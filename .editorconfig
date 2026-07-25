@@ -420,3 +420,8 @@ dotnet_diagnostic.S6781.severity = none
 
 # CA1308: emails are normalized to lowercase on purpose
 dotnet_diagnostic.CA1308.severity = none
+
+# EF Core migrations are generated code
+[**/Migrations/**.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none
