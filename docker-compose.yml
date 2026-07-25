@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: tydee-postgres
+    environment:
+      - POSTGRES_DB=tydee
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - ./.containers/db:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+  seq:
+    image: datalust/seq:2024.3
+    container_name: tydee-seq
+    environment:
+      - ACCEPT_EULA=Y
+    ports:
+      - 8081:80
