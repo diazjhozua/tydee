@@ -1,0 +1,40 @@
+@base = http://localhost:5000
+
+### Register
+POST {{base}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Password123!",
+  "firstName": "Test",
+  "lastName": "User"
+}
+
+### Verify email (token comes from the verification email)
+POST {{base}}/api/v1/auth/verify-email
+Content-Type: application/json
+
+{
+  "token": "PASTE_VERIFICATION_TOKEN"
+}
+
+### Login
+POST {{base}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Password123!"
+}
+
+### Refresh token
+POST {{base}}/api/v1/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "PASTE_REFRESH_TOKEN"
+}
+
+### Health
+GET {{base}}/health
