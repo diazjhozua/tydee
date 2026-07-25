@@ -417,3 +417,6 @@ dotnet_diagnostic.S6605.severity = none
 
 # S6781: JWT secret keys should not be disclosed
 dotnet_diagnostic.S6781.severity = none
+
+# CA1308: emails are normalized to lowercase on purpose
+dotnet_diagnostic.CA1308.severity = none
