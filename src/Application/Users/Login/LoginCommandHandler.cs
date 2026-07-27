@@ -39,7 +39,9 @@ internal sealed class LoginCommandHandler(
 
         string rawRefreshToken = tokenProvider.GenerateRefreshToken();
 
-        user.RefreshTokens.Add(new Domain.Users.RefreshToken
+        // Add through the DbSet so EF tracks it as an insert; adding via the
+        // navigation with a pre-set Guid key makes it issue an update instead.
+        context.RefreshTokens.Add(new Domain.Users.RefreshToken
         {
             Id = Guid.NewGuid(),
             Token = tokenProvider.HashRefreshToken(rawRefreshToken),

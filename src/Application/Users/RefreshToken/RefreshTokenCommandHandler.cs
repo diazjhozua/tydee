@@ -60,7 +60,7 @@ internal sealed class RefreshTokenCommandHandler(
 
         string rawRefreshToken = tokenProvider.GenerateRefreshToken();
 
-        user.RefreshTokens.Add(new Domain.Users.RefreshToken
+        context.RefreshTokens.Add(new Domain.Users.RefreshToken
         {
             Id = Guid.NewGuid(),
             Token = tokenProvider.HashRefreshToken(rawRefreshToken),
