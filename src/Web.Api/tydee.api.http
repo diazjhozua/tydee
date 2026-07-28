@@ -36,5 +36,83 @@ Content-Type: application/json
   "refreshToken": "PASTE_REFRESH_TOKEN"
 }
 
+@token = PASTE_ACCESS_TOKEN
+
+### Create account
+POST {{base}}/api/v1/accounts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Budget",
+  "type": "Spending",
+  "allocationPercent": 70
+}
+
+### List accounts (add ?includeArchived=true to see archived ones)
+GET {{base}}/api/v1/accounts
+Authorization: Bearer {{token}}
+
+### Rename account / change type
+PUT {{base}}/api/v1/accounts/PASTE_ACCOUNT_ID
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Daily Budget",
+  "type": "Spending"
+}
+
+### Archive account
+DELETE {{base}}/api/v1/accounts/PASTE_ACCOUNT_ID
+Authorization: Bearer {{token}}
+
+### Set allocation template (must cover all active accounts, total 100)
+PUT {{base}}/api/v1/accounts/template
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "items": [
+    { "accountId": "PASTE_ACCOUNT_ID_1", "percent": 70 },
+    { "accountId": "PASTE_ACCOUNT_ID_2", "percent": 30 }
+  ]
+}
+
+### Log income with allocations (must sum to amount)
+POST {{base}}/api/v1/incomes
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 30000,
+  "source": "Salary",
+  "date": "2026-07-28",
+  "allocations": [
+    { "accountId": "PASTE_ACCOUNT_ID_1", "amount": 21000 },
+    { "accountId": "PASTE_ACCOUNT_ID_2", "amount": 9000 }
+  ]
+}
+
+### Log expense
+POST {{base}}/api/v1/expenses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "accountId": "PASTE_ACCOUNT_ID",
+  "amount": 150,
+  "note": "Lunch",
+  "date": "2026-07-28"
+}
+
+### List expenses
+GET {{base}}/api/v1/expenses?page=1&pageSize=20
+Authorization: Bearer {{token}}
+
+### Dashboard (balances, monthly spend, recent activity)
+GET {{base}}/api/v1/dashboard
+Authorization: Bearer {{token}}
+
 ### Health
 GET {{base}}/health

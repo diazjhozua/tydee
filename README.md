@@ -57,3 +57,26 @@ Requirements: .NET 10 SDK, Docker.
 | `POST api/v1/auth/refresh-token` | Rotates the refresh token. Reusing an old token revokes all sessions |
 
 Refresh tokens are stored as SHA-256 hashes, so a database dump can't be replayed.
+
+## Budgeting endpoints
+
+All of these require a bearer token.
+
+| Endpoint | Description |
+|---|---|
+| `POST /api/v1/accounts` | Create an account (envelope). Type is `Spending` or `Saving` |
+| `GET /api/v1/accounts` | List accounts with computed balances (`?includeArchived=true` for all) |
+| `PUT /api/v1/accounts/{id}` | Rename an account or change its type |
+| `DELETE /api/v1/accounts/{id}` | Archive an account (history is kept, account becomes unusable) |
+| `PUT /api/v1/accounts/template` | Set allocation percents for all active accounts; must total 100 |
+| `POST /api/v1/incomes` | Log income with per-account allocations that sum to the amount |
+| `PUT /api/v1/incomes/{id}` | Edit an income; allocations are replaced |
+| `DELETE /api/v1/incomes/{id}` | Delete an income and its allocations |
+| `POST /api/v1/expenses` | Log an expense against an account |
+| `GET /api/v1/expenses` | List expenses, newest first (`?accountId=&page=&pageSize=`) |
+| `PUT /api/v1/expenses/{id}` | Edit an expense |
+| `DELETE /api/v1/expenses/{id}` | Delete an expense |
+| `GET /api/v1/dashboard` | Balances, total spent this month, and recent activity |
+
+Balances are always computed from income allocations minus expenses, never stored,
+so editing or deleting an entry can't leave a stale balance behind.
