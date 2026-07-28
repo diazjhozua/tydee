@@ -1,4 +1,7 @@
 using Application.Abstractions.Data;
+using Domain.Accounts;
+using Domain.Expenses;
+using Domain.Incomes;
 using Domain.Users;
 using Infrastructure.DomainEvents;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +17,14 @@ public sealed class ApplicationDbContext(
     public DbSet<User> Users { get; set; }
 
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+
+    public DbSet<Account> Accounts { get; set; }
+
+    public DbSet<Income> Incomes { get; set; }
+
+    public DbSet<IncomeAllocation> IncomeAllocations { get; set; }
+
+    public DbSet<Expense> Expenses { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
