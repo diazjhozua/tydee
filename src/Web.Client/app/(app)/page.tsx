@@ -1,10 +1,13 @@
 "use client";
 
+import { Inbox } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ExpenseDialog } from "@/components/expenses/ExpenseDialog";
-import { Badge } from "@/components/ui/badge";
+import { AccountIcon } from "@/components/shared/AccountIcon";
+import { ActivityIcon } from "@/components/shared/ActivityIcon";
+import { Money } from "@/components/shared/Money";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -24,6 +27,14 @@ import { ActivityItem } from "@/lib/types/dashboard";
 import { Expense } from "@/lib/types/expense";
 import { formatMoney } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      {children}
+    </h2>
+  );
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -48,12 +59,20 @@ export default function HomePage() {
   if (isLoading || !dashboard) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-36 w-full rounded-3xl" />
+        <Skeleton className="h-20 w-full rounded-2xl" />
+        <Skeleton className="h-20 w-full rounded-2xl" />
+        <Skeleton className="h-40 w-full rounded-2xl" />
       </div>
     );
   }
+
+  const spent = dashboard.totalSpentThisMonth;
+  const spendingPower = dashboard.accountBalances
+    .filter((a) => a.type === "Spending")
+    .reduce((sum, a) => sum + a.balance, 0);
+  const monthBudget = spendingPower + spent;
+  const spentRatio = monthBudget > 0 ? Math.min(spent / monthBudget, 1) : 0;
 
   function onActivityClick(item: ActivityItem) {
     if (item.kind === "expense") {
@@ -83,68 +102,113 @@ export default function HomePage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm text-muted-foreground">Spent this month</p>
-        <p className="text-4xl font-bold tracking-tight">
-          {formatMoney(dashboard.totalSpentThisMonth, currency)}
-        </p>
+    <div className="space-y-7">
+      <div className="hero-gradient relative overflow-hidden rounded-3xl p-6 text-white shadow-lg shadow-emerald-600/20">
+        <div className="pointer-events-none absolute -right-10 -top-14 size-44 rounded-full bg-white/10" />
+        <div className="pointer-events-none absolute -bottom-20 -left-8 size-52 rounded-full bg-white/5" />
+
+        <p className="text-sm font-medium text-white/80">Spent this month</p>
+        <Money value={spent} currency={currency} size="xl" className="mt-1 text-white" />
+
+        {monthBudget > 0 && (
+          <div className="mt-5">
+            <div className="h-1.5 overflow-hidden rounded-full bg-white/25">
+              <div
+                className="h-full rounded-full bg-white transition-all"
+                style={{ width: `${spentRatio * 100}%` }}
+              />
+            </div>
+            <p className="money mt-2 text-xs font-medium text-white/80">
+              of {formatMoney(monthBudget, currency)} spendable
+            </p>
+          </div>
+        )}
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground">Accounts</h2>
-        {dashboard.accountBalances.map((account) => (
-          <Card key={account.accountId}>
-            <CardContent className="flex items-center justify-between py-4">
-              <div>
-                <p className="font-medium">{account.name}</p>
-                <Badge variant="secondary" className="mt-1 text-xs">
-                  {account.type === "Spending" ? "Spending" : "Saving"} · {account.allocationPercent}%
-                </Badge>
-              </div>
-              <p className="text-lg font-semibold">
-                {formatMoney(account.balance, currency)}
-                {account.type === "Spending" && (
-                  <span className="text-xs font-normal text-muted-foreground ml-1">left</span>
-                )}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
+        <SectionLabel>Accounts</SectionLabel>
+        {dashboard.accountBalances.map((account) => {
+          const isSpending = account.type === "Spending";
+          const accountTotal = isSpending ? account.balance + spent : 0;
+
+          return (
+            <Card key={account.accountId} className="rounded-2xl border-border/60 py-0 shadow-sm">
+              <CardContent className="flex items-center gap-3 p-4">
+                <AccountIcon type={account.type === "Spending" ? "Spending" : "Saving"} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{account.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {account.type} · {account.allocationPercent}%
+                  </p>
+                  {isSpending && accountTotal > 0 && (
+                    <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{
+                          width: `${Math.max((account.balance / accountTotal) * 100, 0)}%`,
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="text-right">
+                  <Money value={account.balance} currency={currency} size="md" />
+                  {isSpending && (
+                    <p className="text-[11px] font-medium text-muted-foreground">left</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </section>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-medium text-muted-foreground">Recent</h2>
-        {dashboard.recentActivity.length === 0 && (
-          <p className="text-sm text-muted-foreground py-4 text-center">
-            Nothing yet. Add your first income with the button below.
-          </p>
-        )}
-        <div className="divide-y rounded-lg border bg-card">
-          {dashboard.recentActivity.map((item) => (
-            <button
-              key={`${item.kind}-${item.id}`}
-              type="button"
-              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-accent/50"
-              onClick={() => onActivityClick(item)}
-            >
-              <div>
-                <p className="text-sm font-medium">{item.description}</p>
-                <p className="text-xs text-muted-foreground">{formatDate(item.date)}</p>
-              </div>
-              <span
+      <section className="space-y-3">
+        <SectionLabel>Recent</SectionLabel>
+
+        {dashboard.recentActivity.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border py-10 text-center">
+            <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Inbox className="size-6" />
+            </span>
+            <div>
+              <p className="text-sm font-medium">Nothing here yet</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Add your first income with the button below.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
+            {dashboard.recentActivity.map((item, index) => (
+              <button
+                key={`${item.kind}-${item.id}`}
+                type="button"
+                onClick={() => onActivityClick(item)}
                 className={
-                  item.kind === "income"
-                    ? "text-sm font-semibold text-primary"
-                    : "text-sm font-semibold"
+                  "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/50 active:scale-[0.99]" +
+                  (index > 0 ? " border-t border-border/50" : "")
                 }
               >
-                {item.kind === "income" ? "+" : "-"}
-                {formatMoney(item.amount, currency)}
-              </span>
-            </button>
-          ))}
-        </div>
+                <ActivityIcon kind={item.kind === "income" ? "income" : "expense"} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{item.description}</p>
+                  <p className="text-xs text-muted-foreground">{formatDate(item.date)}</p>
+                </div>
+                <span
+                  className={
+                    item.kind === "income"
+                      ? "money text-sm font-semibold text-emerald-600 dark:text-emerald-400"
+                      : "money text-sm font-semibold"
+                  }
+                >
+                  {item.kind === "income" ? "+" : "−"}
+                  {formatMoney(item.amount, currency)}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       <ExpenseDialog
@@ -157,7 +221,7 @@ export default function HomePage() {
         open={deletingIncome !== undefined}
         onOpenChange={(open) => !open && setDeletingIncome(undefined)}
       >
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm rounded-2xl">
           <DialogHeader>
             <DialogTitle>Delete this income?</DialogTitle>
             <DialogDescription>
@@ -165,7 +229,7 @@ export default function HomePage() {
                 `${deletingIncome.description} (+${formatMoney(deletingIncome.amount, currency)}) and its allocations will be removed. Account balances will go down accordingly.`}
             </DialogDescription>
           </DialogHeader>
-          <div className="flex gap-2 justify-end">
+          <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setDeletingIncome(undefined)}>
               Cancel
             </Button>
