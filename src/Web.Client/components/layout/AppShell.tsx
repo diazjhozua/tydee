@@ -17,8 +17,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
-        <div className="max-w-md mx-auto flex items-center justify-between px-4 h-14">
+      <header className="sticky top-0 z-10 border-b border-border/50 bg-background/80 backdrop-blur-md">
+        <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
           <Link href="/" className="text-xl font-bold tracking-tight text-primary">
             Tydee
           </Link>
@@ -27,6 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             nativeButton={false}
             variant="ghost"
             size="icon"
+            className="rounded-full"
             aria-label="Settings"
           >
             <Settings className="size-5" />
@@ -34,27 +35,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-md mx-auto px-4 py-4 pb-28">{children}</main>
+      <main className="mx-auto w-full max-w-md flex-1 px-4 py-5 pb-32">{children}</main>
 
       {showFabs && (
-        <div className="fixed bottom-6 inset-x-0 z-10 pointer-events-none">
-          <div className="max-w-md mx-auto flex items-end justify-end gap-3 px-5">
-            <Button
-              variant="outline"
-              className="pointer-events-auto shadow-md bg-background"
+        <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-6 z-10">
+          <div className="mx-auto flex max-w-md items-center justify-end gap-3 px-5">
+            <button
+              type="button"
               onClick={() => setIncomeOpen(true)}
+              className="pointer-events-auto flex h-11 items-center gap-2 rounded-full border border-border/60 bg-background/80 px-4 text-sm font-semibold shadow-lg backdrop-blur-md transition-transform active:scale-95"
             >
-              <TrendingUp className="size-4" />
+              <TrendingUp className="size-4 text-primary" />
               Income
-            </Button>
-            <Button
-              size="icon"
-              className="pointer-events-auto size-14 rounded-full shadow-lg"
+            </button>
+            <button
+              type="button"
               aria-label="Add expense"
               onClick={() => setExpenseOpen(true)}
+              className="hero-gradient pointer-events-auto flex size-14 items-center justify-center rounded-2xl text-white shadow-lg shadow-emerald-600/30 transition-transform active:scale-95"
             >
-              <Plus className="size-7" />
-            </Button>
+              <Plus className="size-7" strokeWidth={2.5} />
+            </button>
           </div>
         </div>
       )}

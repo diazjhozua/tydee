@@ -2,14 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
+import { AmountInput } from "@/components/shared/AmountInput";
+import { EntrySheet } from "@/components/shared/EntrySheet";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAccounts } from "@/lib/hooks/useAccounts";
@@ -21,7 +16,8 @@ import {
 import { useMe } from "@/lib/hooks/useMe";
 import { ApiError } from "@/lib/types/api";
 import { Expense } from "@/lib/types/expense";
-import { formatMoney } from "@/lib/utils/currency";
+import { cn } from "@/lib/utils";
+import { currencySymbol, formatMoney } from "@/lib/utils/currency";
 import { today } from "@/lib/utils/date";
 
 const LAST_ACCOUNT_KEY = "tydee.lastExpenseAccount";
@@ -130,81 +126,82 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
   const pending = createExpense.isPending || updateExpense.isPending || deleteExpense.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit expense" : "Add expense"}</DialogTitle>
-        </DialogHeader>
+    <EntrySheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={isEdit ? "Edit expense" : "Add expense"}
+    >
+      <div className="space-y-5">
+        <AmountInput
+          value={amount}
+          onChange={setAmount}
+          currencySymbol={currencySymbol(me?.currency ?? "PHP")}
+          autoFocus={!isEdit}
+        />
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="expense-amount">Amount</Label>
-            <Input
-              id="expense-amount"
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              autoFocus
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Deduct from</Label>
-            <div className="flex flex-wrap gap-2">
-              {activeAccounts.map((account) => (
-                <button
-                  key={account.id}
-                  type="button"
-                  className="rounded-full"
-                  onClick={() => setAccountId(account.id)}
-                >
-                  <Badge
-                    variant={account.id === accountId ? "default" : "outline"}
-                    className="cursor-pointer px-3 py-1.5"
-                  >
-                    {account.name}
-                  </Badge>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="expense-note">Note (optional)</Label>
-            <Input
-              id="expense-note"
-              placeholder="e.g. lunch"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="expense-date">Date</Label>
-            <Input
-              id="expense-date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </div>
-
-          <div className="flex gap-2">
-            {isEdit && (
-              <Button variant="destructive" onClick={remove} disabled={pending}>
-                Delete
-              </Button>
-            )}
-            <Button className="flex-1" onClick={save} disabled={!canSave || pending}>
-              {pending ? "Saving..." : "Save"}
-            </Button>
+        <div className="space-y-2">
+          <Label>Deduct from</Label>
+          <div className="flex flex-wrap gap-2">
+            {activeAccounts.map((account) => (
+              <button
+                key={account.id}
+                type="button"
+                onClick={() => setAccountId(account.id)}
+                className={cn(
+                  "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                  account.id === accountId
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {account.name}
+              </button>
+            ))}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <div className="space-y-2">
+          <Label htmlFor="expense-note">Note (optional)</Label>
+          <Input
+            id="expense-note"
+            placeholder="e.g. lunch"
+            className="h-11 rounded-xl"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="expense-date">Date</Label>
+          <Input
+            id="expense-date"
+            type="date"
+            className="h-11 rounded-xl"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </div>
+
+        <div className="flex gap-2 pt-1">
+          {isEdit && (
+            <Button
+              variant="destructive"
+              className="h-12 rounded-xl px-5"
+              onClick={remove}
+              disabled={pending}
+            >
+              Delete
+            </Button>
+          )}
+          <Button
+            className="h-12 flex-1 rounded-xl text-base font-semibold"
+            onClick={save}
+            disabled={!canSave || pending}
+          >
+            {pending ? "Saving..." : "Save"}
+          </Button>
+        </div>
+      </div>
+    </EntrySheet>
   );
 }

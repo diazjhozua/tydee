@@ -2,13 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { AmountInput } from "@/components/shared/AmountInput";
+import { EntrySheet } from "@/components/shared/EntrySheet";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -16,7 +12,7 @@ import { useAccounts } from "@/lib/hooks/useAccounts";
 import { useCreateIncome } from "@/lib/hooks/useIncomes";
 import { useMe } from "@/lib/hooks/useMe";
 import { ApiError } from "@/lib/types/api";
-import { formatMoney } from "@/lib/utils/currency";
+import { currencySymbol, formatMoney } from "@/lib/utils/currency";
 import { today } from "@/lib/utils/date";
 
 type Props = {
@@ -116,93 +112,88 @@ export function IncomeDialog({ open, onOpenChange }: Props) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Add income</DialogTitle>
-        </DialogHeader>
+    <EntrySheet open={open} onOpenChange={onOpenChange} title="Add income">
+      <div className="space-y-5">
+        <AmountInput
+          value={amount}
+          onChange={setAmount}
+          currencySymbol={currencySymbol(currency)}
+          autoFocus
+        />
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="income-amount">Amount</Label>
-            <Input
-              id="income-amount"
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.01"
-              placeholder="0.00"
-              autoFocus
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-          </div>
-
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
             <Label htmlFor="income-source">Source</Label>
             <Input
               id="income-source"
               placeholder="e.g. Salary"
+              className="h-11 rounded-xl"
               value={source}
               onChange={(e) => setSource(e.target.value)}
             />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="income-date">Date</Label>
             <Input
               id="income-date"
               type="date"
+              className="h-11 rounded-xl"
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />
           </div>
+        </div>
 
-          <Separator />
+        <Separator />
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Allocation</Label>
-              <span className="text-xs text-muted-foreground">tap amounts to adjust</span>
-            </div>
-
-            {activeAccounts.map((account) => (
-              <div key={account.id} className="flex items-center gap-2">
-                <span className="flex-1 text-sm truncate">
-                  {account.name}
-                  <span className="text-muted-foreground ml-1">
-                    {account.allocationPercent}%
-                  </span>
-                </span>
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="0.01"
-                  className="w-32"
-                  value={allocations[account.id] ?? ""}
-                  onChange={(e) => setAllocation(account.id, e.target.value)}
-                />
-              </div>
-            ))}
-
-            <div className="flex justify-between text-sm pt-1">
-              <span className="text-muted-foreground">Remaining</span>
-              <span className={remaining === 0 ? "text-primary font-medium" : "text-destructive font-medium"}>
-                {formatMoney(remaining, currency)}
-              </span>
-            </div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <Label>Allocation</Label>
+            <span className="text-xs text-muted-foreground">tap amounts to adjust</span>
           </div>
 
-          <Button
-            className="w-full"
-            onClick={save}
-            disabled={!canSave || createIncome.isPending}
-          >
-            {createIncome.isPending ? "Saving..." : "Confirm & allocate"}
-          </Button>
+          {activeAccounts.map((account) => (
+            <div key={account.id} className="flex items-center gap-2">
+              <span className="flex-1 truncate text-sm font-medium">
+                {account.name}
+                <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                  {account.allocationPercent}%
+                </span>
+              </span>
+              <Input
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                className="money h-10 w-32 rounded-xl text-right"
+                value={allocations[account.id] ?? ""}
+                onChange={(e) => setAllocation(account.id, e.target.value)}
+              />
+            </div>
+          ))}
+
+          <div className="flex items-center justify-between rounded-xl bg-muted/60 px-3 py-2 text-sm">
+            <span className="text-muted-foreground">Remaining</span>
+            <span
+              className={
+                remaining === 0
+                  ? "money font-semibold text-primary"
+                  : "money font-semibold text-destructive"
+              }
+            >
+              {formatMoney(remaining, currency)}
+            </span>
+          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <Button
+          className="h-12 w-full rounded-xl text-base font-semibold"
+          onClick={save}
+          disabled={!canSave || createIncome.isPending}
+        >
+          {createIncome.isPending ? "Saving..." : "Confirm & allocate"}
+        </Button>
+      </div>
+    </EntrySheet>
   );
 }
