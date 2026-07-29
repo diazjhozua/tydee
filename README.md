@@ -80,3 +80,27 @@ All of these require a bearer token.
 
 Balances are always computed from income allocations minus expenses, never stored,
 so editing or deleting an entry can't leave a stale balance behind.
+
+## Web client
+
+The frontend is a mobile-first Next.js app in `src/Web.Client` (Tailwind v4 + shadcn,
+TanStack Query, Zustand). Auth uses a BFF pattern: Next.js route handlers under
+`app/api/auth/*` keep the refresh token in an httpOnly cookie and the browser only
+ever holds the short-lived access token in memory.
+
+```
+cd src/Web.Client
+npm install
+npm run dev     # http://localhost:3000
+```
+
+Copy `.env.example` to `.env.local` — both values point at the API:
+
+| Variable | Purpose |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | Browser-side axios calls (Bearer token) |
+| `API_URL` | Server-side auth route handlers (cookie handling) |
+
+Run the API and the client together; registration emails link straight to
+`http://localhost:3000/verify-email`. First login with no accounts drops you
+into a two-step setup: create your envelopes, then set the income split.
