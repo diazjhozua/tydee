@@ -62,7 +62,7 @@ function StatusCard({ title, description }: { title: string; description: string
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <Button render={<Link href="/login" />} variant="outline" className="w-full">
+        <Button render={<Link href="/login" />} nativeButton={false} variant="outline" className="w-full">
           Go to login
         </Button>
       </CardContent>

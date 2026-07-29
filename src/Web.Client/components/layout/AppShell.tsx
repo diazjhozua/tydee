@@ -24,6 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
           <Button
             render={<Link href="/settings" />}
+            nativeButton={false}
             variant="ghost"
             size="icon"
             aria-label="Settings"

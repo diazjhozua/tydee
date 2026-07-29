@@ -48,7 +48,7 @@ export default function RegisterPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button render={<Link href="/login" />} className="w-full">
+          <Button render={<Link href="/login" />} nativeButton={false} className="w-full">
             Go to login
           </Button>
         </CardContent>
