@@ -16,3 +16,15 @@ export function formatMoney(amount: number, currency: string): string {
     currencyDisplay: "narrowSymbol",
   }).format(amount);
 }
+
+export function currencySymbol(currency: string): string {
+  return (
+    new Intl.NumberFormat("en", {
+      style: "currency",
+      currency,
+      currencyDisplay: "narrowSymbol",
+    })
+      .formatToParts(0)
+      .find((part) => part.type === "currency")?.value ?? currency
+  );
+}
