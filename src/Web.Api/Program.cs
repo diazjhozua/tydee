@@ -20,7 +20,15 @@ builder.Services
 
 builder.Services.AddEndpoints(Assembly.GetExecutingAssembly());
 
+builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
+    policy
+        .WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
+        .AllowAnyHeader()
+        .AllowAnyMethod()));
+
 WebApplication app = builder.Build();
+
+app.UseCors();
 
 app.MapEndpoints();
 
