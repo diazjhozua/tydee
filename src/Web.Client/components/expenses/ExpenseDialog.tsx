@@ -156,14 +156,19 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
             <Label>Deduct from</Label>
             <div className="flex flex-wrap gap-2">
               {activeAccounts.map((account) => (
-                <Badge
+                <button
                   key={account.id}
-                  variant={account.id === accountId ? "default" : "outline"}
-                  className="cursor-pointer px-3 py-1.5"
+                  type="button"
+                  className="rounded-full"
                   onClick={() => setAccountId(account.id)}
                 >
-                  {account.name}
-                </Badge>
+                  <Badge
+                    variant={account.id === accountId ? "default" : "outline"}
+                    className="cursor-pointer px-3 py-1.5"
+                  >
+                    {account.name}
+                  </Badge>
+                </button>
               ))}
             </div>
           </div>

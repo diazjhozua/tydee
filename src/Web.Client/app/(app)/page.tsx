@@ -27,7 +27,7 @@ import { formatDate } from "@/lib/utils/date";
 
 export default function HomePage() {
   const router = useRouter();
-  const { data: dashboard, isLoading } = useDashboard();
+  const { data: dashboard, isLoading, isFetching } = useDashboard();
   const { data: me } = useMe();
   const { data: expenses } = useExpenses({ pageSize: 50 });
   const deleteIncome = useDeleteIncome();
@@ -38,10 +38,12 @@ export default function HomePage() {
   const currency = me?.currency ?? "PHP";
 
   useEffect(() => {
-    if (dashboard && dashboard.accountBalances.length === 0) {
+    // Wait for a fresh fetch so a stale cached dashboard (e.g. right after
+    // finishing setup) doesn't bounce the user back to the wizard.
+    if (!isFetching && dashboard && dashboard.accountBalances.length === 0) {
       router.replace("/setup");
     }
-  }, [dashboard, router]);
+  }, [dashboard, isFetching, router]);
 
   if (isLoading || !dashboard) {
     return (
