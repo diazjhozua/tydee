@@ -25,7 +25,7 @@ src/
   Domain/           Entities and domain errors
   Contracts/        Request/response DTOs
   Application/      Commands, queries, handlers, validators (no MediatR - custom handler interfaces)
-  Infrastructure/   EF Core (PostgreSQL), JWT, password hashing, SMTP email
+  Infrastructure/   EF Core (SQL Server / Azure SQL), JWT, password hashing, SMTP email
   Web.Api/          Minimal API endpoints (.NET 10)
   Web.Client/       Next.js app (Tailwind v4, shadcn, TanStack Query, Zustand)
 tests/
@@ -36,11 +36,14 @@ tests/
 
 Requirements: .NET 10 SDK, Node.js, Docker.
 
-1. Start PostgreSQL (and optionally Seq for logs at http://localhost:8081):
+1. Start SQL Server (and optionally Seq for logs at http://localhost:8081):
 
    ```
-   docker compose up postgres -d
+   docker compose up mssql -d
    ```
+
+   In production the same code runs against Azure SQL Database (its serverless
+   free tier fits this app) — only the connection string changes.
 
 2. Fill in the SMTP credentials in `src/Web.Api/appsettings.Development.json`
    (the file is gitignored). Any SMTP provider works — a Gmail app password or

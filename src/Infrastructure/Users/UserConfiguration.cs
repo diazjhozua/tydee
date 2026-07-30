@@ -21,7 +21,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.EmailVerificationToken).HasMaxLength(64);
         builder.HasIndex(u => u.EmailVerificationToken)
             .IsUnique()
-            .HasFilter("email_verification_token IS NOT NULL");
+            .HasFilter("[email_verification_token] IS NOT NULL");
 
         builder.HasMany(u => u.RefreshTokens)
             .WithOne(t => t.User)

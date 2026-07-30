@@ -45,8 +45,8 @@ public static class DependencyInjection
 
         services.AddDbContext<ApplicationDbContext>(
             options => options
-                .UseNpgsql(connectionString, npgsqlOptions =>
-                    npgsqlOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schemas.Default))
+                .UseSqlServer(connectionString, sqlServerOptions =>
+                    sqlServerOptions.MigrationsHistoryTable(HistoryRepository.DefaultTableName, Schemas.Default))
                 .UseSnakeCaseNamingConvention());
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
@@ -60,7 +60,7 @@ public static class DependencyInjection
     {
         services
             .AddHealthChecks()
-            .AddNpgSql(configuration.GetConnectionString("Database")!);
+            .AddSqlServer(configuration.GetConnectionString("Database")!);
 
         return services;
     }

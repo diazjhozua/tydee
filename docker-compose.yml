@@ -1,15 +1,14 @@
 services:
-  postgres:
-    image: postgres:17
-    container_name: tydee-postgres
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: tydee-mssql
     environment:
-      - POSTGRES_DB=tydee
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=Tydee_Dev123!
     volumes:
-      - ./.containers/db:/var/lib/postgresql/data
+      - mssql-data:/var/opt/mssql
     ports:
-      - 5432:5432
+      - 1433:1433
 
   seq:
     image: datalust/seq:2024.3
@@ -18,3 +17,6 @@ services:
       - ACCEPT_EULA=Y
     ports:
       - 8081:80
+
+volumes:
+  mssql-data:
