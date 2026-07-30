@@ -1,8 +1,21 @@
 # Tydee
 
 A simple envelope-style expense and savings tracker. You create account placeholders
-(Budget, Savings, Emergency Fund), allocate your income across them, and log daily
-expenses against the account they come from.
+(Budget, Savings, Emergency Fund), split your income across them with a percentage
+template, and log daily expenses against the account they come from — so you always
+know how much you have left to spend and how much you've kept.
+
+## Features
+
+- Email + password auth with email verification and rotating refresh tokens
+- Accounts ("envelopes") with a Spending or Saving type; archive instead of delete
+- Allocation template — set once (e.g. 70/20/10), every income pre-fills the split
+- Income logging with per-account allocations, expense logging with account, note, and date
+- Balances are always computed from allocations minus expenses, never stored, so
+  editing or deleting an entry can't leave a stale balance behind
+- Dashboard: per-account balances, total spent this month, recent activity
+- Selectable display currency (PHP, USD, EUR, GBP, JPY, AUD, CAD, SGD)
+- Mobile-first web client with light/dark/system theme
 
 ## Structure
 
@@ -11,16 +24,17 @@ src/
   SharedKernel/     Result, Error, Entity, domain event primitives
   Domain/           Entities and domain errors
   Contracts/        Request/response DTOs
-  Application/      Commands, handlers, validators (no MediatR - custom handler interfaces)
+  Application/      Commands, queries, handlers, validators (no MediatR - custom handler interfaces)
   Infrastructure/   EF Core (PostgreSQL), JWT, password hashing, SMTP email
-  Web.Api/          Minimal API endpoints
+  Web.Api/          Minimal API endpoints (.NET 10)
+  Web.Client/       Next.js app (Tailwind v4, shadcn, TanStack Query, Zustand)
 tests/
   Tests/            xUnit tests
 ```
 
-## Local setup
+## Getting started
 
-Requirements: .NET 10 SDK, Docker.
+Requirements: .NET 10 SDK, Node.js, Docker.
 
 1. Start PostgreSQL (and optionally Seq for logs at http://localhost:8081):
 
@@ -29,9 +43,9 @@ Requirements: .NET 10 SDK, Docker.
    ```
 
 2. Fill in the SMTP credentials in `src/Web.Api/appsettings.Development.json`
-   (the file is gitignored). Any SMTP provider works; [Mailtrap](https://mailtrap.io)
-   is handy for development since it captures emails without sending real ones.
-   For anything beyond local dev, prefer user secrets over the settings file:
+   (the file is gitignored). Any SMTP provider works — a Gmail app password or
+   [Mailtrap](https://mailtrap.io) for development. For anything beyond local
+   dev, prefer user secrets over the settings file:
 
    ```
    cd src/Web.Api
@@ -45,22 +59,35 @@ Requirements: .NET 10 SDK, Docker.
    dotnet run --project src/Web.Api
    ```
 
-4. Open Swagger at http://localhost:5000/swagger, or use `src/Web.Api/tydee.api.http`.
+   Swagger lives at http://localhost:5000/swagger, and `src/Web.Api/tydee.api.http`
+   has ready-made requests for every endpoint.
 
-## Auth flow
+4. Run the web client (copy `.env.example` to `.env.local` first):
+
+   ```
+   cd src/Web.Client
+   npm install
+   npm run dev     # http://localhost:3000
+   ```
+
+Register at http://localhost:3000/register — the verification email links back to
+the client. Your first login drops you into a two-step setup: create your
+envelopes, then set the income split.
+
+## API
+
+### Auth
 
 | Endpoint | Description |
 |---|---|
-| `POST api/v1/auth/register` | Creates the account and emails a verification link (24h expiry) |
-| `POST api/v1/auth/verify-email` | Verifies the email using the token from the link |
-| `POST api/v1/auth/login` | Returns an access token (15 min) and refresh token (7 days). Rejects unverified emails |
-| `POST api/v1/auth/refresh-token` | Rotates the refresh token. Reusing an old token revokes all sessions |
+| `POST /api/v1/auth/register` | Creates the account and emails a verification link (24h expiry) |
+| `POST /api/v1/auth/verify-email` | Verifies the email using the token from the link |
+| `POST /api/v1/auth/login` | Returns an access token (15 min) and refresh token (7 days). Rejects unverified emails |
+| `POST /api/v1/auth/refresh-token` | Rotates the refresh token. Reusing an old token revokes all sessions |
 
 Refresh tokens are stored as SHA-256 hashes, so a database dump can't be replayed.
 
-## Budgeting endpoints
-
-All of these require a bearer token.
+### Budgeting and profile (bearer token required)
 
 | Endpoint | Description |
 |---|---|
@@ -77,30 +104,23 @@ All of these require a bearer token.
 | `PUT /api/v1/expenses/{id}` | Edit an expense |
 | `DELETE /api/v1/expenses/{id}` | Delete an expense |
 | `GET /api/v1/dashboard` | Balances, total spent this month, and recent activity |
+| `GET /api/v1/me` | Profile and preferred currency |
+| `PUT /api/v1/me/currency` | Set the preferred display currency |
 
-Balances are always computed from income allocations minus expenses, never stored,
-so editing or deleting an entry can't leave a stale balance behind.
+CORS origins for the browser client come from `Cors:AllowedOrigins` in
+`appsettings.json` (defaults to http://localhost:3000).
 
 ## Web client
 
-The frontend is a mobile-first Next.js app in `src/Web.Client` (Tailwind v4 + shadcn,
-TanStack Query, Zustand). Auth uses a BFF pattern: Next.js route handlers under
-`app/api/auth/*` keep the refresh token in an httpOnly cookie and the browser only
-ever holds the short-lived access token in memory.
+Mobile-first Next.js app in `src/Web.Client` — Inter typography, emerald "fintech"
+theme with a light/dark/system toggle, bottom-sheet entry forms, and a gradient
+spend summary on the home screen.
 
-```
-cd src/Web.Client
-npm install
-npm run dev     # http://localhost:3000
-```
+Auth uses a BFF pattern: Next.js route handlers under `app/api/auth/*` keep the
+refresh token in an httpOnly cookie, the browser only ever holds the short-lived
+access token in memory, and an axios interceptor refreshes it transparently on 401.
 
-Copy `.env.example` to `.env.local` — both values point at the API:
-
-| Variable | Purpose |
+| Variable (`.env.local`) | Purpose |
 |---|---|
 | `NEXT_PUBLIC_API_URL` | Browser-side axios calls (Bearer token) |
 | `API_URL` | Server-side auth route handlers (cookie handling) |
-
-Run the API and the client together; registration emails link straight to
-`http://localhost:3000/verify-email`. First login with no accounts drops you
-into a two-step setup: create your envelopes, then set the income split.
