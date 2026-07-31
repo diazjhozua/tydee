@@ -16,6 +16,8 @@ internal sealed class LoginCommandHandler(
 {
     private const int RefreshTokenLifetimeDays = 7;
     private const int AccessTokenLifetimeMinutes = 15;
+    private const int MaxFailedLoginAttempts = 5;
+    private const int LockoutMinutes = 15;
 
     public async Task<Result<AuthTokensResponse>> Handle(LoginCommand command, CancellationToken cancellationToken)
     {
@@ -25,9 +27,37 @@ internal sealed class LoginCommandHandler(
             .Include(u => u.RefreshTokens)
             .SingleOrDefaultAsync(u => u.Email == email, cancellationToken);
 
-        if (user is null || !passwordHasher.Verify(command.Password, user.PasswordHash))
+        if (user is null)
         {
             return Result.Failure<AuthTokensResponse>(UserErrors.InvalidCredentials);
+        }
+
+        // Locked accounts answer exactly like a wrong password so the lockout
+        // can't be used to probe accounts or confirm a guessed password.
+        if (user.LockoutEndUtc > dateTimeProvider.UtcNow)
+        {
+            return Result.Failure<AuthTokensResponse>(UserErrors.InvalidCredentials);
+        }
+
+        if (!passwordHasher.Verify(command.Password, user.PasswordHash))
+        {
+            user.FailedLoginAttempts++;
+
+            if (user.FailedLoginAttempts >= MaxFailedLoginAttempts)
+            {
+                user.LockoutEndUtc = dateTimeProvider.UtcNow.AddMinutes(LockoutMinutes);
+                user.FailedLoginAttempts = 0;
+            }
+
+            await context.SaveChangesAsync(cancellationToken);
+
+            return Result.Failure<AuthTokensResponse>(UserErrors.InvalidCredentials);
+        }
+
+        if (user.FailedLoginAttempts > 0 || user.LockoutEndUtc is not null)
+        {
+            user.FailedLoginAttempts = 0;
+            user.LockoutEndUtc = null;
         }
 
         if (!user.IsEmailVerified)
