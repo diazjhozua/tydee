@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0](https://github.com/diazjhozua/tydee/compare/v1.0.0...v1.1.0) (2026-07-31)
+
+
+### Features
+
+* **application:** lock accounts after repeated failed logins ([493a262](https://github.com/diazjhozua/tydee/commit/493a262c0121b453b3dd68010e42bab1b3e57945))
+* **web-api:** rate limit auth endpoints and harden http responses ([ef88448](https://github.com/diazjhozua/tydee/commit/ef88448c21075773c487eb4da6cfe84734830646))
+
 ## 1.0.0 (2026-07-31)
 
 
