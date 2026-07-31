@@ -1,0 +1,46 @@
+# Changelog
+
+## 1.0.0 (2026-07-31)
+
+
+### Features
+
+* **application:** add account commands and list query with computed balances ([312cf6e](https://github.com/diazjhozua/tydee/commit/312cf6e49e50ff2bea7cf441d0adf8a0c4569460))
+* **application:** add command handler plumbing and auth abstractions ([c438639](https://github.com/diazjhozua/tydee/commit/c43863991d8d33b7bfc84fa4ab26b67df18da96b))
+* **application:** add dashboard query for balances, monthly spend, and recent activity ([1231026](https://github.com/diazjhozua/tydee/commit/12310260a6bee17fdb27995843dee6e7be308a50))
+* **application:** add expense commands and paginated list query ([e182796](https://github.com/diazjhozua/tydee/commit/e182796125d6184cd5140a3067c0deee14839061))
+* **application:** add income commands with allocation validation ([0ded6a5](https://github.com/diazjhozua/tydee/commit/0ded6a52b48413b9694df2a1ddf5232dd8653071))
+* **application:** implement register, verify email, login, and refresh token ([d37d831](https://github.com/diazjhozua/tydee/commit/d37d83146894fa3069a921eb9eb5d484811b8b6f))
+* **contracts:** add accounts, incomes, expenses, and dashboard DTOs ([902d5bb](https://github.com/diazjhozua/tydee/commit/902d5bb880533c230ef040fb1a013ad595a50686))
+* **contracts:** add auth request/response DTOs ([c91b9f2](https://github.com/diazjhozua/tydee/commit/c91b9f26930b20533619bfdbb7c6698d5ef4c9b0))
+* **domain:** add account, income, and expense entities with errors ([76616a9](https://github.com/diazjhozua/tydee/commit/76616a903af87f36d641a8930f15789894528fc5))
+* **domain:** add user currency preference with migration ([83bfc4c](https://github.com/diazjhozua/tydee/commit/83bfc4cfef574ec9dc7c12b8a1675920bbbc326f))
+* **domain:** add User with email verification and refresh token model ([1539acc](https://github.com/diazjhozua/tydee/commit/1539acc530be113d4437382cd5b07799c65084c0))
+* **infrastructure:** add EF configurations and budgeting migration ([ccc5173](https://github.com/diazjhozua/tydee/commit/ccc51738ab4a73ff8ff7e7e1a30f1ae1f475a4e6))
+* **infrastructure:** add EF Core context, entity configurations, and domain event dispatch ([f81a032](https://github.com/diazjhozua/tydee/commit/f81a0322cbd7e0386636728a5e31523bd1bf2d6d))
+* **infrastructure:** add initial database migration for users and refresh tokens ([7ecc43d](https://github.com/diazjhozua/tydee/commit/7ecc43dc41ef75c0eeb954496af0994d0172f218))
+* **infrastructure:** add JWT token provider and password hasher ([b41bb42](https://github.com/diazjhozua/tydee/commit/b41bb42353fe221e3e75515e333f31d00b463eeb))
+* **infrastructure:** add MailKit SMTP email sender and DI wiring ([65e4480](https://github.com/diazjhozua/tydee/commit/65e4480d69e09ff5a6c56fda9ee05e140bdcfdf8))
+* **infrastructure:** switch database from postgres to sql server ([40851a7](https://github.com/diazjhozua/tydee/commit/40851a785ec0adc85217b25ccc81bff61cd4111c))
+* **shared-kernel:** add Result, Error, Entity, and domain event primitives ([4804980](https://github.com/diazjhozua/tydee/commit/48049804a61f3ee1866c0faa4b0864be63a580da))
+* **web-api:** add accounts, incomes, expenses, and dashboard endpoints ([3820120](https://github.com/diazjhozua/tydee/commit/3820120782f2f31b8d15cab0fd283f9e174ca256))
+* **web-api:** add profile endpoint and currency setting ([906c05c](https://github.com/diazjhozua/tydee/commit/906c05cd4ecc55a91211dd3602b9c7db66918ef2))
+* **web-api:** wire up auth endpoints and middleware pipeline ([b1fab77](https://github.com/diazjhozua/tydee/commit/b1fab77822c682b1b4fdb6c52e12875ff29a25d7))
+* **web-client:** add auth store, api client, and BFF auth routes ([1694789](https://github.com/diazjhozua/tydee/commit/1694789461d4c2dc06036f6e5ab9d473edccd355))
+* **web-client:** add bottom sheet, money, and icon primitives ([9d84dc8](https://github.com/diazjhozua/tydee/commit/9d84dc82c8af0ca535f37dbcbb77c8c3d78654e2))
+* **web-client:** add home, setup wizard, entry dialogs, and settings ([3a62ecf](https://github.com/diazjhozua/tydee/commit/3a62ecf7d27b40c87715a9c77e1f62b32e1f6e24))
+* **web-client:** add login, register, and verify-email pages ([cfc5f0e](https://github.com/diazjhozua/tydee/commit/cfc5f0e5540e18583677a2a7574ec10a293cbe44))
+* **web-client:** add typed api modules and query hooks ([7cb3f08](https://github.com/diazjhozua/tydee/commit/7cb3f08fcc50503a1f1bd021d1ad6023b9f5840c))
+* **web-client:** move entry forms into bottom sheets ([bfd34e4](https://github.com/diazjhozua/tydee/commit/bfd34e4f419697a62f9a2ccd755b8cc1e138ee6b))
+* **web-client:** redesign home, setup, and settings screens ([102ad4a](https://github.com/diazjhozua/tydee/commit/102ad4a6b102845b0f34255f6edfffaa14b5729e))
+* **web-client:** refresh design tokens and add dark mode support ([3df5028](https://github.com/diazjhozua/tydee/commit/3df5028861984cf5f8355d2ccbdb1be4b7333e77))
+
+
+### Bug Fixes
+
+* **application:** insert refresh tokens through the DbSet ([d0199e8](https://github.com/diazjhozua/tydee/commit/d0199e8fbf181c1f121bba45c44d94ad949cd814))
+* **web-api:** allow cross-origin requests from the web client ([bc4edff](https://github.com/diazjhozua/tydee/commit/bc4edffc52ff44c7559e5ff47b5070a018965767))
+* **web-api:** apply migrations on startup in all environments ([f395981](https://github.com/diazjhozua/tydee/commit/f39598166fed91c4f5c3984abf01aacc65aa94d7))
+* **web-client:** mark link-rendered buttons as non-native ([eba5c7e](https://github.com/diazjhozua/tydee/commit/eba5c7ea6c0a69c399ed6b0fc293f9ed22eb3a18))
+* **web-client:** stop home from bouncing back to setup on stale cache ([4198bb5](https://github.com/diazjhozua/tydee/commit/4198bb59b15dc2dd34c25730be8f91c125b217fb))
+* **web-client:** switch to Inter and repair font variable wiring ([51a5dc3](https://github.com/diazjhozua/tydee/commit/51a5dc3ad2833264b68a7bc9a94d1dd404510098))
