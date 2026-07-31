@@ -25,6 +25,7 @@ internal sealed class VerifyEmail : IEndpoint
                 CustomResults.Problem);
         })
         .WithTags(Tags.Auth)
+        .RequireRateLimiting(RateLimitingExtensions.AuthPolicy)
         .WithSummary("Verify an email address using the token from the verification email.");
     }
 }

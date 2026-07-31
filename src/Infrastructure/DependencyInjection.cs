@@ -21,12 +21,13 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
-        IConfiguration configuration) =>
+        IConfiguration configuration,
+        bool isDevelopment) =>
         services
             .AddServices()
             .AddDatabase(configuration)
             .AddHealthChecksInternal(configuration)
-            .AddAuthenticationInternal(configuration)
+            .AddAuthenticationInternal(configuration, isDevelopment)
             .AddEmail(configuration)
             .AddAuthorizationInternal();
 
@@ -67,19 +68,25 @@ public static class DependencyInjection
 
     private static IServiceCollection AddAuthenticationInternal(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        bool isDevelopment)
     {
         JwtSettings jwtSettings = configuration
             .GetSection(JwtSettings.SectionName)
             .Get<JwtSettings>()
             ?? throw new InvalidOperationException("Jwt configuration section is missing.");
 
+        if (jwtSettings.Secret.Length < 32)
+        {
+            throw new InvalidOperationException("Jwt:Secret must be at least 32 characters.");
+        }
+
         services.AddSingleton(jwtSettings);
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(o =>
             {
-                o.RequireHttpsMetadata = false;
+                o.RequireHttpsMetadata = !isDevelopment;
                 o.TokenValidationParameters = new TokenValidationParameters
                 {
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),

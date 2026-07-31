@@ -28,6 +28,7 @@ internal sealed class Login : IEndpoint
                 CustomResults.Problem);
         })
         .WithTags(Tags.Auth)
+        .RequireRateLimiting(RateLimitingExtensions.AuthPolicy)
         .WithSummary("Login with email and password. Returns access and refresh tokens.");
     }
 }

@@ -29,6 +29,7 @@ internal sealed class RefreshToken : IEndpoint
                 CustomResults.Problem);
         })
         .WithTags(Tags.Auth)
+        .RequireRateLimiting(RateLimitingExtensions.AuthPolicy)
         .WithSummary("Exchange a refresh token for a new token pair. The old token is revoked.");
     }
 }

@@ -30,6 +30,7 @@ internal sealed class Register : IEndpoint
                 CustomResults.Problem);
         })
         .WithTags(Tags.Auth)
+        .RequireRateLimiting(RateLimitingExtensions.AuthPolicy)
         .WithSummary("Register a new account and send a verification email.");
     }
 }

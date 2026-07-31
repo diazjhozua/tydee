@@ -9,6 +9,8 @@ using Web.Api.Extensions;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
+
 builder.Host.UseSerilog((context, loggerConfig) => loggerConfig.ReadFrom.Configuration(context.Configuration));
 
 builder.Services.AddSwaggerGenWithAuth();
@@ -16,9 +18,11 @@ builder.Services.AddSwaggerGenWithAuth();
 builder.Services
     .AddApplication()
     .AddPresentation()
-    .AddInfrastructure(builder.Configuration);
+    .AddInfrastructure(builder.Configuration, builder.Environment.IsDevelopment());
 
 builder.Services.AddEndpoints(Assembly.GetExecutingAssembly());
+
+builder.Services.AddRateLimitingInternal(builder.Configuration);
 
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
     policy
@@ -30,11 +34,19 @@ WebApplication app = builder.Build();
 
 app.UseCors();
 
+app.UseRateLimiter();
+
+app.UseSecurityHeaders();
+
 app.MapEndpoints();
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwaggerWithUi();
+}
+else
+{
+    app.UseHsts();
 }
 
 app.ApplyMigrations();
