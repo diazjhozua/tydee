@@ -9,7 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useAccounts } from "@/lib/hooks/useAccounts";
-import { useCreateIncome } from "@/lib/hooks/useIncomes";
+import {
+  useCreateIncome,
+  useDeleteIncome,
+  useIncome,
+  useUpdateIncome,
+} from "@/lib/hooks/useIncomes";
 import { useMe } from "@/lib/hooks/useMe";
 import { ApiError } from "@/lib/types/api";
 import { currencySymbol, formatMoney } from "@/lib/utils/currency";
@@ -18,19 +23,25 @@ import { today } from "@/lib/utils/date";
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  incomeId?: string;
 };
 
-export function IncomeDialog({ open, onOpenChange }: Props) {
+export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
   const { data: accounts } = useAccounts();
   const { data: me } = useMe();
+  const { data: income } = useIncome(open ? incomeId : undefined);
   const createIncome = useCreateIncome();
+  const updateIncome = useUpdateIncome();
+  const deleteIncome = useDeleteIncome();
 
   const [amount, setAmount] = useState("");
   const [source, setSource] = useState("");
   const [date, setDate] = useState(today());
   const [allocations, setAllocations] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
+  const isEdit = incomeId !== undefined;
   const activeAccounts = accounts ?? [];
   const parsedAmount = Number(amount);
   const currency = me?.currency ?? "PHP";
@@ -39,16 +50,35 @@ export function IncomeDialog({ open, onOpenChange }: Props) {
     if (!open) {
       return;
     }
+    setConfirmingDelete(false);
+    if (isEdit) {
+      return;
+    }
     setAmount("");
     setSource("");
     setDate(today());
     setAllocations({});
     setTouched(false);
-  }, [open]);
+  }, [open, isEdit]);
+
+  // Edit mode: prefill from the fetched income and stop the template
+  // auto-fill from overwriting the stored split.
+  useEffect(() => {
+    if (!open || !isEdit || !income) {
+      return;
+    }
+    setAmount(String(income.amount));
+    setSource(income.source);
+    setDate(income.date);
+    setAllocations(
+      Object.fromEntries(income.allocations.map((a) => [a.accountId, String(a.amount)])),
+    );
+    setTouched(true);
+  }, [open, isEdit, income]);
 
   // Pre-fill the split from the template until the user edits a row manually.
   useEffect(() => {
-    if (touched || activeAccounts.length === 0) {
+    if (touched || isEdit || activeAccounts.length === 0) {
       return;
     }
 
@@ -73,7 +103,7 @@ export function IncomeDialog({ open, onOpenChange }: Props) {
 
     setAllocations(split);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parsedAmount, accounts, touched, open]);
+  }, [parsedAmount, accounts, touched, isEdit, open]);
 
   const allocated = activeAccounts.reduce(
     (sum, account) => sum + (Number(allocations[account.id]) || 0),
@@ -81,44 +111,81 @@ export function IncomeDialog({ open, onOpenChange }: Props) {
   );
   const remaining = Math.round((parsedAmount - allocated) * 100) / 100;
   const canSave = parsedAmount > 0 && source.trim() !== "" && remaining === 0;
+  const pending = createIncome.isPending || updateIncome.isPending || deleteIncome.isPending;
 
   function setAllocation(accountId: string, value: string) {
     setTouched(true);
     setAllocations((prev) => ({ ...prev, [accountId]: value }));
   }
 
+  function handleError(err: unknown) {
+    toast.error(err instanceof ApiError ? err.displayMessage : "Something went wrong.");
+  }
+
   function save() {
-    createIncome.mutate(
-      {
-        amount: parsedAmount,
-        source: source.trim(),
-        date,
-        allocations: activeAccounts
-          .map((account) => ({
-            accountId: account.id,
-            amount: Number(allocations[account.id]) || 0,
-          }))
-          .filter((line) => line.amount > 0),
-      },
-      {
+    const request = {
+      amount: parsedAmount,
+      source: source.trim(),
+      date,
+      allocations: activeAccounts
+        .map((account) => ({
+          accountId: account.id,
+          amount: Number(allocations[account.id]) || 0,
+        }))
+        .filter((line) => line.amount > 0),
+    };
+
+    if (isEdit) {
+      updateIncome.mutate(
+        { incomeId: incomeId!, request },
+        {
+          onSuccess: () => {
+            toast.success("Income updated");
+            onOpenChange(false);
+          },
+          onError: handleError,
+        },
+      );
+    } else {
+      createIncome.mutate(request, {
         onSuccess: () => {
           toast.success("Income allocated");
           onOpenChange(false);
         },
-        onError: (err) =>
-          toast.error(err instanceof ApiError ? err.displayMessage : "Something went wrong."),
+        onError: handleError,
+      });
+    }
+  }
+
+  function removeIncome() {
+    if (!isEdit) {
+      return;
+    }
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      return;
+    }
+    deleteIncome.mutate(incomeId!, {
+      onSuccess: () => {
+        toast.success("Income deleted");
+        onOpenChange(false);
       },
-    );
+      onError: handleError,
+    });
   }
 
   return (
-    <EntrySheet open={open} onOpenChange={onOpenChange} title="Add income">
+    <EntrySheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={isEdit ? "Edit income" : "Add income"}
+    >
       <div className="space-y-5">
         <AmountInput
           value={amount}
           onChange={setAmount}
           currencySymbol={currencySymbol(currency)}
-          autoFocus
+          autoFocus={!isEdit}
         />
 
         <div className="grid grid-cols-2 gap-3">
@@ -186,13 +253,25 @@ export function IncomeDialog({ open, onOpenChange }: Props) {
           </div>
         </div>
 
-        <Button
-          className="h-12 w-full rounded-xl text-base font-semibold"
-          onClick={save}
-          disabled={!canSave || createIncome.isPending}
-        >
-          {createIncome.isPending ? "Saving..." : "Confirm & allocate"}
-        </Button>
+        <div className="flex gap-2">
+          {isEdit && (
+            <Button
+              variant="destructive"
+              className="h-12 rounded-xl px-5"
+              onClick={removeIncome}
+              disabled={pending}
+            >
+              {confirmingDelete ? "Really delete?" : "Delete"}
+            </Button>
+          )}
+          <Button
+            className="h-12 flex-1 rounded-xl text-base font-semibold"
+            onClick={save}
+            disabled={!canSave || pending}
+          >
+            {pending ? "Saving..." : isEdit ? "Save changes" : "Confirm & allocate"}
+          </Button>
+        </div>
       </div>
     </EntrySheet>
   );
