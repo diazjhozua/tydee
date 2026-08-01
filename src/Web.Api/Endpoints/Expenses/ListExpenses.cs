@@ -14,6 +14,8 @@ internal sealed class ListExpenses : IEndpoint
     {
         app.MapGet("api/v1/expenses", async (
             Guid? accountId,
+            int? year,
+            int? month,
             int? page,
             int? pageSize,
             IUserContext userContext,
@@ -21,7 +23,7 @@ internal sealed class ListExpenses : IEndpoint
             CancellationToken cancellationToken) =>
         {
             Result<List<ExpenseListItem>> result = await handler.Handle(
-                new ListExpensesQuery(userContext.UserId, accountId, page ?? 1, pageSize ?? 20),
+                new ListExpensesQuery(userContext.UserId, accountId, year, month, page ?? 1, pageSize ?? 20),
                 cancellationToken);
 
             return result.Match(

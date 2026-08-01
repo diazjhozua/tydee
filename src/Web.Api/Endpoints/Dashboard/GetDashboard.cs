@@ -13,12 +13,21 @@ internal sealed class GetDashboard : IEndpoint
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
         app.MapGet("api/v1/dashboard", async (
+            int? year,
+            int? month,
             IUserContext userContext,
             IQueryHandler<GetDashboardQuery, DashboardResult> handler,
             CancellationToken cancellationToken) =>
         {
+            if (month is < 1 or > 12 || year is < 2000 or > 2200 || year is null != month is null)
+            {
+                return CustomResults.Problem(Result.Failure<DashboardResult>(Error.Problem(
+                    "Dashboard.InvalidMonth",
+                    "Provide both year and month, with month between 1 and 12.")));
+            }
+
             Result<DashboardResult> result = await handler.Handle(
-                new GetDashboardQuery(userContext.UserId),
+                new GetDashboardQuery(userContext.UserId, year, month),
                 cancellationToken);
 
             return result.Match(
