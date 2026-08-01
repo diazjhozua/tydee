@@ -55,16 +55,39 @@ internal sealed class GetDashboardQueryHandler(
             .Select(i => new { i.Id, i.Amount, i.Source, i.Date, i.CreatedAtUtc })
             .ToListAsync(cancellationToken);
 
+        var incomeIds = recentIncomes.Select(i => i.Id).ToList();
+
+        var allocationRows = await context.IncomeAllocations
+            .Where(a => incomeIds.Contains(a.IncomeId))
+            .Join(
+                context.Accounts,
+                a => a.AccountId,
+                acc => acc.Id,
+                (a, acc) => new { a.IncomeId, acc.Name, a.Amount })
+            .ToListAsync(cancellationToken);
+
+        var allocationsByIncome = allocationRows
+            .GroupBy(x => x.IncomeId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(x => new ActivityAllocation(x.Name, x.Amount)).ToList());
+
         var recentActivity = recentExpenses
             .Select(e => new
             {
-                Item = new Activity(e.Id, "expense", e.Amount, e.Note ?? e.AccountName, e.Date),
+                Item = new Activity(e.Id, "expense", e.Amount, e.Note ?? e.AccountName, e.Date, []),
                 e.Date,
                 e.CreatedAtUtc,
             })
             .Concat(recentIncomes.Select(i => new
             {
-                Item = new Activity(i.Id, "income", i.Amount, i.Source, i.Date),
+                Item = new Activity(
+                    i.Id,
+                    "income",
+                    i.Amount,
+                    i.Source,
+                    i.Date,
+                    allocationsByIncome.GetValueOrDefault(i.Id) ?? []),
                 i.Date,
                 i.CreatedAtUtc,
             }))

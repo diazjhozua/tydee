@@ -8,12 +8,18 @@ export type AccountBalance = {
   balance: number;
 };
 
+export type ActivityAllocation = {
+  accountName: string;
+  amount: number;
+};
+
 export type ActivityItem = {
   id: string;
   kind: "income" | "expense";
   amount: number;
   description: string;
   date: string;
+  allocations: ActivityAllocation[];
 };
 
 export type Dashboard = {

@@ -17,4 +17,7 @@ public sealed record ActivityItem(
     string Kind,
     decimal Amount,
     string Description,
-    DateOnly Date);
+    DateOnly Date,
+    List<ActivityAllocationItem> Allocations);
+
+public sealed record ActivityAllocationItem(string AccountName, decimal Amount);

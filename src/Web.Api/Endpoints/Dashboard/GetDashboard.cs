@@ -38,7 +38,15 @@ internal sealed class GetDashboard : IEndpoint
                         .ToList(),
                     d.TotalSpentThisMonth,
                     d.RecentActivity
-                        .Select(x => new ActivityItem(x.Id, x.Kind, x.Amount, x.Description, x.Date))
+                        .Select(x => new ActivityItem(
+                            x.Id,
+                            x.Kind,
+                            x.Amount,
+                            x.Description,
+                            x.Date,
+                            x.Allocations
+                                .Select(a => new ActivityAllocationItem(a.AccountName, a.Amount))
+                                .ToList()))
                         .ToList())),
                 CustomResults.Problem);
         })

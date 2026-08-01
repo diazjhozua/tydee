@@ -22,4 +22,7 @@ public sealed record Activity(
     string Kind,
     decimal Amount,
     string Description,
-    DateOnly Date);
+    DateOnly Date,
+    List<ActivityAllocation> Allocations);
+
+public sealed record ActivityAllocation(string AccountName, decimal Amount);
