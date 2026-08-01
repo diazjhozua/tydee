@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.0](https://github.com/diazjhozua/tydee/compare/v1.1.0...v1.2.0) (2026-08-01)
+
+
+### Features
+
+* **application:** add month filters and an income detail query ([ca90ab9](https://github.com/diazjhozua/tydee/commit/ca90ab996eefe28f53c15750e119803f69022791))
+* show income allocation breakdown on the activity list ([f08b7b0](https://github.com/diazjhozua/tydee/commit/f08b7b0ffcb86857d4b35467c3b83271fbca09ef))
+* **web-api:** expose income detail and month query params ([4984ad6](https://github.com/diazjhozua/tydee/commit/4984ad6d465f84d7e59ee5ea807ccc9237784957))
+* **web-client:** add month picker to home ([f4377d9](https://github.com/diazjhozua/tydee/commit/f4377d9cecd04bb499fe035ef8a63e3aa4eb964e))
+* **web-client:** open incomes in an editable sheet ([2429032](https://github.com/diazjhozua/tydee/commit/242903216b797d26f515485b84288e2ec55e3354))
+
 ## [1.1.0](https://github.com/diazjhozua/tydee/compare/v1.0.0...v1.1.0) (2026-07-31)
 
 
