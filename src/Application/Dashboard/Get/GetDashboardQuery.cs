@@ -3,7 +3,7 @@ using Domain.Accounts;
 
 namespace Application.Dashboard.Get;
 
-public sealed record GetDashboardQuery(Guid UserId) : IQuery<DashboardResult>;
+public sealed record GetDashboardQuery(Guid UserId, int? Year, int? Month) : IQuery<DashboardResult>;
 
 public sealed record DashboardResult(
     List<AccountBalance> AccountBalances,

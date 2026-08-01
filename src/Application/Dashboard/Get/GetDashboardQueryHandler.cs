@@ -12,7 +12,7 @@ internal sealed class GetDashboardQueryHandler(
     IDateTimeProvider dateTimeProvider)
     : IQueryHandler<GetDashboardQuery, DashboardResult>
 {
-    private const int RecentActivityCount = 10;
+    private const int RecentActivityCount = 20;
 
     public async Task<Result<DashboardResult>> Handle(GetDashboardQuery query, CancellationToken cancellationToken)
     {
@@ -30,14 +30,15 @@ internal sealed class GetDashboardQueryHandler(
             .ToList();
 
         DateTime now = dateTimeProvider.UtcNow;
-        var monthStart = new DateOnly(now.Year, now.Month, 1);
+        var monthStart = new DateOnly(query.Year ?? now.Year, query.Month ?? now.Month, 1);
+        DateOnly monthEnd = monthStart.AddMonths(1);
 
         decimal totalSpentThisMonth = await context.Expenses
-            .Where(e => e.UserId == query.UserId && e.Date >= monthStart)
+            .Where(e => e.UserId == query.UserId && e.Date >= monthStart && e.Date < monthEnd)
             .SumAsync(e => e.Amount, cancellationToken);
 
         var recentExpenses = await context.Expenses
-            .Where(e => e.UserId == query.UserId)
+            .Where(e => e.UserId == query.UserId && e.Date >= monthStart && e.Date < monthEnd)
             .OrderByDescending(e => e.Date).ThenByDescending(e => e.CreatedAtUtc)
             .Take(RecentActivityCount)
             .Join(
@@ -48,7 +49,7 @@ internal sealed class GetDashboardQueryHandler(
             .ToListAsync(cancellationToken);
 
         var recentIncomes = await context.Incomes
-            .Where(i => i.UserId == query.UserId)
+            .Where(i => i.UserId == query.UserId && i.Date >= monthStart && i.Date < monthEnd)
             .OrderByDescending(i => i.Date).ThenByDescending(i => i.CreatedAtUtc)
             .Take(RecentActivityCount)
             .Select(i => new { i.Id, i.Amount, i.Source, i.Date, i.CreatedAtUtc })

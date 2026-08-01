@@ -5,6 +5,8 @@ namespace Application.Expenses.List;
 public sealed record ListExpensesQuery(
     Guid UserId,
     Guid? AccountId,
+    int? Year,
+    int? Month,
     int Page,
     int PageSize) : IQuery<List<ExpenseListItem>>;
 
