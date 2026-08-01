@@ -3,26 +3,22 @@
 import { Inbox } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { ExpenseDialog } from "@/components/expenses/ExpenseDialog";
+import { IncomeDialog } from "@/components/incomes/IncomeDialog";
 import { AccountIcon } from "@/components/shared/AccountIcon";
 import { ActivityIcon } from "@/components/shared/ActivityIcon";
 import { Money } from "@/components/shared/Money";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  MonthPicker,
+  currentYearMonth,
+  isCurrentMonth,
+  monthLabel,
+} from "@/components/shared/MonthPicker";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/lib/hooks/useDashboard";
 import { useExpenses } from "@/lib/hooks/useExpenses";
-import { useDeleteIncome } from "@/lib/hooks/useIncomes";
 import { useMe } from "@/lib/hooks/useMe";
-import { ApiError } from "@/lib/types/api";
 import { ActivityItem } from "@/lib/types/dashboard";
 import { Expense } from "@/lib/types/expense";
 import { formatMoney } from "@/lib/utils/currency";
@@ -38,23 +34,25 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 export default function HomePage() {
   const router = useRouter();
-  const { data: dashboard, isLoading, isFetching } = useDashboard();
+  const [month, setMonth] = useState(currentYearMonth);
+  const { data: dashboard, isLoading, isFetching } = useDashboard(month.year, month.month);
   const { data: me } = useMe();
   const { data: expenses } = useExpenses({ pageSize: 50 });
-  const deleteIncome = useDeleteIncome();
 
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
-  const [deletingIncome, setDeletingIncome] = useState<ActivityItem | undefined>();
+  const [editingIncomeId, setEditingIncomeId] = useState<string | undefined>();
 
   const currency = me?.currency ?? "PHP";
+  const viewingCurrentMonth = isCurrentMonth(month);
 
   useEffect(() => {
     // Wait for a fresh fetch so a stale cached dashboard (e.g. right after
-    // finishing setup) doesn't bounce the user back to the wizard.
-    if (!isFetching && dashboard && dashboard.accountBalances.length === 0) {
+    // finishing setup) doesn't bounce the user back to the wizard. Only the
+    // current month says anything about whether accounts exist.
+    if (viewingCurrentMonth && !isFetching && dashboard && dashboard.accountBalances.length === 0) {
       router.replace("/setup");
     }
-  }, [dashboard, isFetching, router]);
+  }, [dashboard, isFetching, viewingCurrentMonth, router]);
 
   if (isLoading || !dashboard) {
     return (
@@ -81,36 +79,26 @@ export default function HomePage() {
         setEditingExpense(expense);
       }
     } else {
-      setDeletingIncome(item);
+      setEditingIncomeId(item.id);
     }
-  }
-
-  function confirmDeleteIncome() {
-    if (!deletingIncome) {
-      return;
-    }
-    deleteIncome.mutate(deletingIncome.id, {
-      onSuccess: () => {
-        toast.success("Income deleted");
-        setDeletingIncome(undefined);
-      },
-      onError: (err) => {
-        toast.error(err instanceof ApiError ? err.displayMessage : "Something went wrong.");
-        setDeletingIncome(undefined);
-      },
-    });
   }
 
   return (
     <div className="space-y-7">
+      <div className="flex justify-center">
+        <MonthPicker value={month} onChange={setMonth} />
+      </div>
+
       <div className="hero-gradient relative overflow-hidden rounded-3xl p-6 text-white shadow-lg shadow-emerald-600/20">
         <div className="pointer-events-none absolute -right-10 -top-14 size-44 rounded-full bg-white/10" />
         <div className="pointer-events-none absolute -bottom-20 -left-8 size-52 rounded-full bg-white/5" />
 
-        <p className="text-sm font-medium text-white/80">Spent this month</p>
+        <p className="text-sm font-medium text-white/80">
+          {viewingCurrentMonth ? "Spent this month" : `Spent in ${monthLabel(month)}`}
+        </p>
         <Money value={spent} currency={currency} size="xl" className="mt-1 text-white" />
 
-        {monthBudget > 0 && (
+        {viewingCurrentMonth && monthBudget > 0 && (
           <div className="mt-5">
             <div className="h-1.5 overflow-hidden rounded-full bg-white/25">
               <div
@@ -172,10 +160,14 @@ export default function HomePage() {
               <Inbox className="size-6" />
             </span>
             <div>
-              <p className="text-sm font-medium">Nothing here yet</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Add your first income with the button below.
+              <p className="text-sm font-medium">
+                {viewingCurrentMonth ? "Nothing here yet" : "No activity in this month"}
               </p>
+              {viewingCurrentMonth && (
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Add your first income with the button below.
+                </p>
+              )}
             </div>
           </div>
         ) : (
@@ -217,32 +209,11 @@ export default function HomePage() {
         expense={editingExpense}
       />
 
-      <Dialog
-        open={deletingIncome !== undefined}
-        onOpenChange={(open) => !open && setDeletingIncome(undefined)}
-      >
-        <DialogContent className="max-w-sm rounded-2xl">
-          <DialogHeader>
-            <DialogTitle>Delete this income?</DialogTitle>
-            <DialogDescription>
-              {deletingIncome &&
-                `${deletingIncome.description} (+${formatMoney(deletingIncome.amount, currency)}) and its allocations will be removed. Account balances will go down accordingly.`}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setDeletingIncome(undefined)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmDeleteIncome}
-              disabled={deleteIncome.isPending}
-            >
-              Delete
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <IncomeDialog
+        open={editingIncomeId !== undefined}
+        onOpenChange={(open) => !open && setEditingIncomeId(undefined)}
+        incomeId={editingIncomeId}
+      />
     </div>
   );
 }

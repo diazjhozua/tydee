@@ -1,5 +1,10 @@
 import { apiClient } from "@/lib/api/client";
-import { IncomeRequest } from "@/lib/types/income";
+import { Income, IncomeRequest } from "@/lib/types/income";
+
+export async function getIncome(incomeId: string): Promise<Income> {
+  const res = await apiClient.get<Income>(`/api/v1/incomes/${incomeId}`);
+  return res.data;
+}
 
 export async function createIncome(request: IncomeRequest): Promise<string> {
   const res = await apiClient.post<{ id: string }>("/api/v1/incomes", request);
