@@ -94,6 +94,10 @@ Content-Type: application/json
   ]
 }
 
+### Get a single income with its allocation lines
+GET {{base}}/api/v1/incomes/PASTE_INCOME_ID
+Authorization: Bearer {{token}}
+
 ### Log expense
 POST {{base}}/api/v1/expenses
 Authorization: Bearer {{token}}
@@ -106,12 +110,12 @@ Content-Type: application/json
   "date": "2026-07-28"
 }
 
-### List expenses
+### List expenses (optionally filter with &year=2026&month=7)
 GET {{base}}/api/v1/expenses?page=1&pageSize=20
 Authorization: Bearer {{token}}
 
-### Dashboard (balances, monthly spend, recent activity)
-GET {{base}}/api/v1/dashboard
+### Dashboard (balances, monthly spend, recent activity; defaults to the current month)
+GET {{base}}/api/v1/dashboard?year=2026&month=7
 Authorization: Bearer {{token}}
 
 ### Health
