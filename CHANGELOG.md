@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.3.0](https://github.com/diazjhozua/tydee/compare/v1.2.0...v1.3.0) (2026-08-03)
+
+
+### Features
+
+* **application:** add expense categories and recent-source queries ([1f295f9](https://github.com/diazjhozua/tydee/commit/1f295f9e6ac2e1f8d45970e4e1012a1d15de1c07))
+* **web-api:** expose category field and suggestion endpoints ([02d7992](https://github.com/diazjhozua/tydee/commit/02d7992715b79a6989a01daf087141f9133528d9))
+* **web-client:** pick expense categories from chips ([704719e](https://github.com/diazjhozua/tydee/commit/704719edd29b342abc71dfcf7a19520bf33f5a3d))
+* **web-client:** suggest past income sources ([872886a](https://github.com/diazjhozua/tydee/commit/872886a9fa9dc09e48d5e8ce880ec946e6f1b920))
+
 ## [1.2.0](https://github.com/diazjhozua/tydee/compare/v1.1.0...v1.2.0) (2026-08-01)
 
 
