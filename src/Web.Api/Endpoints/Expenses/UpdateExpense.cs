@@ -25,6 +25,7 @@ internal sealed class UpdateExpense : IEndpoint
                 request.AccountId,
                 request.Amount,
                 request.Note,
+                request.Category,
                 request.Date);
 
             Result result = await handler.Handle(command, cancellationToken);

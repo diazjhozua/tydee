@@ -29,7 +29,7 @@ internal sealed class ListExpenses : IEndpoint
             return result.Match(
                 items => Results.Ok(items
                     .Select(e => new ExpenseResponse(
-                        e.Id, e.AccountId, e.AccountName, e.Amount, e.Note, e.Date))
+                        e.Id, e.AccountId, e.AccountName, e.Amount, e.Note, e.Category, e.Date))
                     .ToList()),
                 CustomResults.Problem);
         })

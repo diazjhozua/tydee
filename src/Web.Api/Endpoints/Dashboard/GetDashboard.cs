@@ -43,6 +43,7 @@ internal sealed class GetDashboard : IEndpoint
                             x.Kind,
                             x.Amount,
                             x.Description,
+                            x.Category,
                             x.Date,
                             x.Allocations
                                 .Select(a => new ActivityAllocationItem(a.AccountName, a.Amount))

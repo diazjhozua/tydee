@@ -6,4 +6,5 @@ public sealed record ExpenseResponse(
     string AccountName,
     decimal Amount,
     string? Note,
+    string? Category,
     DateOnly Date);

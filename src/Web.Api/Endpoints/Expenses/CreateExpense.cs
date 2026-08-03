@@ -23,6 +23,7 @@ internal sealed class CreateExpense : IEndpoint
                 request.AccountId,
                 request.Amount,
                 request.Note,
+                request.Category,
                 request.Date);
 
             Result<Guid> result = await handler.Handle(command, cancellationToken);
