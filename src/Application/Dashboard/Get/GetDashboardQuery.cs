@@ -22,6 +22,7 @@ public sealed record Activity(
     string Kind,
     decimal Amount,
     string Description,
+    string? Category,
     DateOnly Date,
     List<ActivityAllocation> Allocations);
 

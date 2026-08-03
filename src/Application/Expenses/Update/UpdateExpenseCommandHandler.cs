@@ -38,6 +38,7 @@ internal sealed class UpdateExpenseCommandHandler(IApplicationDbContext context)
         expense.AccountId = command.AccountId;
         expense.Amount = command.Amount;
         expense.Note = command.Note;
+        expense.Category = command.Category;
         expense.Date = command.Date;
 
         await context.SaveChangesAsync(cancellationToken);

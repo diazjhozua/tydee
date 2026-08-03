@@ -45,7 +45,7 @@ internal sealed class GetDashboardQueryHandler(
                 context.Accounts,
                 e => e.AccountId,
                 a => a.Id,
-                (e, a) => new { e.Id, e.Amount, e.Note, e.Date, e.CreatedAtUtc, AccountName = a.Name })
+                (e, a) => new { e.Id, e.Amount, e.Note, e.Category, e.Date, e.CreatedAtUtc, AccountName = a.Name })
             .ToListAsync(cancellationToken);
 
         var recentIncomes = await context.Incomes
@@ -75,7 +75,7 @@ internal sealed class GetDashboardQueryHandler(
         var recentActivity = recentExpenses
             .Select(e => new
             {
-                Item = new Activity(e.Id, "expense", e.Amount, e.Note ?? e.AccountName, e.Date, []),
+                Item = new Activity(e.Id, "expense", e.Amount, e.Note ?? e.AccountName, e.Category, e.Date, []),
                 e.Date,
                 e.CreatedAtUtc,
             })
@@ -86,6 +86,7 @@ internal sealed class GetDashboardQueryHandler(
                     "income",
                     i.Amount,
                     i.Source,
+                    null,
                     i.Date,
                     allocationsByIncome.GetValueOrDefault(i.Id) ?? []),
                 i.Date,

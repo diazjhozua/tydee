@@ -7,6 +7,7 @@ public sealed class Expense
     public Guid AccountId { get; set; }
     public decimal Amount { get; set; }
     public string? Note { get; set; }
+    public string? Category { get; set; }
     public DateOnly Date { get; set; }
     public DateTime CreatedAtUtc { get; set; }
 }

@@ -7,4 +7,5 @@ public sealed record CreateExpenseCommand(
     Guid AccountId,
     decimal Amount,
     string? Note,
+    string? Category,
     DateOnly Date) : ICommand<Guid>;

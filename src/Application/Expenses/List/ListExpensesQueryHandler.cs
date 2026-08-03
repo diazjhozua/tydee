@@ -30,7 +30,7 @@ internal sealed class ListExpensesQueryHandler(IApplicationDbContext context)
                 context.Accounts,
                 e => e.AccountId,
                 a => a.Id,
-                (e, a) => new ExpenseListItem(e.Id, e.AccountId, a.Name, e.Amount, e.Note, e.Date))
+                (e, a) => new ExpenseListItem(e.Id, e.AccountId, a.Name, e.Amount, e.Note, e.Category, e.Date))
             .ToListAsync(cancellationToken);
     }
 }

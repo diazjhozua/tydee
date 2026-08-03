@@ -35,6 +35,7 @@ internal sealed class CreateExpenseCommandHandler(
             AccountId = command.AccountId,
             Amount = command.Amount,
             Note = command.Note,
+            Category = command.Category,
             Date = command.Date,
             CreatedAtUtc = dateTimeProvider.UtcNow,
         };

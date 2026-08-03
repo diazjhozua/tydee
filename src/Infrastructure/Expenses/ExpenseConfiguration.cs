@@ -14,6 +14,7 @@ internal sealed class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
 
         builder.Property(e => e.Amount).HasColumnType("numeric(18,2)");
         builder.Property(e => e.Note).HasMaxLength(500);
+        builder.Property(e => e.Category).HasMaxLength(50);
 
         builder.HasIndex(e => new { e.UserId, e.Date });
         builder.HasIndex(e => e.AccountId);

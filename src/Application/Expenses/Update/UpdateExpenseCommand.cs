@@ -8,4 +8,5 @@ public sealed record UpdateExpenseCommand(
     Guid AccountId,
     decimal Amount,
     string? Note,
+    string? Category,
     DateOnly Date) : ICommand;
