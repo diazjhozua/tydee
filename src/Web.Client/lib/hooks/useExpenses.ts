@@ -1,7 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createExpense, deleteExpense, listExpenses, updateExpense } from "@/lib/api/expenses";
+import {
+  createExpense,
+  deleteExpense,
+  getExpenseCategories,
+  listExpenses,
+  updateExpense,
+} from "@/lib/api/expenses";
 import { ExpenseRequest } from "@/lib/types/expense";
 
 function useInvalidateMoneyData() {
@@ -17,6 +23,15 @@ export function useExpenses(params: { accountId?: string; page?: number; pageSiz
   return useQuery({
     queryKey: ["expenses", params],
     queryFn: () => listExpenses(params),
+  });
+}
+
+export function useExpenseCategories(enabled: boolean) {
+  return useQuery({
+    queryKey: ["expenses", "categories"],
+    queryFn: getExpenseCategories,
+    enabled,
+    staleTime: 60_000,
   });
 }
 

@@ -185,7 +185,10 @@ export default function HomePage() {
                 <ActivityIcon kind={item.kind === "income" ? "income" : "expense"} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{item.description}</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(item.date)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDate(item.date)}
+                    {item.category ? ` · ${item.category}` : ""}
+                  </p>
                   {item.allocations.length > 0 && (
                     <p className="money mt-0.5 text-xs leading-relaxed text-muted-foreground">
                       {item.allocations

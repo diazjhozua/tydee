@@ -11,6 +11,7 @@ import { useAccounts } from "@/lib/hooks/useAccounts";
 import {
   useCreateExpense,
   useDeleteExpense,
+  useExpenseCategories,
   useUpdateExpense,
 } from "@/lib/hooks/useExpenses";
 import { useMe } from "@/lib/hooks/useMe";
@@ -21,6 +22,8 @@ import { currencySymbol, formatMoney } from "@/lib/utils/currency";
 import { today } from "@/lib/utils/date";
 
 const LAST_ACCOUNT_KEY = "tydee.lastExpenseAccount";
+
+const PRESET_CATEGORIES = ["Bills", "Groceries", "Food", "Transport", "House", "Fun", "Other"];
 
 type Props = {
   open: boolean;
@@ -39,20 +42,26 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
   const [note, setNote] = useState("");
   const [accountId, setAccountId] = useState("");
   const [date, setDate] = useState(today());
+  const [category, setCategory] = useState("");
+  const [customCategory, setCustomCategory] = useState(false);
 
   const isEdit = expense !== undefined;
   const activeAccounts = accounts ?? [];
+  const { data: usedCategories } = useExpenseCategories(open);
 
   useEffect(() => {
     if (!open) {
       return;
     }
+    setCustomCategory(false);
     if (expense) {
       setAmount(String(expense.amount));
       setNote(expense.note ?? "");
       setAccountId(expense.accountId);
       setDate(expense.date);
+      setCategory(expense.category ?? "");
     } else {
+      setCategory("");
       setAmount("");
       setNote("");
       setDate(today());
@@ -78,6 +87,7 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
       accountId,
       amount: parsedAmount,
       note: note.trim() === "" ? null : note.trim(),
+      category: category.trim() === "" ? null : category.trim(),
       date,
     };
 
@@ -125,6 +135,13 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
 
   const pending = createExpense.isPending || updateExpense.isPending || deleteExpense.isPending;
 
+  const categoryOptions = [...PRESET_CATEGORIES];
+  for (const used of [...(usedCategories ?? []), category]) {
+    if (used && !categoryOptions.some((c) => c.toLowerCase() === used.toLowerCase())) {
+      categoryOptions.push(used);
+    }
+  }
+
   return (
     <EntrySheet
       open={open}
@@ -157,6 +174,48 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
                 {account.name}
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Category (optional)</Label>
+          <div className="flex flex-wrap gap-2">
+            {categoryOptions.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setCategory(category === option ? "" : option)}
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                  category === option
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {option}
+              </button>
+            ))}
+            {customCategory ? (
+              <Input
+                autoFocus
+                maxLength={50}
+                placeholder="Custom category"
+                className="h-8 w-40 rounded-full text-xs"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setCategory("");
+                  setCustomCategory(true);
+                }}
+                className="rounded-full border border-dashed border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                + New
+              </button>
+            )}
           </div>
         </div>
 

@@ -1,7 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createIncome, deleteIncome, getIncome, updateIncome } from "@/lib/api/incomes";
+import {
+  createIncome,
+  deleteIncome,
+  getIncome,
+  getIncomeSources,
+  updateIncome,
+} from "@/lib/api/incomes";
 import { IncomeRequest } from "@/lib/types/income";
 
 function useInvalidateMoneyData() {
@@ -18,6 +24,15 @@ export function useIncome(incomeId: string | undefined) {
     queryKey: ["incomes", incomeId],
     queryFn: () => getIncome(incomeId!),
     enabled: incomeId !== undefined,
+  });
+}
+
+export function useIncomeSources(enabled: boolean) {
+  return useQuery({
+    queryKey: ["incomes", "sources"],
+    queryFn: getIncomeSources,
+    enabled,
+    staleTime: 60_000,
   });
 }
 

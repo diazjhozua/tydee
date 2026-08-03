@@ -18,6 +18,7 @@ export type ActivityItem = {
   kind: "income" | "expense";
   amount: number;
   description: string;
+  category: string | null;
   date: string;
   allocations: ActivityAllocation[];
 };

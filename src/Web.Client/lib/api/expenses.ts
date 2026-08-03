@@ -10,6 +10,11 @@ export async function listExpenses(params: {
   return res.data;
 }
 
+export async function getExpenseCategories(): Promise<string[]> {
+  const res = await apiClient.get<string[]>("/api/v1/expenses/categories");
+  return res.data;
+}
+
 export async function createExpense(request: ExpenseRequest): Promise<string> {
   const res = await apiClient.post<{ id: string }>("/api/v1/expenses", request);
   return res.data.id;
