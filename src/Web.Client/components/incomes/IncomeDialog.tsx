@@ -13,6 +13,7 @@ import {
   useCreateIncome,
   useDeleteIncome,
   useIncome,
+  useIncomeSources,
   useUpdateIncome,
 } from "@/lib/hooks/useIncomes";
 import { useMe } from "@/lib/hooks/useMe";
@@ -43,6 +44,7 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
 
   const isEdit = incomeId !== undefined;
   const activeAccounts = accounts ?? [];
+  const { data: pastSources } = useIncomeSources(open && !isEdit);
   const parsedAmount = Number(amount);
   const currency = me?.currency ?? "PHP";
 
@@ -210,6 +212,26 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
             />
           </div>
         </div>
+
+        {!isEdit && (pastSources ?? []).length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {(pastSources ?? []).map((past) => (
+              <button
+                key={past}
+                type="button"
+                onClick={() => setSource(past)}
+                className={
+                  "rounded-full px-3 py-1.5 text-xs font-medium transition-colors " +
+                  (source === past
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-muted text-muted-foreground hover:text-foreground")
+                }
+              >
+                {past}
+              </button>
+            ))}
+          </div>
+        )}
 
         <Separator />
 
