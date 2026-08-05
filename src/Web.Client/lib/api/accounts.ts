@@ -26,6 +26,13 @@ export async function archiveAccount(accountId: string): Promise<void> {
   await apiClient.delete(`/api/v1/accounts/${accountId}`);
 }
 
+export async function setAccountBalance(
+  accountId: string,
+  request: { newBalance: number; date: string },
+): Promise<void> {
+  await apiClient.put(`/api/v1/accounts/${accountId}/balance`, request);
+}
+
 export async function updateAllocationTemplate(items: AllocationTemplateItem[]): Promise<void> {
   await apiClient.put("/api/v1/accounts/template", { items });
 }

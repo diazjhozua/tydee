@@ -5,6 +5,7 @@ import {
   archiveAccount,
   createAccount,
   listAccounts,
+  setAccountBalance,
   updateAccount,
   updateAllocationTemplate,
 } from "@/lib/api/accounts";
@@ -52,6 +53,20 @@ export function useArchiveAccount() {
   const invalidate = useInvalidateMoneyData();
   return useMutation({
     mutationFn: (accountId: string) => archiveAccount(accountId),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSetAccountBalance() {
+  const invalidate = useInvalidateMoneyData();
+  return useMutation({
+    mutationFn: ({
+      accountId,
+      request,
+    }: {
+      accountId: string;
+      request: { newBalance: number; date: string };
+    }) => setAccountBalance(accountId, request),
     onSuccess: invalidate,
   });
 }

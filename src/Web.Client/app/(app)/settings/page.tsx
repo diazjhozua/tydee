@@ -1,10 +1,11 @@
 "use client";
 
-import { Archive, Globe, LogOut, MoreVertical, Moon, Pencil, Percent } from "lucide-react";
+import { Archive, Globe, LogOut, MoreVertical, Moon, Pencil, Percent, Scale } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AccountDialog } from "@/components/accounts/AccountDialog";
+import { SetBalanceSheet } from "@/components/accounts/SetBalanceSheet";
 import { AccountIcon } from "@/components/shared/AccountIcon";
 import { Money } from "@/components/shared/Money";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,7 @@ export default function SettingsPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | undefined>();
+  const [balanceAccount, setBalanceAccount] = useState<Account | undefined>();
   const [percents, setPercents] = useState<Record<string, string>>({});
 
   const activeAccounts = accounts ?? [];
@@ -156,6 +158,9 @@ export default function SettingsPage() {
                       }}
                     >
                       <Pencil className="size-4" /> Rename
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setBalanceAccount(account)}>
+                      <Scale className="size-4" /> Set balance
                     </DropdownMenuItem>
                     <DropdownMenuItem variant="destructive" onClick={() => archive(account)}>
                       <Archive className="size-4" /> Archive
@@ -300,6 +305,12 @@ export default function SettingsPage() {
       </SectionCard>
 
       <AccountDialog open={dialogOpen} onOpenChange={setDialogOpen} account={editingAccount} />
+
+      <SetBalanceSheet
+        open={balanceAccount !== undefined}
+        onOpenChange={(open) => !open && setBalanceAccount(undefined)}
+        account={balanceAccount}
+      />
     </div>
   );
 }
