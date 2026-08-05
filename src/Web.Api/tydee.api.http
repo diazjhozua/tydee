@@ -119,6 +119,20 @@ Authorization: Bearer {{token}}
 GET {{base}}/api/v1/dashboard?year=2026&month=7
 Authorization: Bearer {{token}}
 
+### Set an account's balance (stores the difference as an adjustment)
+PUT {{base}}/api/v1/accounts/PASTE_ACCOUNT_ID/balance
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "newBalance": 9500,
+  "date": "2026-08-05"
+}
+
+### Delete an adjustment (balance reverts)
+DELETE {{base}}/api/v1/adjustments/PASTE_ADJUSTMENT_ID
+Authorization: Bearer {{token}}
+
 ### Categories used so far (for the picker)
 GET {{base}}/api/v1/expenses/categories
 Authorization: Bearer {{token}}
