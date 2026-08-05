@@ -19,6 +19,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Currency).HasMaxLength(3).HasDefaultValue("PHP");
 
         builder.Property(u => u.EmailVerificationToken).HasMaxLength(64);
+        builder.Property(u => u.PasswordResetTokenHash).HasMaxLength(64);
         builder.HasIndex(u => u.EmailVerificationToken)
             .IsUnique()
             .HasFilter("[email_verification_token] IS NOT NULL");

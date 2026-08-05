@@ -28,6 +28,10 @@ public static class UserErrors
         "Users.InvalidRefreshToken",
         "The refresh token is invalid or has expired.");
 
+    public static readonly Error InvalidResetToken = Error.Problem(
+        "Users.InvalidResetToken",
+        "The reset link is invalid or has expired.");
+
     public static readonly Error TokenReuseDetected = Error.Unauthorized(
         "Users.TokenReuseDetected",
         "Suspicious activity detected. All sessions have been revoked.");

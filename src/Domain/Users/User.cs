@@ -13,6 +13,8 @@ public sealed class User : Entity
     public string Currency { get; set; } = "PHP";
     public string? EmailVerificationToken { get; set; }
     public DateTime? EmailVerificationTokenExpiresAt { get; set; }
+    public string? PasswordResetTokenHash { get; set; }
+    public DateTime? PasswordResetTokenExpiresAt { get; set; }
     public int FailedLoginAttempts { get; set; }
     public DateTime? LockoutEndUtc { get; set; }
 
