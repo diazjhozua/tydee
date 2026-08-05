@@ -1,4 +1,5 @@
 using Domain.Accounts;
+using Domain.Adjustments;
 using Domain.Expenses;
 using Domain.Incomes;
 using Domain.Users;
@@ -14,6 +15,7 @@ public interface IApplicationDbContext
     DbSet<Income> Incomes { get; }
     DbSet<IncomeAllocation> IncomeAllocations { get; }
     DbSet<Expense> Expenses { get; }
+    DbSet<Adjustment> Adjustments { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

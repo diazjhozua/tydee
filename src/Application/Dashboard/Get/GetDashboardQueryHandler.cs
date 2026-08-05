@@ -55,6 +55,17 @@ internal sealed class GetDashboardQueryHandler(
             .Select(i => new { i.Id, i.Amount, i.Source, i.Date, i.CreatedAtUtc })
             .ToListAsync(cancellationToken);
 
+        var recentAdjustments = await context.Adjustments
+            .Where(a => a.UserId == query.UserId && a.Date >= monthStart && a.Date < monthEnd)
+            .OrderByDescending(a => a.Date).ThenByDescending(a => a.CreatedAtUtc)
+            .Take(RecentActivityCount)
+            .Join(
+                context.Accounts,
+                a => a.AccountId,
+                acc => acc.Id,
+                (a, acc) => new { a.Id, a.Amount, a.Date, a.CreatedAtUtc, AccountName = acc.Name })
+            .ToListAsync(cancellationToken);
+
         var incomeIds = recentIncomes.Select(i => i.Id).ToList();
 
         var allocationRows = await context.IncomeAllocations
@@ -91,6 +102,12 @@ internal sealed class GetDashboardQueryHandler(
                     allocationsByIncome.GetValueOrDefault(i.Id) ?? []),
                 i.Date,
                 i.CreatedAtUtc,
+            }))
+            .Concat(recentAdjustments.Select(a => new
+            {
+                Item = new Activity(a.Id, "adjustment", a.Amount, a.AccountName, null, a.Date, []),
+                a.Date,
+                a.CreatedAtUtc,
             }))
             .OrderByDescending(x => x.Date).ThenByDescending(x => x.CreatedAtUtc)
             .Take(RecentActivityCount)

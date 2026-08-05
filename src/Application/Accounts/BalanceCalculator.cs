@@ -18,6 +18,12 @@ internal static class BalanceCalculator
             .Select(g => new { AccountId = g.Key, Total = g.Sum(a => a.Amount) })
             .ToListAsync(cancellationToken);
 
+        var adjusted = await context.Adjustments
+            .Where(a => a.UserId == userId)
+            .GroupBy(a => a.AccountId)
+            .Select(g => new { AccountId = g.Key, Total = g.Sum(a => a.Amount) })
+            .ToListAsync(cancellationToken);
+
         var spent = await context.Expenses
             .Where(e => e.UserId == userId)
             .GroupBy(e => e.AccountId)
@@ -25,6 +31,12 @@ internal static class BalanceCalculator
             .ToListAsync(cancellationToken);
 
         var balances = allocated.ToDictionary(x => x.AccountId, x => x.Total);
+
+        foreach (var adjustment in adjusted)
+        {
+            balances[adjustment.AccountId] =
+                balances.GetValueOrDefault(adjustment.AccountId) + adjustment.Total;
+        }
 
         foreach (var expense in spent)
         {
