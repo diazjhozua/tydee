@@ -1,25 +1,25 @@
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  kind: "income" | "expense";
+  kind: "income" | "expense" | "adjustment";
   className?: string;
 };
 
 export function ActivityIcon({ kind, className }: Props) {
-  const income = kind === "income";
-
   return (
     <span
       className={cn(
         "flex size-9 shrink-0 items-center justify-center rounded-full",
-        income
-          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-          : "bg-red-500/12 text-red-500 dark:text-red-400",
+        kind === "income" && "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+        kind === "expense" && "bg-red-500/12 text-red-500 dark:text-red-400",
+        kind === "adjustment" && "bg-sky-500/15 text-sky-600 dark:text-sky-400",
         className,
       )}
     >
-      {income ? <ArrowUpRight className="size-4.5" /> : <ArrowDownRight className="size-4.5" />}
+      {kind === "income" && <ArrowUpRight className="size-4.5" />}
+      {kind === "expense" && <ArrowDownRight className="size-4.5" />}
+      {kind === "adjustment" && <Scale className="size-4.5" />}
     </span>
   );
 }

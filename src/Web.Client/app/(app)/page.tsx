@@ -16,9 +16,19 @@ import {
 } from "@/components/shared/MonthPicker";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useDeleteAdjustment } from "@/lib/hooks/useAdjustments";
 import { useDashboard } from "@/lib/hooks/useDashboard";
 import { useExpenses } from "@/lib/hooks/useExpenses";
 import { useMe } from "@/lib/hooks/useMe";
+import { toast } from "sonner";
 import { ActivityItem } from "@/lib/types/dashboard";
 import { Expense } from "@/lib/types/expense";
 import { formatMoney } from "@/lib/utils/currency";
@@ -41,6 +51,8 @@ export default function HomePage() {
 
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
   const [editingIncomeId, setEditingIncomeId] = useState<string | undefined>();
+  const [deletingAdjustment, setDeletingAdjustment] = useState<ActivityItem | undefined>();
+  const deleteAdjustment = useDeleteAdjustment();
 
   const currency = me?.currency ?? "PHP";
   const viewingCurrentMonth = isCurrentMonth(month);
@@ -78,9 +90,27 @@ export default function HomePage() {
       if (expense) {
         setEditingExpense(expense);
       }
-    } else {
+    } else if (item.kind === "income") {
       setEditingIncomeId(item.id);
+    } else {
+      setDeletingAdjustment(item);
     }
+  }
+
+  function confirmDeleteAdjustment() {
+    if (!deletingAdjustment) {
+      return;
+    }
+    deleteAdjustment.mutate(deletingAdjustment.id, {
+      onSuccess: () => {
+        toast.success("Adjustment removed");
+        setDeletingAdjustment(undefined);
+      },
+      onError: () => {
+        toast.error("Something went wrong.");
+        setDeletingAdjustment(undefined);
+      },
+    });
   }
 
   return (
@@ -182,12 +212,13 @@ export default function HomePage() {
                   (index > 0 ? " border-t border-border/50" : "")
                 }
               >
-                <ActivityIcon kind={item.kind === "income" ? "income" : "expense"} />
+                <ActivityIcon kind={item.kind} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{item.description}</p>
                   <p className="text-xs text-muted-foreground">
                     {formatDate(item.date)}
                     {item.category ? ` · ${item.category}` : ""}
+                    {item.kind === "adjustment" ? " · Balance set" : ""}
                   </p>
                   {item.allocations.length > 0 && (
                     <p className="money mt-0.5 text-xs leading-relaxed text-muted-foreground">
@@ -201,11 +232,13 @@ export default function HomePage() {
                   className={
                     item.kind === "income"
                       ? "money text-sm font-semibold text-emerald-600 dark:text-emerald-400"
-                      : "money text-sm font-semibold"
+                      : item.kind === "adjustment"
+                        ? "money text-sm font-semibold text-sky-600 dark:text-sky-400"
+                        : "money text-sm font-semibold"
                   }
                 >
-                  {item.kind === "income" ? "+" : "−"}
-                  {formatMoney(item.amount, currency)}
+                  {item.kind === "expense" || item.amount < 0 ? "−" : "+"}
+                  {formatMoney(Math.abs(item.amount), currency)}
                 </span>
               </button>
             ))}
@@ -224,6 +257,33 @@ export default function HomePage() {
         onOpenChange={(open) => !open && setEditingIncomeId(undefined)}
         incomeId={editingIncomeId}
       />
+
+      <Dialog
+        open={deletingAdjustment !== undefined}
+        onOpenChange={(open) => !open && setDeletingAdjustment(undefined)}
+      >
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Remove this adjustment?</DialogTitle>
+            <DialogDescription>
+              {deletingAdjustment &&
+                `${deletingAdjustment.description} will go back to its balance before this adjustment.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setDeletingAdjustment(undefined)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteAdjustment}
+              disabled={deleteAdjustment.isPending}
+            >
+              Remove
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
