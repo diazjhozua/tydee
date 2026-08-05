@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.4.0](https://github.com/diazjhozua/tydee/compare/v1.3.0...v1.4.0) (2026-08-05)
+
+
+### Features
+
+* **application:** record balance adjustments against computed balances ([fd00ab9](https://github.com/diazjhozua/tydee/commit/fd00ab94b0a189ea814255163f784b0f3efa1aa8))
+* **web-api:** add set-balance and delete-adjustment endpoints ([df25aa6](https://github.com/diazjhozua/tydee/commit/df25aa6b1764d3544a0b814f6b7834f3081d370c))
+* **web-client:** set account balances from settings ([5e02a2d](https://github.com/diazjhozua/tydee/commit/5e02a2d1a645aca2ab6db38d5ee36191c715a428))
+* **web-client:** show adjustments in the activity list ([04a40cc](https://github.com/diazjhozua/tydee/commit/04a40cc93920ccefc1b686ed343fc1096b60ffaf))
+
 ## [1.3.0](https://github.com/diazjhozua/tydee/compare/v1.2.0...v1.3.0) (2026-08-03)
 
 
