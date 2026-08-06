@@ -30,6 +30,20 @@ export function verifyEmail(token: string): Promise<{ message: string }> {
   return post<{ message: string }>("/api/auth/verify-email", { token });
 }
 
+export function forgotPassword(email: string): Promise<{ message: string }> {
+  return post<{ message: string }>(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/forgot-password`,
+    { email },
+  );
+}
+
+export function resetPassword(token: string, newPassword: string): Promise<null> {
+  return post<null>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/reset-password`, {
+    token,
+    newPassword,
+  });
+}
+
 export function logout(): Promise<null> {
   return post<null>("/api/auth/logout");
 }

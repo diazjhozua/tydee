@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { login, logout, register, verifyEmail } from "@/lib/api/auth";
+import { forgotPassword, login, logout, register, resetPassword, verifyEmail } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/stores/authStore";
 
 export function useLogin() {
@@ -25,6 +25,17 @@ export function useRegister() {
 
 export function useVerifyEmail() {
   return useMutation({ mutationFn: verifyEmail });
+}
+
+export function useForgotPassword() {
+  return useMutation({ mutationFn: forgotPassword });
+}
+
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: ({ token, newPassword }: { token: string; newPassword: string }) =>
+      resetPassword(token, newPassword),
+  });
 }
 
 export function useLogout() {
