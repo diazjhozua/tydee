@@ -143,6 +143,36 @@ export default function HomePage() {
         )}
       </div>
 
+      {spent > 0 && (
+        <section className="space-y-3">
+          <SectionLabel>Where it went</SectionLabel>
+          <div className="space-y-3 rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
+            {dashboard.spentByCategory.map((row) => (
+              <div key={row.category ?? "__none"} className="space-y-1">
+                <div className="flex items-center justify-between gap-3">
+                  <span
+                    className={
+                      row.category
+                        ? "truncate text-sm font-medium"
+                        : "truncate text-sm text-muted-foreground"
+                    }
+                  >
+                    {row.category ?? "Uncategorized"}
+                  </span>
+                  <Money value={row.amount} currency={currency} size="sm" />
+                </div>
+                <div className="h-1 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary/70"
+                    style={{ width: `${Math.min((row.amount / spent) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <section className="space-y-3">
         <SectionLabel>Accounts</SectionLabel>
         {dashboard.accountBalances.map((account) => {

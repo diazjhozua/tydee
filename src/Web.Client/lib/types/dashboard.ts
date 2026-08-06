@@ -23,8 +23,14 @@ export type ActivityItem = {
   allocations: ActivityAllocation[];
 };
 
+export type CategorySpend = {
+  category: string | null;
+  amount: number;
+};
+
 export type Dashboard = {
   accountBalances: AccountBalance[];
   totalSpentThisMonth: number;
+  spentByCategory: CategorySpend[];
   recentActivity: ActivityItem[];
 };
