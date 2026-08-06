@@ -35,7 +35,7 @@ internal sealed class ResetPasswordCommandHandler(
 
         // Whoever reset the password should be the only one left logged in,
         // so every existing session gets revoked.
-        foreach (Domain.Users.RefreshToken token in user.RefreshTokens.Where(t => t.IsActive))
+        foreach (Domain.Users.RefreshToken token in user.RefreshTokens.Where(t => t.IsActive(dateTimeProvider.UtcNow)))
         {
             token.RevokedAt = dateTimeProvider.UtcNow;
         }

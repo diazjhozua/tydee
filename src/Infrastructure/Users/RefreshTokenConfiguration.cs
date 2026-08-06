@@ -14,7 +14,5 @@ internal sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refre
 
         builder.HasIndex(t => t.Token).IsUnique();
 
-        builder.Ignore(t => t.IsExpired);
-        builder.Ignore(t => t.IsActive);
     }
 }

@@ -10,8 +10,9 @@ public sealed class RefreshToken
     public DateTime ExpiresOnUtc { get; set; }
     public DateTime? RevokedAt { get; set; }
 
-    public bool IsExpired => DateTime.UtcNow >= ExpiresOnUtc;
-    public bool IsActive => RevokedAt is null && !IsExpired;
+    public bool IsExpired(DateTime utcNow) => utcNow >= ExpiresOnUtc;
+
+    public bool IsActive(DateTime utcNow) => RevokedAt is null && !IsExpired(utcNow);
 
     public User User { get; set; } = null!;
 }

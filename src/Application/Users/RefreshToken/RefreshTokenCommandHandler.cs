@@ -39,7 +39,7 @@ internal sealed class RefreshTokenCommandHandler(
         // rotation, so kill every active session for this user.
         if (existingToken.RevokedAt is not null)
         {
-            foreach (Domain.Users.RefreshToken token in user.RefreshTokens.Where(t => t.IsActive))
+            foreach (Domain.Users.RefreshToken token in user.RefreshTokens.Where(t => t.IsActive(dateTimeProvider.UtcNow)))
             {
                 token.RevokedAt = dateTimeProvider.UtcNow;
             }
@@ -49,14 +49,14 @@ internal sealed class RefreshTokenCommandHandler(
             return Result.Failure<AuthTokensResponse>(UserErrors.TokenReuseDetected);
         }
 
-        if (existingToken.IsExpired)
+        if (existingToken.IsExpired(dateTimeProvider.UtcNow))
         {
             return Result.Failure<AuthTokensResponse>(UserErrors.InvalidRefreshToken);
         }
 
         existingToken.RevokedAt = dateTimeProvider.UtcNow;
 
-        user.RefreshTokens.RemoveAll(t => t.IsExpired);
+        user.RefreshTokens.RemoveAll(t => t.IsExpired(dateTimeProvider.UtcNow));
 
         string rawRefreshToken = tokenProvider.GenerateRefreshToken();
 

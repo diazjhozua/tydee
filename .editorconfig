@@ -425,3 +425,9 @@ dotnet_diagnostic.CA1308.severity = none
 [**/Migrations/**.cs]
 generated_code = true
 dotnet_analyzer_diagnostic.severity = none
+
+# Test code favors terseness: var everywhere and sync SaveChanges in arranges
+[tests/**.cs]
+dotnet_diagnostic.IDE0008.severity = none
+dotnet_diagnostic.CA1849.severity = none
+dotnet_diagnostic.S6966.severity = none

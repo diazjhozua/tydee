@@ -65,7 +65,7 @@ internal sealed class LoginCommandHandler(
             return Result.Failure<AuthTokensResponse>(UserErrors.EmailNotVerified);
         }
 
-        user.RefreshTokens.RemoveAll(t => t.IsExpired);
+        user.RefreshTokens.RemoveAll(t => t.IsExpired(dateTimeProvider.UtcNow));
 
         string rawRefreshToken = tokenProvider.GenerateRefreshToken();
 
