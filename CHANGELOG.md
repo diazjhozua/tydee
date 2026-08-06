@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.0](https://github.com/diazjhozua/tydee/compare/v1.4.0...v1.5.0) (2026-08-06)
+
+
+### Features
+
+* **application:** add forgot and reset password flows ([6713528](https://github.com/diazjhozua/tydee/commit/6713528c407ac7492a0253c933453708b75b31f6))
+* **web-api:** expose password reset endpoints ([2004417](https://github.com/diazjhozua/tydee/commit/2004417595f00e437c1990cb8280cc61f6a8b1d2))
+* **web-client:** add forgot and reset password pages ([fd230d3](https://github.com/diazjhozua/tydee/commit/fd230d39b346ab4970378fcc6bffa1a39791e51e))
+
 ## [1.4.0](https://github.com/diazjhozua/tydee/compare/v1.3.0...v1.4.0) (2026-08-05)
 
 
