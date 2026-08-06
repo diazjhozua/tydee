@@ -8,7 +8,10 @@ public sealed record GetDashboardQuery(Guid UserId, int? Year, int? Month) : IQu
 public sealed record DashboardResult(
     List<AccountBalance> AccountBalances,
     decimal TotalSpentThisMonth,
+    List<CategorySpend> SpentByCategory,
     List<Activity> RecentActivity);
+
+public sealed record CategorySpend(string? Category, decimal Amount);
 
 public sealed record AccountBalance(
     Guid AccountId,

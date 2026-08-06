@@ -37,6 +37,9 @@ internal sealed class GetDashboard : IEndpoint
                             a.AccountId, a.Name, a.Type.ToString(), a.AllocationPercent, a.Balance))
                         .ToList(),
                     d.TotalSpentThisMonth,
+                    d.SpentByCategory
+                        .Select(c => new CategorySpendItem(c.Category, c.Amount))
+                        .ToList(),
                     d.RecentActivity
                         .Select(x => new ActivityItem(
                             x.Id,

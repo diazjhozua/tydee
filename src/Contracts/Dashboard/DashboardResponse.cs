@@ -3,7 +3,10 @@ namespace Contracts.Dashboard;
 public sealed record DashboardResponse(
     List<AccountBalanceItem> AccountBalances,
     decimal TotalSpentThisMonth,
+    List<CategorySpendItem> SpentByCategory,
     List<ActivityItem> RecentActivity);
+
+public sealed record CategorySpendItem(string? Category, decimal Amount);
 
 public sealed record AccountBalanceItem(
     Guid AccountId,

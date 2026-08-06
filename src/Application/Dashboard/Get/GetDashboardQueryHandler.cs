@@ -37,6 +37,17 @@ internal sealed class GetDashboardQueryHandler(
             .Where(e => e.UserId == query.UserId && e.Date >= monthStart && e.Date < monthEnd)
             .SumAsync(e => e.Amount, cancellationToken);
 
+        var categoryTotals = await context.Expenses
+            .Where(e => e.UserId == query.UserId && e.Date >= monthStart && e.Date < monthEnd)
+            .GroupBy(e => e.Category)
+            .Select(g => new { Category = g.Key, Amount = g.Sum(e => e.Amount) })
+            .OrderByDescending(c => c.Amount)
+            .ToListAsync(cancellationToken);
+
+        var spentByCategory = categoryTotals
+            .Select(c => new CategorySpend(c.Category, c.Amount))
+            .ToList();
+
         var recentExpenses = await context.Expenses
             .Where(e => e.UserId == query.UserId && e.Date >= monthStart && e.Date < monthEnd)
             .OrderByDescending(e => e.Date).ThenByDescending(e => e.CreatedAtUtc)
@@ -114,6 +125,6 @@ internal sealed class GetDashboardQueryHandler(
             .Select(x => x.Item)
             .ToList();
 
-        return new DashboardResult(accountBalances, totalSpentThisMonth, recentActivity);
+        return new DashboardResult(accountBalances, totalSpentThisMonth, spentByCategory, recentActivity);
     }
 }
