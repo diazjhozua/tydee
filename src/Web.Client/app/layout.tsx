@@ -16,14 +16,44 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
-  title: "Tydee",
-  description: "A simple envelope-style expense and savings tracker",
+  metadataBase: new URL(appUrl),
+  title: {
+    default: "Tydee",
+    template: "%s · Tydee",
+  },
+  description:
+    "Simple envelope budgeting: split your income into accounts, log daily expenses, and always know how much is left.",
+  appleWebApp: {
+    capable: true,
+    title: "Tydee",
+    statusBarStyle: "default",
+  },
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    title: "Tydee",
+    description: "Simple envelope-style expense and savings tracker",
+    url: appUrl,
+    siteName: "Tydee",
+    images: [{ url: "/icon-512.png", width: 512, height: 512 }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Tydee",
+    description: "Simple envelope-style expense and savings tracker",
+    images: ["/icon-512.png"],
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#019966",
 };
 
 export default function RootLayout({
