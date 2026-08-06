@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.6.0](https://github.com/diazjhozua/tydee/compare/v1.5.0...v1.6.0) (2026-08-06)
+
+
+### Features
+
+* **application:** break monthly spending down by category ([f1eb9ee](https://github.com/diazjhozua/tydee/commit/f1eb9ee54ec9fa0b869d83c85ff63a33f2921db2))
+* **web-client:** add a branded 404 page ([0890689](https://github.com/diazjhozua/tydee/commit/089068943bf00bafd826bfeb1b509b417930c9f0))
+* **web-client:** add page metadata, robots, and sitemap ([fd0a434](https://github.com/diazjhozua/tydee/commit/fd0a43495169acfa413aa1753c05fcb4c16ae65e))
+* **web-client:** make the app installable ([a982ada](https://github.com/diazjhozua/tydee/commit/a982ada2069016304cf6495302da88fb219fe721))
+* **web-client:** show where the money went on home ([428a631](https://github.com/diazjhozua/tydee/commit/428a6315000a53bb186c80743b5752c1875cfc08))
+
 ## [1.5.0](https://github.com/diazjhozua/tydee/compare/v1.4.0...v1.5.0) (2026-08-06)
 
 
