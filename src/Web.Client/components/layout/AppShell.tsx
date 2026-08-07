@@ -1,17 +1,19 @@
 "use client";
 
-import { Plus, Settings, TrendingUp } from "lucide-react";
+import { ArrowLeftRight, Plus, Settings, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ExpenseDialog } from "@/components/expenses/ExpenseDialog";
 import { IncomeDialog } from "@/components/incomes/IncomeDialog";
+import { TransferSheet } from "@/components/transfers/TransferSheet";
 import { Button } from "@/components/ui/button";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [incomeOpen, setIncomeOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
 
   const showFabs = pathname === "/";
 
@@ -42,6 +44,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="mx-auto flex max-w-md items-center justify-end gap-3 px-5">
             <button
               type="button"
+              aria-label="Transfer"
+              onClick={() => setTransferOpen(true)}
+              className="pointer-events-auto flex h-11 items-center gap-2 rounded-full border border-border/60 bg-background/80 px-4 text-sm font-semibold shadow-lg backdrop-blur-md transition-transform active:scale-95"
+            >
+              <ArrowLeftRight className="size-4 text-violet-500" />
+              Transfer
+            </button>
+            <button
+              type="button"
               onClick={() => setIncomeOpen(true)}
               className="pointer-events-auto flex h-11 items-center gap-2 rounded-full border border-border/60 bg-background/80 px-4 text-sm font-semibold shadow-lg backdrop-blur-md transition-transform active:scale-95"
             >
@@ -62,6 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <ExpenseDialog open={expenseOpen} onOpenChange={setExpenseOpen} />
       <IncomeDialog open={incomeOpen} onOpenChange={setIncomeOpen} />
+      <TransferSheet open={transferOpen} onOpenChange={setTransferOpen} />
     </div>
   );
 }

@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useDeleteAdjustment } from "@/lib/hooks/useAdjustments";
+import { useDeleteTransfer } from "@/lib/hooks/useTransfers";
 import { useDashboard } from "@/lib/hooks/useDashboard";
 import { useExpenses } from "@/lib/hooks/useExpenses";
 import { useMe } from "@/lib/hooks/useMe";
@@ -52,7 +53,9 @@ export default function HomePage() {
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
   const [editingIncomeId, setEditingIncomeId] = useState<string | undefined>();
   const [deletingAdjustment, setDeletingAdjustment] = useState<ActivityItem | undefined>();
+  const [deletingTransfer, setDeletingTransfer] = useState<ActivityItem | undefined>();
   const deleteAdjustment = useDeleteAdjustment();
+  const deleteTransfer = useDeleteTransfer();
 
   const currency = me?.currency ?? "PHP";
   const viewingCurrentMonth = isCurrentMonth(month);
@@ -92,9 +95,27 @@ export default function HomePage() {
       }
     } else if (item.kind === "income") {
       setEditingIncomeId(item.id);
-    } else {
+    } else if (item.kind === "adjustment") {
       setDeletingAdjustment(item);
+    } else {
+      setDeletingTransfer(item);
     }
+  }
+
+  function confirmDeleteTransfer() {
+    if (!deletingTransfer) {
+      return;
+    }
+    deleteTransfer.mutate(deletingTransfer.id, {
+      onSuccess: () => {
+        toast.success("Transfer removed");
+        setDeletingTransfer(undefined);
+      },
+      onError: () => {
+        toast.error("Something went wrong.");
+        setDeletingTransfer(undefined);
+      },
+    });
   }
 
   function confirmDeleteAdjustment() {
@@ -264,10 +285,16 @@ export default function HomePage() {
                       ? "money text-sm font-semibold text-emerald-600 dark:text-emerald-400"
                       : item.kind === "adjustment"
                         ? "money text-sm font-semibold text-sky-600 dark:text-sky-400"
-                        : "money text-sm font-semibold"
+                        : item.kind === "transfer"
+                          ? "money text-sm font-semibold text-violet-600 dark:text-violet-400"
+                          : "money text-sm font-semibold"
                   }
                 >
-                  {item.kind === "expense" || item.amount < 0 ? "−" : "+"}
+                  {item.kind === "transfer"
+                    ? ""
+                    : item.kind === "expense" || item.amount < 0
+                      ? "−"
+                      : "+"}
                   {formatMoney(Math.abs(item.amount), currency)}
                 </span>
               </button>
@@ -308,6 +335,33 @@ export default function HomePage() {
               variant="destructive"
               onClick={confirmDeleteAdjustment}
               disabled={deleteAdjustment.isPending}
+            >
+              Remove
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deletingTransfer !== undefined}
+        onOpenChange={(open) => !open && setDeletingTransfer(undefined)}
+      >
+        <DialogContent className="max-w-sm rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Remove this transfer?</DialogTitle>
+            <DialogDescription>
+              {deletingTransfer &&
+                `${deletingTransfer.description} will be undone and both balances will revert.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setDeletingTransfer(undefined)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteTransfer}
+              disabled={deleteTransfer.isPending}
             >
               Remove
             </Button>

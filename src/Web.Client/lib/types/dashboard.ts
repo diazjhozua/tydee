@@ -15,7 +15,7 @@ export type ActivityAllocation = {
 
 export type ActivityItem = {
   id: string;
-  kind: "income" | "expense" | "adjustment";
+  kind: "income" | "expense" | "adjustment" | "transfer";
   amount: number;
   description: string;
   category: string | null;
