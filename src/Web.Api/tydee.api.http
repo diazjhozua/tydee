@@ -19,6 +19,14 @@ Content-Type: application/json
   "token": "PASTE_VERIFICATION_TOKEN"
 }
 
+### Resend verification email (always answers success)
+POST {{base}}/api/v1/auth/resend-verification
+Content-Type: application/json
+
+{
+  "email": "test@example.com"
+}
+
 ### Forgot password (always answers success)
 POST {{base}}/api/v1/auth/forgot-password
 Content-Type: application/json
@@ -113,6 +121,22 @@ Content-Type: application/json
 
 ### Get a single income with its allocation lines
 GET {{base}}/api/v1/incomes/PASTE_INCOME_ID
+Authorization: Bearer {{token}}
+
+### Move money between two accounts
+POST {{base}}/api/v1/transfers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fromAccountId": "PASTE_ACCOUNT_ID_1",
+  "toAccountId": "PASTE_ACCOUNT_ID_2",
+  "amount": 500,
+  "date": "2026-08-07"
+}
+
+### Delete a transfer (both balances revert)
+DELETE {{base}}/api/v1/transfers/PASTE_TRANSFER_ID
 Authorization: Bearer {{token}}
 
 ### Log expense
