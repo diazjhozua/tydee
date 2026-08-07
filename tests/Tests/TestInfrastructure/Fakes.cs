@@ -1,4 +1,5 @@
 using Application.Abstractions.Authentication;
+using Application.Abstractions.Email;
 using Domain.Users;
 using SharedKernel;
 
@@ -25,4 +26,24 @@ internal sealed class FakeTokenProvider : ITokenProvider
 internal sealed class FixedDateTimeProvider : IDateTimeProvider
 {
     public DateTime UtcNow { get; set; } = new(2026, 8, 6, 12, 0, 0, DateTimeKind.Utc);
+}
+
+internal sealed class FakeEmailSender : IEmailSender
+{
+    public int VerificationEmailsSent { get; private set; }
+    public int PasswordResetEmailsSent { get; private set; }
+
+    public Task SendEmailVerificationAsync(
+        string toEmail, string verificationToken, CancellationToken cancellationToken = default)
+    {
+        VerificationEmailsSent++;
+        return Task.CompletedTask;
+    }
+
+    public Task SendPasswordResetAsync(
+        string toEmail, string resetToken, CancellationToken cancellationToken = default)
+    {
+        PasswordResetEmailsSent++;
+        return Task.CompletedTask;
+    }
 }
