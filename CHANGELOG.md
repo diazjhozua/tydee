@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.7.0](https://github.com/diazjhozua/tydee/compare/v1.6.0...v1.7.0) (2026-08-07)
+
+
+### Features
+
+* allow resending the verification email ([13d3134](https://github.com/diazjhozua/tydee/commit/13d31349b6fbe3fd6fb11a1fc8017594e1729afe))
+* **application:** add transfers between accounts ([97d5144](https://github.com/diazjhozua/tydee/commit/97d5144389bca2873d8ec8e729a2405fcd84ef5f))
+* **web-api:** expose transfer endpoints ([cf84435](https://github.com/diazjhozua/tydee/commit/cf84435c8b57d2308d38c92d7ba1a39040994ad3))
+* **web-client:** give each spending category its own icon and color ([755a8bb](https://github.com/diazjhozua/tydee/commit/755a8bbf3c08fb5fb55a51f8f2850cb4c701014e))
+* **web-client:** move money between accounts ([8cd9daa](https://github.com/diazjhozua/tydee/commit/8cd9daaae932adcd67a3bc528e72ee76a0cc2b73))
+* **web-client:** offer a resend from the unverified login notice ([8ea59e9](https://github.com/diazjhozua/tydee/commit/8ea59e9917b555921469a546ba1bff691ed48860))
+
 ## [1.6.0](https://github.com/diazjhozua/tydee/compare/v1.5.0...v1.6.0) (2026-08-06)
 
 
