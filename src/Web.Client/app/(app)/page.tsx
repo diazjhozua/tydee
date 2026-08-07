@@ -7,6 +7,7 @@ import { ExpenseDialog } from "@/components/expenses/ExpenseDialog";
 import { IncomeDialog } from "@/components/incomes/IncomeDialog";
 import { AccountIcon } from "@/components/shared/AccountIcon";
 import { ActivityIcon } from "@/components/shared/ActivityIcon";
+import { categoryBarColorClass, CategoryIcon } from "@/components/shared/CategoryIcon";
 import { Money } from "@/components/shared/Money";
 import {
   MonthPicker,
@@ -167,29 +168,39 @@ export default function HomePage() {
       {spent > 0 && (
         <section className="space-y-3">
           <SectionLabel>Where it went</SectionLabel>
-          <div className="space-y-3 rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
-            {dashboard.spentByCategory.map((row) => (
-              <div key={row.category ?? "__none"} className="space-y-1">
-                <div className="flex items-center justify-between gap-3">
-                  <span
-                    className={
-                      row.category
-                        ? "truncate text-sm font-medium"
-                        : "truncate text-sm text-muted-foreground"
-                    }
-                  >
-                    {row.category ?? "Uncategorized"}
-                  </span>
-                  <Money value={row.amount} currency={currency} size="sm" />
+          <div className="space-y-4 rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
+            {dashboard.spentByCategory.map((row) => {
+              const percent = Math.round((row.amount / spent) * 100);
+
+              return (
+                <div key={row.category ?? "__none"} className="flex items-center gap-3">
+                  <CategoryIcon category={row.category} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <span
+                        className={
+                          row.category
+                            ? "truncate text-sm font-medium"
+                            : "truncate text-sm text-muted-foreground"
+                        }
+                      >
+                        {row.category ?? "Uncategorized"}
+                      </span>
+                      <span className="flex items-baseline gap-1.5 whitespace-nowrap">
+                        <Money value={row.amount} currency={currency} size="sm" />
+                        <span className="text-xs text-muted-foreground">{percent}%</span>
+                      </span>
+                    </div>
+                    <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={`h-full rounded-full ${categoryBarColorClass(row.category)}`}
+                        style={{ width: `${Math.min(percent, 100)}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <div className="h-1 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary/70"
-                    style={{ width: `${Math.min((row.amount / spent) * 100, 100)}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}
