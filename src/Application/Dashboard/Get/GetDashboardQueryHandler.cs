@@ -77,6 +77,22 @@ internal sealed class GetDashboardQueryHandler(
                 (a, acc) => new { a.Id, a.Amount, a.Date, a.CreatedAtUtc, AccountName = acc.Name })
             .ToListAsync(cancellationToken);
 
+        var recentTransfers = await context.Transfers
+            .Where(t => t.UserId == query.UserId && t.Date >= monthStart && t.Date < monthEnd)
+            .OrderByDescending(t => t.Date).ThenByDescending(t => t.CreatedAtUtc)
+            .Take(RecentActivityCount)
+            .Join(
+                context.Accounts,
+                t => t.FromAccountId,
+                acc => acc.Id,
+                (t, acc) => new { t.Id, t.Amount, t.Date, t.CreatedAtUtc, t.ToAccountId, FromName = acc.Name })
+            .Join(
+                context.Accounts,
+                t => t.ToAccountId,
+                acc => acc.Id,
+                (t, acc) => new { t.Id, t.Amount, t.Date, t.CreatedAtUtc, t.FromName, ToName = acc.Name })
+            .ToListAsync(cancellationToken);
+
         var incomeIds = recentIncomes.Select(i => i.Id).ToList();
 
         var allocationRows = await context.IncomeAllocations
@@ -119,6 +135,13 @@ internal sealed class GetDashboardQueryHandler(
                 Item = new Activity(a.Id, "adjustment", a.Amount, a.AccountName, null, a.Date, []),
                 a.Date,
                 a.CreatedAtUtc,
+            }))
+            .Concat(recentTransfers.Select(t => new
+            {
+                Item = new Activity(
+                    t.Id, "transfer", t.Amount, $"{t.FromName} → {t.ToName}", null, t.Date, []),
+                t.Date,
+                t.CreatedAtUtc,
             }))
             .OrderByDescending(x => x.Date).ThenByDescending(x => x.CreatedAtUtc)
             .Take(RecentActivityCount)

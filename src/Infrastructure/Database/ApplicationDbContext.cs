@@ -1,6 +1,7 @@
 using Application.Abstractions.Data;
 using Domain.Accounts;
 using Domain.Adjustments;
+using Domain.Transfers;
 using Domain.Expenses;
 using Domain.Incomes;
 using Domain.Users;
@@ -28,6 +29,8 @@ public sealed class ApplicationDbContext(
     public DbSet<Expense> Expenses { get; set; }
 
     public DbSet<Adjustment> Adjustments { get; set; }
+
+    public DbSet<Transfer> Transfers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

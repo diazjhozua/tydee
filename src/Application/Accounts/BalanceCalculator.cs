@@ -24,6 +24,18 @@ internal static class BalanceCalculator
             .Select(g => new { AccountId = g.Key, Total = g.Sum(a => a.Amount) })
             .ToListAsync(cancellationToken);
 
+        var transferredOut = await context.Transfers
+            .Where(t => t.UserId == userId)
+            .GroupBy(t => t.FromAccountId)
+            .Select(g => new { AccountId = g.Key, Total = g.Sum(t => t.Amount) })
+            .ToListAsync(cancellationToken);
+
+        var transferredIn = await context.Transfers
+            .Where(t => t.UserId == userId)
+            .GroupBy(t => t.ToAccountId)
+            .Select(g => new { AccountId = g.Key, Total = g.Sum(t => t.Amount) })
+            .ToListAsync(cancellationToken);
+
         var spent = await context.Expenses
             .Where(e => e.UserId == userId)
             .GroupBy(e => e.AccountId)
@@ -36,6 +48,18 @@ internal static class BalanceCalculator
         {
             balances[adjustment.AccountId] =
                 balances.GetValueOrDefault(adjustment.AccountId) + adjustment.Total;
+        }
+
+        foreach (var incoming in transferredIn)
+        {
+            balances[incoming.AccountId] =
+                balances.GetValueOrDefault(incoming.AccountId) + incoming.Total;
+        }
+
+        foreach (var outgoing in transferredOut)
+        {
+            balances[outgoing.AccountId] =
+                balances.GetValueOrDefault(outgoing.AccountId) - outgoing.Total;
         }
 
         foreach (var expense in spent)
