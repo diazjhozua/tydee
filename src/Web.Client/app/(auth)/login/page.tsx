@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useLogin } from "@/lib/hooks/useAuth";
+import { useLogin, useResendVerification } from "@/lib/hooks/useAuth";
 import { ApiError } from "@/lib/types/api";
 
 const schema = z.object({
@@ -21,7 +21,9 @@ type FormValues = z.infer<typeof schema>;
 
 function LoginForm() {
   const login = useLogin();
+  const resendVerification = useResendVerification();
   const [notVerified, setNotVerified] = useState(false);
+  const [enteredEmail, setEnteredEmail] = useState("");
 
   const {
     register,
@@ -31,6 +33,7 @@ function LoginForm() {
 
   function onSubmit(values: FormValues) {
     setNotVerified(false);
+    setEnteredEmail(values.email);
     login.mutate(values, {
       onError: (err) => {
         if (err instanceof ApiError && err.title === "Users.EmailNotVerified") {
@@ -78,9 +81,28 @@ function LoginForm() {
           </div>
 
           {notVerified && (
-            <p className="text-sm text-amber-600">
-              Your email isn&apos;t verified yet. Check your inbox for the verification link.
-            </p>
+            <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/40">
+              {resendVerification.isSuccess ? (
+                <p className="text-amber-700 dark:text-amber-400">
+                  If that email needs verifying, we sent a new link.
+                </p>
+              ) : (
+                <>
+                  <p className="text-amber-700 dark:text-amber-400">
+                    Your email isn&apos;t verified yet. Check your inbox for the verification
+                    link.
+                  </p>
+                  <button
+                    type="button"
+                    className="mt-1.5 font-medium text-primary hover:underline disabled:opacity-50"
+                    disabled={resendVerification.isPending}
+                    onClick={() => resendVerification.mutate(enteredEmail)}
+                  >
+                    {resendVerification.isPending ? "Sending..." : "Resend verification email"}
+                  </button>
+                </>
+              )}
+            </div>
           )}
           {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
 

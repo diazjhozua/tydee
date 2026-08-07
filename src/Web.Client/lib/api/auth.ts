@@ -44,6 +44,13 @@ export function resetPassword(token: string, newPassword: string): Promise<null>
   });
 }
 
+export function resendVerification(email: string): Promise<{ message: string }> {
+  return post<{ message: string }>(
+    `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/resend-verification`,
+    { email },
+  );
+}
+
 export function logout(): Promise<null> {
   return post<null>("/api/auth/logout");
 }
