@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.8.0](https://github.com/diazjhozua/tydee/compare/v1.7.0...v1.8.0) (2026-08-08)
+
+
+### Features
+
+* **web-client:** show the app version in settings ([a38c60f](https://github.com/diazjhozua/tydee/commit/a38c60ffeeb7847368d23534f0c4a600056e7660))
+* **web-client:** tap a category to filter recent activity ([c6e25bc](https://github.com/diazjhozua/tydee/commit/c6e25bc1b68729fef5481645589eec5e8a0bebb4))
+
+
+### Bug Fixes
+
+* **web-client:** pin the turbopack workspace root ([8615ff5](https://github.com/diazjhozua/tydee/commit/8615ff563edf815387f0d6bfa73da3b413be2cb5))
+
 ## [1.7.0](https://github.com/diazjhozua/tydee/compare/v1.6.0...v1.7.0) (2026-08-07)
 
 
