@@ -12,4 +12,7 @@ jobs:
   release:
     uses: diazjhozua/relcut/.github/workflows/release.yml@v1
     with:
-      release-type: simple
+      # Empty on purpose: release-please ignores release-please-config.json
+      # whenever a release-type is set, and we need the config's extra-files
+      # to keep src/Web.Client/package.json's version in sync.
+      release-type: ""
