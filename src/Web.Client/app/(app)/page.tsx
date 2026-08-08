@@ -1,6 +1,6 @@
 "use client";
 
-import { Inbox } from "lucide-react";
+import { Inbox, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ExpenseDialog } from "@/components/expenses/ExpenseDialog";
@@ -51,6 +51,8 @@ export default function HomePage() {
   const { data: me } = useMe();
   const { data: expenses } = useExpenses({ pageSize: 50 });
 
+  // undefined = no filter; null = the "Uncategorized" bucket is selected.
+  const [categoryFilter, setCategoryFilter] = useState<string | null | undefined>(undefined);
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
   const [editingIncomeId, setEditingIncomeId] = useState<string | undefined>();
   const [deletingAdjustment, setDeletingAdjustment] = useState<ActivityItem | undefined>();
@@ -87,6 +89,13 @@ export default function HomePage() {
     .reduce((sum, a) => sum + a.balance, 0);
   const monthBudget = spendingPower + spent;
   const spentRatio = monthBudget > 0 ? Math.min(spent / monthBudget, 1) : 0;
+
+  const visibleActivity =
+    categoryFilter === undefined
+      ? dashboard.recentActivity
+      : dashboard.recentActivity.filter(
+          (item) => item.kind === "expense" && item.category === categoryFilter,
+        );
 
   function onActivityClick(item: ActivityItem) {
     if (item.kind === "expense") {
@@ -138,7 +147,13 @@ export default function HomePage() {
   return (
     <div className="space-y-7">
       <div className="flex justify-center">
-        <MonthPicker value={month} onChange={setMonth} />
+        <MonthPicker
+          value={month}
+          onChange={(value) => {
+            setMonth(value);
+            setCategoryFilter(undefined);
+          }}
+        />
       </div>
 
       <div className="hero-gradient relative overflow-hidden rounded-3xl p-6 text-white shadow-lg shadow-emerald-600/20">
@@ -168,12 +183,25 @@ export default function HomePage() {
       {spent > 0 && (
         <section className="space-y-3">
           <SectionLabel>Where it went</SectionLabel>
-          <div className="space-y-4 rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
+          <div className="space-y-1 rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
             {dashboard.spentByCategory.map((row) => {
               const percent = Math.round((row.amount / spent) * 100);
+              const isSelected = categoryFilter === row.category;
+              const isDimmed = categoryFilter !== undefined && !isSelected;
 
               return (
-                <div key={row.category ?? "__none"} className="flex items-center gap-3">
+                <button
+                  key={row.category ?? "__none"}
+                  type="button"
+                  onClick={() =>
+                    setCategoryFilter((prev) => (prev === row.category ? undefined : row.category))
+                  }
+                  className={
+                    "-mx-2 flex w-[calc(100%+1rem)] items-center gap-3 rounded-xl px-2 py-1.5 text-left transition" +
+                    (isSelected ? " bg-accent/60" : "") +
+                    (isDimmed ? " opacity-45" : "")
+                  }
+                >
                   <CategoryIcon category={row.category} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-3">
@@ -198,7 +226,7 @@ export default function HomePage() {
                       />
                     </div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -244,9 +272,25 @@ export default function HomePage() {
       </section>
 
       <section className="space-y-3">
-        <SectionLabel>Recent</SectionLabel>
+        <div className="flex items-center gap-2">
+          <SectionLabel>Recent</SectionLabel>
+          {categoryFilter !== undefined && (
+            <button
+              type="button"
+              onClick={() => setCategoryFilter(undefined)}
+              className="flex items-center gap-1 rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium transition-colors hover:bg-accent/70"
+            >
+              {categoryFilter ?? "Uncategorized"}
+              <X className="size-3" />
+            </button>
+          )}
+        </div>
 
-        {dashboard.recentActivity.length === 0 ? (
+        {categoryFilter !== undefined && visibleActivity.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-border py-6 text-center text-sm text-muted-foreground">
+            No recent expenses in this category.
+          </p>
+        ) : dashboard.recentActivity.length === 0 ? (
           <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border py-10 text-center">
             <span className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Inbox className="size-6" />
@@ -264,7 +308,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
-            {dashboard.recentActivity.map((item, index) => (
+            {visibleActivity.map((item, index) => (
               <button
                 key={`${item.kind}-${item.id}`}
                 type="button"
