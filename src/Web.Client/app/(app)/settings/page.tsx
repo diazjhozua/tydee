@@ -304,6 +304,15 @@ export default function SettingsPage() {
         </div>
       </SectionCard>
 
+      <a
+        href="https://github.com/diazjhozua/tydee/releases"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
+      >
+        {`Tydee v${process.env.NEXT_PUBLIC_APP_VERSION} · What's new`}
+      </a>
+
       <AccountDialog open={dialogOpen} onOpenChange={setDialogOpen} account={editingAccount} />
 
       <SetBalanceSheet
