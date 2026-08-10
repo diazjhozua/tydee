@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { AmountInput } from "@/components/shared/AmountInput";
 import { EntrySheet } from "@/components/shared/EntrySheet";
@@ -26,14 +26,15 @@ export function SetBalanceSheet({ open, onOpenChange, account }: Props) {
 
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(today());
+  const [prevOpen, setPrevOpen] = useState(false);
 
-  useEffect(() => {
-    if (!open || !account) {
-      return;
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open && account) {
+      setAmount(String(account.balance));
+      setDate(today());
     }
-    setAmount(String(account.balance));
-    setDate(today());
-  }, [open, account]);
+  }
 
   const parsedAmount = Number(amount);
   const unchanged = account !== undefined && parsedAmount === account.balance;

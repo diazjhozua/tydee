@@ -112,7 +112,6 @@ export default function SetupPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             {drafts.map((draft, index) => (
-              // eslint-disable-next-line react/no-array-index-key
               <div key={index} className="flex gap-2">
                 <Input
                   value={draft.name}

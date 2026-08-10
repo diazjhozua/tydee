@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { AmountInput } from "@/components/shared/AmountInput";
 import { EntrySheet } from "@/components/shared/EntrySheet";
@@ -29,21 +29,22 @@ export function TransferSheet({ open, onOpenChange }: Props) {
   const [fromId, setFromId] = useState("");
   const [toId, setToId] = useState("");
   const [date, setDate] = useState(today());
+  const [prevOpen, setPrevOpen] = useState(false);
 
   const activeAccounts = accounts ?? [];
   const currency = me?.currency ?? "PHP";
   const parsedAmount = Number(amount);
   const canSave = parsedAmount > 0 && fromId !== "" && toId !== "" && fromId !== toId;
 
-  useEffect(() => {
-    if (!open) {
-      return;
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setAmount("");
+      setFromId("");
+      setToId("");
+      setDate(today());
     }
-    setAmount("");
-    setFromId("");
-    setToId("");
-    setDate(today());
-  }, [open]);
+  }
 
   function chipRow(selected: string, onSelect: (id: string) => void, disabledId: string) {
     return (

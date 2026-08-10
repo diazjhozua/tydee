@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { EntrySheet } from "@/components/shared/EntrySheet";
 import { Button } from "@/components/ui/button";
@@ -29,16 +29,17 @@ export function AccountDialog({ open, onOpenChange, account }: Props) {
 
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("Spending");
+  const [prevOpen, setPrevOpen] = useState(false);
 
   const isEdit = account !== undefined;
 
-  useEffect(() => {
-    if (!open) {
-      return;
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setName(account?.name ?? "");
+      setType(account?.type ?? "Spending");
     }
-    setName(account?.name ?? "");
-    setType(account?.type ?? "Spending");
-  }, [open, account]);
+  }
 
   function handleError(err: unknown) {
     toast.error(err instanceof ApiError ? err.displayMessage : "Something went wrong.");

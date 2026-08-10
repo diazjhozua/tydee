@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { AmountInput } from "@/components/shared/AmountInput";
 import { EntrySheet } from "@/components/shared/EntrySheet";
@@ -41,6 +41,7 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
   const [allocations, setAllocations] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [prevOpen, setPrevOpen] = useState(false);
 
   const isEdit = incomeId !== undefined;
   const activeAccounts = accounts ?? [];
@@ -48,45 +49,40 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
   const parsedAmount = Number(amount);
   const currency = me?.currency ?? "PHP";
 
-  useEffect(() => {
-    if (!open) {
-      return;
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setConfirmingDelete(false);
+      if (!isEdit) {
+        setAmount("");
+        setSource("");
+        setDate(today());
+        setAllocations({});
+        setTouched(false);
+      }
     }
-    setConfirmingDelete(false);
-    if (isEdit) {
-      return;
-    }
-    setAmount("");
-    setSource("");
-    setDate(today());
-    setAllocations({});
-    setTouched(false);
-  }, [open, isEdit]);
+  }
 
   // Edit mode: prefill from the fetched income and stop the template
   // auto-fill from overwriting the stored split.
-  useEffect(() => {
-    if (!open || !isEdit || !income) {
-      return;
+  const [prevIncome, setPrevIncome] = useState(income);
+  if (income !== prevIncome) {
+    setPrevIncome(income);
+    if (open && isEdit && income) {
+      setAmount(String(income.amount));
+      setSource(income.source);
+      setDate(income.date);
+      setAllocations(
+        Object.fromEntries(income.allocations.map((a) => [a.accountId, String(a.amount)])),
+      );
+      setTouched(true);
     }
-    setAmount(String(income.amount));
-    setSource(income.source);
-    setDate(income.date);
-    setAllocations(
-      Object.fromEntries(income.allocations.map((a) => [a.accountId, String(a.amount)])),
-    );
-    setTouched(true);
-  }, [open, isEdit, income]);
+  }
 
-  // Pre-fill the split from the template until the user edits a row manually.
-  useEffect(() => {
-    if (touched || isEdit || activeAccounts.length === 0) {
-      return;
-    }
-
+  // The template split is shown until the user edits a row manually.
+  function templateSplit(): Record<string, string> {
     if (!(parsedAmount > 0)) {
-      setAllocations({});
-      return;
+      return {};
     }
 
     const split: Record<string, string> = {};
@@ -103,12 +99,13 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
       split[account.id] = share === 0 ? "" : String(share);
     });
 
-    setAllocations(split);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [parsedAmount, accounts, touched, isEdit, open]);
+    return split;
+  }
+
+  const shownAllocations = touched || isEdit ? allocations : templateSplit();
 
   const allocated = activeAccounts.reduce(
-    (sum, account) => sum + (Number(allocations[account.id]) || 0),
+    (sum, account) => sum + (Number(shownAllocations[account.id]) || 0),
     0,
   );
   const remaining = Math.round((parsedAmount - allocated) * 100) / 100;
@@ -117,7 +114,7 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
 
   function setAllocation(accountId: string, value: string) {
     setTouched(true);
-    setAllocations((prev) => ({ ...prev, [accountId]: value }));
+    setAllocations({ ...shownAllocations, [accountId]: value });
   }
 
   function handleError(err: unknown) {
@@ -132,7 +129,7 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
       allocations: activeAccounts
         .map((account) => ({
           accountId: account.id,
-          amount: Number(allocations[account.id]) || 0,
+          amount: Number(shownAllocations[account.id]) || 0,
         }))
         .filter((line) => line.amount > 0),
     };
@@ -255,7 +252,7 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
                 min="0"
                 step="0.01"
                 className="money h-10 w-32 rounded-xl text-right"
-                value={allocations[account.id] ?? ""}
+                value={shownAllocations[account.id] ?? ""}
                 onChange={(e) => setAllocation(account.id, e.target.value)}
               />
             </div>

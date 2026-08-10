@@ -2,7 +2,7 @@
 
 import { Archive, Globe, LogOut, MoreVertical, Moon, Pencil, Percent, Scale } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { AccountDialog } from "@/components/accounts/AccountDialog";
 import { SetBalanceSheet } from "@/components/accounts/SetBalanceSheet";
@@ -37,6 +37,10 @@ import { ApiError } from "@/lib/types/api";
 import { cn } from "@/lib/utils";
 import { SUPPORTED_CURRENCIES } from "@/lib/utils/currency";
 
+const emptySubscribe = () => () => {};
+const isClient = () => true;
+const isServer = () => false;
+
 function SectionCard({
   title,
   action,
@@ -67,23 +71,25 @@ export default function SettingsPage() {
   const updateCurrency = useUpdateCurrency();
   const logout = useLogout();
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  // False during SSR and hydration, true after - the theme select would
+  // otherwise mismatch the server-rendered markup.
+  const mounted = useSyncExternalStore(emptySubscribe, isClient, isServer);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | undefined>();
   const [balanceAccount, setBalanceAccount] = useState<Account | undefined>();
   const [percents, setPercents] = useState<Record<string, string>>({});
+  const [seededAccounts, setSeededAccounts] = useState<Account[] | undefined>();
 
   const activeAccounts = accounts ?? [];
   const currency = me?.currency ?? "PHP";
 
-  useEffect(() => setMounted(true), []);
-
-  useEffect(() => {
+  if (accounts !== seededAccounts) {
+    setSeededAccounts(accounts);
     if (accounts) {
       setPercents(Object.fromEntries(accounts.map((a) => [a.id, String(a.allocationPercent)])));
     }
-  }, [accounts]);
+  }
 
   const total = activeAccounts.reduce((sum, a) => sum + (Number(percents[a.id]) || 0), 0);
 

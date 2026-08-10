@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { AmountInput } from "@/components/shared/AmountInput";
 import { EntrySheet } from "@/components/shared/EntrySheet";
@@ -44,36 +44,36 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
   const [date, setDate] = useState(today());
   const [category, setCategory] = useState("");
   const [customCategory, setCustomCategory] = useState(false);
+  const [prevOpen, setPrevOpen] = useState(false);
 
   const isEdit = expense !== undefined;
   const activeAccounts = accounts ?? [];
   const { data: usedCategories } = useExpenseCategories(open);
 
-  useEffect(() => {
-    if (!open) {
-      return;
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setCustomCategory(false);
+      if (expense) {
+        setAmount(String(expense.amount));
+        setNote(expense.note ?? "");
+        setAccountId(expense.accountId);
+        setDate(expense.date);
+        setCategory(expense.category ?? "");
+      } else {
+        setCategory("");
+        setAmount("");
+        setNote("");
+        setDate(today());
+        const last = localStorage.getItem(LAST_ACCOUNT_KEY);
+        setAccountId(
+          last && activeAccounts.some((a) => a.id === last)
+            ? last
+            : (activeAccounts[0]?.id ?? ""),
+        );
+      }
     }
-    setCustomCategory(false);
-    if (expense) {
-      setAmount(String(expense.amount));
-      setNote(expense.note ?? "");
-      setAccountId(expense.accountId);
-      setDate(expense.date);
-      setCategory(expense.category ?? "");
-    } else {
-      setCategory("");
-      setAmount("");
-      setNote("");
-      setDate(today());
-      const last = localStorage.getItem(LAST_ACCOUNT_KEY);
-      setAccountId(
-        last && activeAccounts.some((a) => a.id === last)
-          ? last
-          : (activeAccounts[0]?.id ?? ""),
-      );
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, expense, accounts]);
+  }
 
   const parsedAmount = Number(amount);
   const canSave = parsedAmount > 0 && accountId !== "";
