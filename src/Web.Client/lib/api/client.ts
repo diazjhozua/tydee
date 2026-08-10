@@ -1,5 +1,11 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { refreshAccessToken } from "@/lib/api/auth";
+import {
+  WAKE_UP_PROBLEM,
+  coldStartDelay,
+  dismissWakeUpNotice,
+  showWakeUpNotice,
+} from "@/lib/api/coldStart";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { ApiError, ProblemDetails } from "@/lib/types/api";
 
@@ -16,7 +22,10 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-type RetriableConfig = InternalAxiosRequestConfig & { _retried?: boolean };
+type RetriableConfig = InternalAxiosRequestConfig & {
+  _retried?: boolean;
+  _retriedColdStart?: boolean;
+};
 
 apiClient.interceptors.response.use(
   (response) => response,
@@ -39,12 +48,31 @@ apiClient.interceptors.response.use(
       }
     }
 
+    const coldStart = !error.response || error.response.status === 503;
+    if (coldStart && config && !config._retriedColdStart) {
+      config._retriedColdStart = true;
+      showWakeUpNotice();
+      await coldStartDelay();
+      try {
+        return await apiClient(config);
+      } finally {
+        dismissWakeUpNotice();
+      }
+    }
+
     throw toApiError(error);
   },
 );
 
 function toApiError(error: AxiosError): ApiError {
   const status = error.response?.status ?? 0;
-  const problem = (error.response?.data ?? {}) as ProblemDetails;
+  const data = error.response?.data;
+  const problem = (typeof data === "object" && data !== null ? data : {}) as ProblemDetails;
+
+  // A dead connection or Azure's own 503 carries no useful body.
+  if ((status === 0 || status === 503) && !problem.title && !problem.detail) {
+    return new ApiError(503, WAKE_UP_PROBLEM);
+  }
+
   return new ApiError(status, problem);
 }
