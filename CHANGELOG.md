@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.0](https://github.com/diazjhozua/tydee/compare/v1.9.0...v1.10.0) (2026-08-11)
+
+
+### Features
+
+* expose the user's latest income ([c2efe9f](https://github.com/diazjhozua/tydee/commit/c2efe9f8986d2894ad5055e0f8369f25cc02144b))
+* **web-client:** prefill a new income from the last one ([d618fea](https://github.com/diazjhozua/tydee/commit/d618feafd998be9d65ef29ed937a22430c120f18))
+
 ## [1.9.0](https://github.com/diazjhozua/tydee/compare/v1.8.0...v1.9.0) (2026-08-11)
 
 
