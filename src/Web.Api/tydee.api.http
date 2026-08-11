@@ -123,6 +123,10 @@ Content-Type: application/json
 GET {{base}}/api/v1/incomes/PASTE_INCOME_ID
 Authorization: Bearer {{token}}
 
+### Latest income (prefills the "same as last time" chip)
+GET {{base}}/api/v1/incomes/latest
+Authorization: Bearer {{token}}
+
 ### Move money between two accounts
 POST {{base}}/api/v1/transfers
 Authorization: Bearer {{token}}
