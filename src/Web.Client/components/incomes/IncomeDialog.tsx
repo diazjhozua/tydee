@@ -1,5 +1,6 @@
 "use client";
 
+import { History } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AmountInput } from "@/components/shared/AmountInput";
@@ -14,6 +15,7 @@ import {
   useDeleteIncome,
   useIncome,
   useIncomeSources,
+  useLatestIncome,
   useUpdateIncome,
 } from "@/lib/hooks/useIncomes";
 import { useMe } from "@/lib/hooks/useMe";
@@ -46,6 +48,7 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
   const isEdit = incomeId !== undefined;
   const activeAccounts = accounts ?? [];
   const { data: pastSources } = useIncomeSources(open && !isEdit);
+  const { data: lastIncome } = useLatestIncome(open && !isEdit);
   const parsedAmount = Number(amount);
   const currency = me?.currency ?? "PHP";
 
@@ -117,6 +120,26 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
     setAllocations({ ...shownAllocations, [accountId]: value });
   }
 
+  function applyLastIncome() {
+    if (!lastIncome) {
+      return;
+    }
+    setAmount(String(lastIncome.amount));
+    setSource(lastIncome.source);
+
+    // Copy the exact previous split when every line still points at an
+    // active account; otherwise let the template derive a valid one.
+    const activeIds = new Set(activeAccounts.map((a) => a.id));
+    if (lastIncome.allocations.every((a) => activeIds.has(a.accountId))) {
+      setAllocations(
+        Object.fromEntries(lastIncome.allocations.map((a) => [a.accountId, String(a.amount)])),
+      );
+      setTouched(true);
+    } else {
+      setTouched(false);
+    }
+  }
+
   function handleError(err: unknown) {
     toast.error(err instanceof ApiError ? err.displayMessage : "Something went wrong.");
   }
@@ -186,6 +209,17 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
           currencySymbol={currencySymbol(currency)}
           autoFocus={!isEdit}
         />
+
+        {!isEdit && lastIncome && (
+          <button
+            type="button"
+            onClick={applyLastIncome}
+            className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <History className="size-3.5" />
+            Same as last time · {formatMoney(lastIncome.amount, currency)} · {lastIncome.source}
+          </button>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">

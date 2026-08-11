@@ -6,6 +6,11 @@ export async function getIncome(incomeId: string): Promise<Income> {
   return res.data;
 }
 
+export async function getLatestIncome(): Promise<Income> {
+  const res = await apiClient.get<Income>("/api/v1/incomes/latest");
+  return res.data;
+}
+
 export async function getIncomeSources(): Promise<string[]> {
   const res = await apiClient.get<string[]>("/api/v1/incomes/sources");
   return res.data;

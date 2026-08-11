@@ -6,8 +6,10 @@ import {
   deleteIncome,
   getIncome,
   getIncomeSources,
+  getLatestIncome,
   updateIncome,
 } from "@/lib/api/incomes";
+import { ApiError } from "@/lib/types/api";
 import { IncomeRequest } from "@/lib/types/income";
 
 function useInvalidateMoneyData() {
@@ -24,6 +26,25 @@ export function useIncome(incomeId: string | undefined) {
     queryKey: ["incomes", incomeId],
     queryFn: () => getIncome(incomeId!),
     enabled: incomeId !== undefined,
+  });
+}
+
+export function useLatestIncome(enabled: boolean) {
+  return useQuery({
+    queryKey: ["incomes", "latest"],
+    queryFn: async () => {
+      try {
+        return await getLatestIncome();
+      } catch (err) {
+        // No incomes yet - no chip, not an error.
+        if (err instanceof ApiError && err.status === 404) {
+          return null;
+        }
+        throw err;
+      }
+    },
+    enabled,
+    staleTime: 60_000,
   });
 }
 
