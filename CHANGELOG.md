@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.9.0](https://github.com/diazjhozua/tydee/compare/v1.8.0...v1.9.0) (2026-08-11)
+
+
+### Features
+
+* **web-client:** retry once and show a wake-up notice on cold starts ([57b51e1](https://github.com/diazjhozua/tydee/commit/57b51e17d42459eb690422568533d6f65fa97e7b))
+
+
+### Bug Fixes
+
+* **web-client:** answer a friendly 503 from the auth bff when the api is unreachable ([15532d2](https://github.com/diazjhozua/tydee/commit/15532d273ff967a0767161444c7506b735b16bf8))
+
 ## [1.8.0](https://github.com/diazjhozua/tydee/compare/v1.7.0...v1.8.0) (2026-08-08)
 
 
