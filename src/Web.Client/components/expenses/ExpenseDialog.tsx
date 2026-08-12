@@ -15,6 +15,7 @@ import {
   useUpdateExpense,
 } from "@/lib/hooks/useExpenses";
 import { useMe } from "@/lib/hooks/useMe";
+import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { ApiError } from "@/lib/types/api";
 import { Expense } from "@/lib/types/expense";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
   const createExpense = useCreateExpense();
   const updateExpense = useUpdateExpense();
   const deleteExpense = useDeleteExpense();
+  const isOnline = useOnlineStatus();
 
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -104,6 +106,14 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
       );
     } else {
       localStorage.setItem(LAST_ACCOUNT_KEY, accountId);
+
+      if (!isOnline) {
+        createExpense.mutate(request);
+        toast.info("Queued — will sync when you're back online");
+        onOpenChange(false);
+        return;
+      }
+
       createExpense.mutate(request, {
         onSuccess: () => {
           const account = activeAccounts.find((a) => a.id === accountId);
@@ -247,7 +257,7 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
               variant="destructive"
               className="h-12 rounded-xl px-5"
               onClick={remove}
-              disabled={pending}
+              disabled={pending || !isOnline}
             >
               Delete
             </Button>
@@ -255,7 +265,7 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
           <Button
             className="h-12 flex-1 rounded-xl text-base font-semibold"
             onClick={save}
-            disabled={!canSave || pending}
+            disabled={!canSave || pending || (isEdit && !isOnline)}
           >
             {pending ? "Saving..." : "Save"}
           </Button>

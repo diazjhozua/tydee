@@ -19,6 +19,7 @@ import {
   useUpdateIncome,
 } from "@/lib/hooks/useIncomes";
 import { useMe } from "@/lib/hooks/useMe";
+import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { ApiError } from "@/lib/types/api";
 import { currencySymbol, formatMoney } from "@/lib/utils/currency";
 import { today } from "@/lib/utils/date";
@@ -36,6 +37,7 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
   const createIncome = useCreateIncome();
   const updateIncome = useUpdateIncome();
   const deleteIncome = useDeleteIncome();
+  const isOnline = useOnlineStatus();
 
   const [amount, setAmount] = useState("");
   const [source, setSource] = useState("");
@@ -169,6 +171,13 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
         },
       );
     } else {
+      if (!isOnline) {
+        createIncome.mutate(request);
+        toast.info("Queued — will sync when you're back online");
+        onOpenChange(false);
+        return;
+      }
+
       createIncome.mutate(request, {
         onSuccess: () => {
           toast.success("Income allocated");
@@ -312,7 +321,7 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
               variant="destructive"
               className="h-12 rounded-xl px-5"
               onClick={removeIncome}
-              disabled={pending}
+              disabled={pending || !isOnline}
             >
               {confirmingDelete ? "Really delete?" : "Delete"}
             </Button>
@@ -320,7 +329,7 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
           <Button
             className="h-12 flex-1 rounded-xl text-base font-semibold"
             onClick={save}
-            disabled={!canSave || pending}
+            disabled={!canSave || pending || (isEdit && !isOnline)}
           >
             {pending ? "Saving..." : isEdit ? "Save changes" : "Confirm & allocate"}
           </Button>

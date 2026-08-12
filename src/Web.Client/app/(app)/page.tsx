@@ -30,6 +30,7 @@ import { useDeleteTransfer } from "@/lib/hooks/useTransfers";
 import { useDashboard } from "@/lib/hooks/useDashboard";
 import { useExpenses } from "@/lib/hooks/useExpenses";
 import { useMe } from "@/lib/hooks/useMe";
+import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { toast } from "sonner";
 import { ActivityItem } from "@/lib/types/dashboard";
 import { Expense } from "@/lib/types/expense";
@@ -50,6 +51,7 @@ export default function HomePage() {
   const { data: dashboard, isLoading, isFetching } = useDashboard(month.year, month.month);
   const { data: me } = useMe();
   const { data: expenses } = useExpenses({ pageSize: 50 });
+  const isOnline = useOnlineStatus();
 
   // undefined = no filter; null = the "Uncategorized" bucket is selected.
   const [categoryFilter, setCategoryFilter] = useState<string | null | undefined>(undefined);
@@ -98,6 +100,9 @@ export default function HomePage() {
         );
 
   function onActivityClick(item: ActivityItem) {
+    if (item.pendingSync) {
+      return;
+    }
     if (item.kind === "expense") {
       const expense = expenses?.find((e) => e.id === item.id);
       if (expense) {
@@ -313,9 +318,11 @@ export default function HomePage() {
                 key={`${item.kind}-${item.id}`}
                 type="button"
                 onClick={() => onActivityClick(item)}
+                disabled={item.pendingSync}
                 className={
                   "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/50 active:scale-[0.99]" +
-                  (index > 0 ? " border-t border-border/50" : "")
+                  (index > 0 ? " border-t border-border/50" : "") +
+                  (item.pendingSync ? " opacity-60" : "")
                 }
               >
                 <ActivityIcon kind={item.kind} />
@@ -334,24 +341,28 @@ export default function HomePage() {
                     </p>
                   )}
                 </div>
-                <span
-                  className={
-                    item.kind === "income"
-                      ? "money text-sm font-semibold text-emerald-600 dark:text-emerald-400"
-                      : item.kind === "adjustment"
-                        ? "money text-sm font-semibold text-sky-600 dark:text-sky-400"
-                        : item.kind === "transfer"
-                          ? "money text-sm font-semibold text-violet-600 dark:text-violet-400"
-                          : "money text-sm font-semibold"
-                  }
-                >
-                  {item.kind === "transfer"
-                    ? ""
-                    : item.kind === "expense" || item.amount < 0
-                      ? "−"
-                      : "+"}
-                  {formatMoney(Math.abs(item.amount), currency)}
-                </span>
+                {item.pendingSync ? (
+                  <span className="text-xs font-medium text-muted-foreground">Syncing…</span>
+                ) : (
+                  <span
+                    className={
+                      item.kind === "income"
+                        ? "money text-sm font-semibold text-emerald-600 dark:text-emerald-400"
+                        : item.kind === "adjustment"
+                          ? "money text-sm font-semibold text-sky-600 dark:text-sky-400"
+                          : item.kind === "transfer"
+                            ? "money text-sm font-semibold text-violet-600 dark:text-violet-400"
+                            : "money text-sm font-semibold"
+                    }
+                  >
+                    {item.kind === "transfer"
+                      ? ""
+                      : item.kind === "expense" || item.amount < 0
+                        ? "−"
+                        : "+"}
+                    {formatMoney(Math.abs(item.amount), currency)}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -389,7 +400,7 @@ export default function HomePage() {
             <Button
               variant="destructive"
               onClick={confirmDeleteAdjustment}
-              disabled={deleteAdjustment.isPending}
+              disabled={deleteAdjustment.isPending || !isOnline}
             >
               Remove
             </Button>
@@ -416,7 +427,7 @@ export default function HomePage() {
             <Button
               variant="destructive"
               onClick={confirmDeleteTransfer}
-              disabled={deleteTransfer.isPending}
+              disabled={deleteTransfer.isPending || !isOnline}
             >
               Remove
             </Button>

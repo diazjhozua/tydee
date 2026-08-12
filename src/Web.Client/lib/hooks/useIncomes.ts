@@ -9,7 +9,10 @@ import {
   getLatestIncome,
   updateIncome,
 } from "@/lib/api/incomes";
+import { useAccounts } from "@/lib/hooks/useAccounts";
+import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { ApiError } from "@/lib/types/api";
+import { Dashboard } from "@/lib/types/dashboard";
 import { IncomeRequest } from "@/lib/types/income";
 
 function useInvalidateMoneyData() {
@@ -58,9 +61,50 @@ export function useIncomeSources(enabled: boolean) {
 }
 
 export function useCreateIncome() {
+  const queryClient = useQueryClient();
   const invalidate = useInvalidateMoneyData();
+  const isOnline = useOnlineStatus();
+  const { data: accounts } = useAccounts();
+
   return useMutation({
+    mutationKey: ["incomes", "create"],
     mutationFn: (request: IncomeRequest) => createIncome(request),
+    meta: { queuedOffline: !isOnline, syncedMessage: "Income synced" },
+    onMutate: (request: IncomeRequest) => {
+      const [year, month] = request.date.split("-").map(Number);
+      const key = ["dashboard", year, month];
+      const previous = queryClient.getQueryData<Dashboard>(key);
+      if (!previous) {
+        return undefined;
+      }
+
+      queryClient.setQueryData<Dashboard>(key, {
+        ...previous,
+        recentActivity: [
+          {
+            id: `pending-${Date.now()}`,
+            kind: "income",
+            amount: request.amount,
+            description: request.source,
+            category: null,
+            date: request.date,
+            allocations: request.allocations.map((line) => ({
+              accountName: accounts?.find((a) => a.id === line.accountId)?.name ?? "",
+              amount: line.amount,
+            })),
+            pendingSync: true,
+          },
+          ...previous.recentActivity,
+        ],
+      });
+
+      return { key, previous };
+    },
+    onError: (_err, _request, context) => {
+      if (context) {
+        queryClient.setQueryData(context.key, context.previous);
+      }
+    },
     onSuccess: invalidate,
   });
 }

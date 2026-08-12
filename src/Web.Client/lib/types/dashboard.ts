@@ -21,6 +21,8 @@ export type ActivityItem = {
   category: string | null;
   date: string;
   allocations: ActivityAllocation[];
+  // Client-only: set on the optimistic row for a mutation queued while offline.
+  pendingSync?: boolean;
 };
 
 export type CategorySpend = {
