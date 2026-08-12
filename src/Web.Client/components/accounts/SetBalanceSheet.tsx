@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSetAccountBalance } from "@/lib/hooks/useAccounts";
 import { useMe } from "@/lib/hooks/useMe";
+import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { Account } from "@/lib/types/account";
 import { ApiError } from "@/lib/types/api";
 import { currencySymbol } from "@/lib/utils/currency";
@@ -23,6 +24,7 @@ type Props = {
 export function SetBalanceSheet({ open, onOpenChange, account }: Props) {
   const { data: me } = useMe();
   const setBalance = useSetAccountBalance();
+  const isOnline = useOnlineStatus();
 
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(today());
@@ -90,7 +92,7 @@ export function SetBalanceSheet({ open, onOpenChange, account }: Props) {
         <Button
           className="h-12 w-full rounded-xl text-base font-semibold"
           onClick={save}
-          disabled={!canSave || setBalance.isPending}
+          disabled={!canSave || setBalance.isPending || !isOnline}
         >
           {setBalance.isPending ? "Saving..." : unchanged ? "Balance unchanged" : "Save"}
         </Button>

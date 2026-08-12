@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAccounts } from "@/lib/hooks/useAccounts";
 import { useMe } from "@/lib/hooks/useMe";
+import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { useCreateTransfer } from "@/lib/hooks/useTransfers";
 import { ApiError } from "@/lib/types/api";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ export function TransferSheet({ open, onOpenChange }: Props) {
   const { data: accounts } = useAccounts();
   const { data: me } = useMe();
   const createTransfer = useCreateTransfer();
+  const isOnline = useOnlineStatus();
 
   const [amount, setAmount] = useState("");
   const [fromId, setFromId] = useState("");
@@ -125,7 +127,7 @@ export function TransferSheet({ open, onOpenChange }: Props) {
         <Button
           className="h-12 w-full rounded-xl text-base font-semibold"
           onClick={save}
-          disabled={!canSave || createTransfer.isPending}
+          disabled={!canSave || createTransfer.isPending || !isOnline}
         >
           {createTransfer.isPending ? "Moving..." : "Move money"}
         </Button>

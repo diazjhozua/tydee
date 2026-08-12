@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ExpenseDialog } from "@/components/expenses/ExpenseDialog";
 import { IncomeDialog } from "@/components/incomes/IncomeDialog";
+import { OfflineBanner } from "@/components/shared/OfflineBanner";
 import { TransferSheet } from "@/components/transfers/TransferSheet";
 import { Button } from "@/components/ui/button";
 
@@ -20,6 +21,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-10 border-b border-border/50 bg-background/80 backdrop-blur-md">
+        <OfflineBanner />
         <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
           <Link href="/" className="text-xl font-bold tracking-tight text-primary">
             Tydee
