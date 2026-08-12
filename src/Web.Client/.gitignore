@@ -17,6 +17,10 @@
 /.next/
 /out/
 
+# serwist (generated at build time by @serwist/next)
+/public/sw.js
+/public/sw.js.map
+
 # production
 /build
 

@@ -1,5 +1,11 @@
+import withSerwistInit from "@serwist/next";
 import type { NextConfig } from "next";
 import packageJson from "./package.json";
+
+const withSerwist = withSerwistInit({
+  swSrc: "app/sw.ts",
+  swDest: "public/sw.js",
+});
 
 const nextConfig: NextConfig = {
   env: {
@@ -12,4 +18,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSerwist(nextConfig);
