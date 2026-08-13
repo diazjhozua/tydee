@@ -56,6 +56,9 @@ app.MapHealthChecks("health", new HealthCheckOptions
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
 });
 
+// Keep-warm target for the free-tier host: no DB, no dependencies, just proof the container is loaded.
+app.MapGet("ping", () => "pong");
+
 app.UseRequestContextLogging();
 
 app.UseSerilogRequestLogging();
