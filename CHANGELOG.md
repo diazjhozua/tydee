@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.11.0](https://github.com/diazjhozua/tydee/compare/v1.10.0...v1.11.0) (2026-08-13)
+
+
+### Features
+
+* **web-api:** add db-free ping endpoint ([89afd4a](https://github.com/diazjhozua/tydee/commit/89afd4abe58a9a5487e89d7319e3a65f5ec2a285))
+* **web-client:** add a service worker for offline installability ([385d6b9](https://github.com/diazjhozua/tydee/commit/385d6b95678f4aad7c542dcca4b0edfd96367d5b))
+* **web-client:** persist the query cache and resume queued mutations ([76a4c17](https://github.com/diazjhozua/tydee/commit/76a4c174c7b09b3ba1f68f140f130b48f00193e1))
+* **web-client:** queue expense and income entries while offline ([1f81c1c](https://github.com/diazjhozua/tydee/commit/1f81c1c883e1c6ec13b634432f7637b80317b259))
+* **web-client:** show an offline banner and detect connectivity ([6517996](https://github.com/diazjhozua/tydee/commit/651799663b099bad8b2e083c4fd320f12acfaf7d))
+
 ## [1.10.0](https://github.com/diazjhozua/tydee/compare/v1.9.0...v1.10.0) (2026-08-11)
 
 
