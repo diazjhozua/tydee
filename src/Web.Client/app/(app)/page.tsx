@@ -247,7 +247,11 @@ export default function HomePage() {
           return (
             <Card key={account.accountId} className="rounded-2xl border-border/60 py-0 shadow-sm">
               <CardContent className="flex items-center gap-3 p-4">
-                <AccountIcon type={account.type === "Spending" ? "Spending" : "Saving"} />
+                <AccountIcon
+                  type={account.type === "Spending" ? "Spending" : "Saving"}
+                  icon={account.icon}
+                  color={account.color}
+                />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">{account.name}</p>
                   <p className="text-xs text-muted-foreground">

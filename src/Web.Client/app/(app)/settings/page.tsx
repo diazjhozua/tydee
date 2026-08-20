@@ -1,6 +1,24 @@
 "use client";
 
-import { Archive, Globe, LogOut, MoreVertical, Moon, Pencil, Percent, Scale } from "lucide-react";
+import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  Archive,
+  Globe,
+  GripVertical,
+  LogOut,
+  MoreVertical,
+  Moon,
+  Pencil,
+  Percent,
+  Scale,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
@@ -28,6 +46,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   useAccounts,
   useArchiveAccount,
+  useReorderAccounts,
   useUpdateAllocationTemplate,
 } from "@/lib/hooks/useAccounts";
 import { useLogout } from "@/lib/hooks/useAuth";
@@ -40,6 +59,78 @@ import { SUPPORTED_CURRENCIES } from "@/lib/utils/currency";
 const emptySubscribe = () => () => {};
 const isClient = () => true;
 const isServer = () => false;
+
+function SortableAccountRow({
+  account,
+  currency,
+  onEdit,
+  onSetBalance,
+  onArchive,
+}: {
+  account: Account;
+  currency: string;
+  onEdit: () => void;
+  onSetBalance: () => void;
+  onArchive: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: account.id,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={cn("flex items-center gap-2 py-1.5", isDragging && "z-10 opacity-90")}
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="cursor-grab touch-none text-muted-foreground active:cursor-grabbing"
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="size-4" />
+      </button>
+      <AccountIcon
+        type={account.type}
+        icon={account.icon}
+        color={account.color}
+        className="size-9 rounded-lg"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">{account.name}</p>
+        <p className="text-xs text-muted-foreground">{account.type}</p>
+      </div>
+      <Money value={account.balance} currency={currency} size="sm" />
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="rounded-full"
+              aria-label="Account actions"
+            />
+          }
+        >
+          <MoreVertical className="size-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={onEdit}>
+            <Pencil className="size-4" /> Rename
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onSetBalance}>
+            <Scale className="size-4" /> Set balance
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onClick={onArchive}>
+            <Archive className="size-4" /> Archive
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
 
 function SectionCard({
   title,
@@ -67,6 +158,7 @@ export default function SettingsPage() {
   const { data: accounts } = useAccounts();
   const { data: me } = useMe();
   const archiveAccount = useArchiveAccount();
+  const reorderAccounts = useReorderAccounts();
   const updateTemplate = useUpdateAllocationTemplate();
   const updateCurrency = useUpdateCurrency();
   const logout = useLogout();
@@ -83,6 +175,7 @@ export default function SettingsPage() {
 
   const activeAccounts = accounts ?? [];
   const currency = me?.currency ?? "PHP";
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   if (accounts !== seededAccounts) {
     setSeededAccounts(accounts);
@@ -102,6 +195,22 @@ export default function SettingsPage() {
       onSuccess: () => toast.success(`${account.name} archived`),
       onError: handleError,
     });
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = activeAccounts.findIndex((a) => a.id === active.id);
+    const newIndex = activeAccounts.findIndex((a) => a.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+
+    const reordered = arrayMove(activeAccounts, oldIndex, newIndex);
+    reorderAccounts.mutate(reordered.map((a) => a.id), { onError: handleError });
   }
 
   function saveTemplate() {
@@ -133,49 +242,28 @@ export default function SettingsPage() {
         }
       >
         <div className="space-y-1">
-          {activeAccounts.map((account, index) => (
-            <div key={account.id}>
-              {index > 0 && <Separator className="my-1 opacity-50" />}
-              <div className="flex items-center gap-3 py-1.5">
-                <AccountIcon type={account.type} className="size-9 rounded-lg" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">{account.name}</p>
-                  <p className="text-xs text-muted-foreground">{account.type}</p>
+          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <SortableContext
+              items={activeAccounts.map((a) => a.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {activeAccounts.map((account, index) => (
+                <div key={account.id}>
+                  {index > 0 && <Separator className="my-1 opacity-50" />}
+                  <SortableAccountRow
+                    account={account}
+                    currency={currency}
+                    onEdit={() => {
+                      setEditingAccount(account);
+                      setDialogOpen(true);
+                    }}
+                    onSetBalance={() => setBalanceAccount(account)}
+                    onArchive={() => archive(account)}
+                  />
                 </div>
-                <Money value={account.balance} currency={currency} size="sm" />
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className="rounded-full"
-                        aria-label="Account actions"
-                      />
-                    }
-                  >
-                    <MoreVertical className="size-4" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setEditingAccount(account);
-                        setDialogOpen(true);
-                      }}
-                    >
-                      <Pencil className="size-4" /> Rename
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setBalanceAccount(account)}>
-                      <Scale className="size-4" /> Set balance
-                    </DropdownMenuItem>
-                    <DropdownMenuItem variant="destructive" onClick={() => archive(account)}>
-                      <Archive className="size-4" /> Archive
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          ))}
+              ))}
+            </SortableContext>
+          </DndContext>
           {activeAccounts.length === 0 && (
             <p className="py-2 text-sm text-muted-foreground">No accounts yet.</p>
           )}

@@ -64,7 +64,13 @@ export default function SetupPage() {
     setPending(true);
     try {
       for (const draft of valid) {
-        await createAccount({ name: draft.name.trim(), type: draft.type, allocationPercent: 0 });
+        await createAccount({
+          name: draft.name.trim(),
+          type: draft.type,
+          allocationPercent: 0,
+          icon: null,
+          color: null,
+        });
       }
 
       const created = await listAccounts();
@@ -178,7 +184,7 @@ export default function SetupPage() {
         <CardContent className="space-y-4">
           {accounts.map((account) => (
             <div key={account.id} className="flex items-center gap-3">
-              <AccountIcon type={account.type} />
+              <AccountIcon type={account.type} icon={account.icon} color={account.color} />
               <span className="flex-1 truncate text-sm font-medium">{account.name}</span>
               <div className="flex items-center gap-1">
                 <Input

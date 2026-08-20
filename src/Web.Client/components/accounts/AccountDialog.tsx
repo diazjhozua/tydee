@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { ACCOUNT_COLOR_OPTIONS, ACCOUNT_ICON_OPTIONS } from "@/components/shared/AccountIcon";
 import { EntrySheet } from "@/components/shared/EntrySheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import {
 import { useCreateAccount, useUpdateAccount } from "@/lib/hooks/useAccounts";
 import { Account, AccountType } from "@/lib/types/account";
 import { ApiError } from "@/lib/types/api";
+import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
@@ -29,6 +31,8 @@ export function AccountDialog({ open, onOpenChange, account }: Props) {
 
   const [name, setName] = useState("");
   const [type, setType] = useState<AccountType>("Spending");
+  const [icon, setIcon] = useState<string | null>(null);
+  const [color, setColor] = useState<string | null>(null);
   const [prevOpen, setPrevOpen] = useState(false);
 
   const isEdit = account !== undefined;
@@ -38,6 +42,8 @@ export function AccountDialog({ open, onOpenChange, account }: Props) {
     if (open) {
       setName(account?.name ?? "");
       setType(account?.type ?? "Spending");
+      setIcon(account?.icon ?? null);
+      setColor(account?.color ?? null);
     }
   }
 
@@ -48,7 +54,7 @@ export function AccountDialog({ open, onOpenChange, account }: Props) {
   function save() {
     if (isEdit) {
       updateAccount.mutate(
-        { accountId: account.id, request: { name: name.trim(), type } },
+        { accountId: account.id, request: { name: name.trim(), type, icon, color } },
         {
           onSuccess: () => {
             toast.success("Account updated");
@@ -59,7 +65,7 @@ export function AccountDialog({ open, onOpenChange, account }: Props) {
       );
     } else {
       createAccount.mutate(
-        { name: name.trim(), type, allocationPercent: 0 },
+        { name: name.trim(), type, allocationPercent: 0, icon, color },
         {
           onSuccess: () => {
             toast.success("Account created. Don't forget to update your allocation split.");
@@ -102,6 +108,53 @@ export function AccountDialog({ open, onOpenChange, account }: Props) {
               <SelectItem value="Saving">Saving (money you keep)</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Icon (optional)</Label>
+          <div className="flex flex-wrap gap-2">
+            {ACCOUNT_ICON_OPTIONS.map((option) => {
+              const Icon = option.icon;
+              const selected = icon === option.key;
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setIcon(selected ? null : option.key)}
+                  className={cn(
+                    "flex size-9 items-center justify-center rounded-full transition-colors",
+                    selected
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Icon className="size-4" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Color (optional)</Label>
+          <div className="flex flex-wrap gap-2">
+            {ACCOUNT_COLOR_OPTIONS.map((option) => {
+              const selected = color === option.key;
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setColor(selected ? null : option.key)}
+                  className={cn(
+                    "size-8 rounded-full transition-shadow",
+                    option.swatchClass,
+                    selected && "ring-2 ring-primary ring-offset-2 ring-offset-background",
+                  )}
+                  aria-label={option.key}
+                />
+              );
+            })}
+          </div>
         </div>
 
         <Button
