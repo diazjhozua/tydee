@@ -105,23 +105,104 @@ export function useCreateIncome() {
         queryClient.setQueryData(context.key, context.previous);
       }
     },
-    onSuccess: invalidate,
+    onSuccess: (id, request) => {
+      // Seed the single-income cache so an offline edit made shortly after
+      // creating (before useIncome ever fetched this id) still has data to work with.
+      queryClient.setQueryData(["incomes", id], { id, ...request });
+      invalidate();
+    },
   });
 }
 
 export function useUpdateIncome() {
+  const queryClient = useQueryClient();
   const invalidate = useInvalidateMoneyData();
+  const isOnline = useOnlineStatus();
+  const { data: accounts } = useAccounts();
+
   return useMutation({
+    mutationKey: ["incomes", "update"],
     mutationFn: ({ incomeId, request }: { incomeId: string; request: IncomeRequest }) =>
       updateIncome(incomeId, request),
-    onSuccess: invalidate,
+    meta: { queuedOffline: !isOnline, syncedMessage: "Income updated" },
+    onMutate: ({ incomeId, request }: { incomeId: string; request: IncomeRequest }) => {
+      const [year, month] = request.date.split("-").map(Number);
+      const key = ["dashboard", year, month];
+      const previous = queryClient.getQueryData<Dashboard>(key);
+      if (!previous) {
+        return undefined;
+      }
+
+      const index = previous.recentActivity.findIndex((item) => item.id === incomeId);
+      if (index === -1) {
+        return { key, previous };
+      }
+
+      const recentActivity = [...previous.recentActivity];
+      recentActivity[index] = {
+        ...recentActivity[index],
+        amount: request.amount,
+        description: request.source,
+        category: null,
+        date: request.date,
+        allocations: request.allocations.map((line) => ({
+          accountName: accounts?.find((a) => a.id === line.accountId)?.name ?? "",
+          amount: line.amount,
+        })),
+        pendingSync: true,
+      };
+
+      queryClient.setQueryData<Dashboard>(key, { ...previous, recentActivity });
+
+      return { key, previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context) {
+        queryClient.setQueryData(context.key, context.previous);
+      }
+    },
+    onSuccess: (_data, { incomeId, request }) => {
+      queryClient.setQueryData(["incomes", incomeId], { id: incomeId, ...request });
+      invalidate();
+    },
   });
 }
 
 export function useDeleteIncome() {
+  const queryClient = useQueryClient();
   const invalidate = useInvalidateMoneyData();
+  const isOnline = useOnlineStatus();
+
   return useMutation({
-    mutationFn: (incomeId: string) => deleteIncome(incomeId),
+    mutationKey: ["incomes", "delete"],
+    mutationFn: ({ incomeId }: { incomeId: string; date: string }) => deleteIncome(incomeId),
+    meta: { queuedOffline: !isOnline, syncedMessage: "Income deleted" },
+    onMutate: ({ incomeId, date }: { incomeId: string; date: string }) => {
+      const [year, month] = date.split("-").map(Number);
+      const key = ["dashboard", year, month];
+      const previous = queryClient.getQueryData<Dashboard>(key);
+      if (!previous) {
+        return undefined;
+      }
+
+      queryClient.setQueryData<Dashboard>(key, {
+        ...previous,
+        recentActivity: previous.recentActivity.filter((item) => item.id !== incomeId),
+      });
+
+      return { key, previous };
+    },
+    onError: (err, _vars, context) => {
+      // A retried delete (e.g. resumed again after a reload interrupted the
+      // first attempt's response) 404s because the row is already gone —
+      // that's success, not a reason to resurrect it in the UI.
+      if (err instanceof ApiError && err.status === 404) {
+        return;
+      }
+      if (context) {
+        queryClient.setQueryData(context.key, context.previous);
+      }
+    },
     onSuccess: invalidate,
   });
 }

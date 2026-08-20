@@ -9,6 +9,7 @@ import {
   updateExpense,
 } from "@/lib/api/expenses";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
+import { ApiError } from "@/lib/types/api";
 import { Dashboard } from "@/lib/types/dashboard";
 import { ExpenseRequest } from "@/lib/types/expense";
 
@@ -83,18 +84,86 @@ export function useCreateExpense() {
 }
 
 export function useUpdateExpense() {
+  const queryClient = useQueryClient();
   const invalidate = useInvalidateMoneyData();
+  const isOnline = useOnlineStatus();
+
   return useMutation({
+    mutationKey: ["expenses", "update"],
     mutationFn: ({ expenseId, request }: { expenseId: string; request: ExpenseRequest }) =>
       updateExpense(expenseId, request),
+    meta: { queuedOffline: !isOnline, syncedMessage: "Expense updated" },
+    onMutate: ({ expenseId, request }: { expenseId: string; request: ExpenseRequest }) => {
+      const [year, month] = request.date.split("-").map(Number);
+      const key = ["dashboard", year, month];
+      const previous = queryClient.getQueryData<Dashboard>(key);
+      if (!previous) {
+        return undefined;
+      }
+
+      const index = previous.recentActivity.findIndex((item) => item.id === expenseId);
+      if (index === -1) {
+        return { key, previous };
+      }
+
+      const recentActivity = [...previous.recentActivity];
+      recentActivity[index] = {
+        ...recentActivity[index],
+        amount: request.amount,
+        description: request.note ?? request.category ?? "Expense",
+        category: request.category,
+        date: request.date,
+        pendingSync: true,
+      };
+
+      queryClient.setQueryData<Dashboard>(key, { ...previous, recentActivity });
+
+      return { key, previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context) {
+        queryClient.setQueryData(context.key, context.previous);
+      }
+    },
     onSuccess: invalidate,
   });
 }
 
 export function useDeleteExpense() {
+  const queryClient = useQueryClient();
   const invalidate = useInvalidateMoneyData();
+  const isOnline = useOnlineStatus();
+
   return useMutation({
-    mutationFn: (expenseId: string) => deleteExpense(expenseId),
+    mutationKey: ["expenses", "delete"],
+    mutationFn: ({ expenseId }: { expenseId: string; date: string }) => deleteExpense(expenseId),
+    meta: { queuedOffline: !isOnline, syncedMessage: "Expense deleted" },
+    onMutate: ({ expenseId, date }: { expenseId: string; date: string }) => {
+      const [year, month] = date.split("-").map(Number);
+      const key = ["dashboard", year, month];
+      const previous = queryClient.getQueryData<Dashboard>(key);
+      if (!previous) {
+        return undefined;
+      }
+
+      queryClient.setQueryData<Dashboard>(key, {
+        ...previous,
+        recentActivity: previous.recentActivity.filter((item) => item.id !== expenseId),
+      });
+
+      return { key, previous };
+    },
+    onError: (err, _vars, context) => {
+      // A retried delete (e.g. resumed again after a reload interrupted the
+      // first attempt's response) 404s because the row is already gone —
+      // that's success, not a reason to resurrect it in the UI.
+      if (err instanceof ApiError && err.status === 404) {
+        return;
+      }
+      if (context) {
+        queryClient.setQueryData(context.key, context.previous);
+      }
+    },
     onSuccess: invalidate,
   });
 }

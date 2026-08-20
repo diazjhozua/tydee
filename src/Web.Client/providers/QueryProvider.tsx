@@ -5,9 +5,11 @@ import { MutationCache, QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { useState } from "react";
 import { toast } from "sonner";
-import { createExpense } from "@/lib/api/expenses";
-import { createIncome } from "@/lib/api/incomes";
+import { createExpense, deleteExpense, updateExpense } from "@/lib/api/expenses";
+import { createIncome, deleteIncome, updateIncome } from "@/lib/api/incomes";
 import { ApiError } from "@/lib/types/api";
+import { ExpenseRequest } from "@/lib/types/expense";
+import { IncomeRequest } from "@/lib/types/income";
 
 type MutationMeta = {
   queuedOffline?: boolean;
@@ -81,6 +83,20 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
     // these defaults are what resumePausedMutations() actually invokes.
     client.setMutationDefaults(["expenses", "create"], { mutationFn: createExpense });
     client.setMutationDefaults(["incomes", "create"], { mutationFn: createIncome });
+    client.setMutationDefaults(["expenses", "update"], {
+      mutationFn: (vars: { expenseId: string; request: ExpenseRequest }) =>
+        updateExpense(vars.expenseId, vars.request),
+    });
+    client.setMutationDefaults(["expenses", "delete"], {
+      mutationFn: (vars: { expenseId: string; date: string }) => deleteExpense(vars.expenseId),
+    });
+    client.setMutationDefaults(["incomes", "update"], {
+      mutationFn: (vars: { incomeId: string; request: IncomeRequest }) =>
+        updateIncome(vars.incomeId, vars.request),
+    });
+    client.setMutationDefaults(["incomes", "delete"], {
+      mutationFn: (vars: { incomeId: string; date: string }) => deleteIncome(vars.incomeId),
+    });
 
     return client;
   });
