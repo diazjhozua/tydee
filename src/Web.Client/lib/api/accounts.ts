@@ -36,3 +36,7 @@ export async function setAccountBalance(
 export async function updateAllocationTemplate(items: AllocationTemplateItem[]): Promise<void> {
   await apiClient.put("/api/v1/accounts/template", { items });
 }
+
+export async function reorderAccounts(accountIds: string[]): Promise<void> {
+  await apiClient.put("/api/v1/accounts/reorder", { accountIds });
+}

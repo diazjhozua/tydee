@@ -6,6 +6,8 @@ export type AccountBalance = {
   type: AccountType;
   allocationPercent: number;
   balance: number;
+  icon: string | null;
+  color: string | null;
 };
 
 export type ActivityAllocation = {

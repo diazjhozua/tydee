@@ -5,11 +5,17 @@ import {
   archiveAccount,
   createAccount,
   listAccounts,
+  reorderAccounts,
   setAccountBalance,
   updateAccount,
   updateAllocationTemplate,
 } from "@/lib/api/accounts";
-import { AllocationTemplateItem, CreateAccountRequest, UpdateAccountRequest } from "@/lib/types/account";
+import {
+  Account,
+  AllocationTemplateItem,
+  CreateAccountRequest,
+  UpdateAccountRequest,
+} from "@/lib/types/account";
 
 export const accountKeys = {
   all: ["accounts"] as const,
@@ -75,6 +81,40 @@ export function useUpdateAllocationTemplate() {
   const invalidate = useInvalidateMoneyData();
   return useMutation({
     mutationFn: (items: AllocationTemplateItem[]) => updateAllocationTemplate(items),
+    onSuccess: invalidate,
+  });
+}
+
+export function useReorderAccounts() {
+  const queryClient = useQueryClient();
+  const invalidate = useInvalidateMoneyData();
+  const key = accountKeys.list(false);
+
+  return useMutation({
+    mutationFn: (accountIds: string[]) => reorderAccounts(accountIds),
+    onMutate: (accountIds: string[]) => {
+      const previous = queryClient.getQueryData<Account[]>(key);
+      if (!previous) {
+        return undefined;
+      }
+
+      const byId = new Map(previous.map((a) => [a.id, a]));
+      const reordered = accountIds
+        .map((id, index) => {
+          const account = byId.get(id);
+          return account ? { ...account, displayOrder: index } : undefined;
+        })
+        .filter((a): a is Account => a !== undefined);
+
+      queryClient.setQueryData<Account[]>(key, reordered);
+
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context) {
+        queryClient.setQueryData(key, context.previous);
+      }
+    },
     onSuccess: invalidate,
   });
 }
