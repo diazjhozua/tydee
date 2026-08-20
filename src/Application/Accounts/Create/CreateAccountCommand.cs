@@ -7,4 +7,6 @@ public sealed record CreateAccountCommand(
     Guid UserId,
     string Name,
     AccountType Type,
-    decimal AllocationPercent) : ICommand<Guid>;
+    decimal AllocationPercent,
+    string? Icon,
+    string? Color) : ICommand<Guid>;

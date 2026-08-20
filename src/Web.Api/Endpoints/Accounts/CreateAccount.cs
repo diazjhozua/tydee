@@ -30,7 +30,9 @@ internal sealed class CreateAccount : IEndpoint
                 userContext.UserId,
                 request.Name,
                 type.Value,
-                request.AllocationPercent);
+                request.AllocationPercent,
+                request.Icon,
+                request.Color);
 
             Result<Guid> result = await handler.Handle(command, cancellationToken);
 

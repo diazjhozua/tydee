@@ -7,4 +7,6 @@ public sealed record UpdateAccountCommand(
     Guid UserId,
     Guid AccountId,
     string Name,
-    AccountType Type) : ICommand;
+    AccountType Type,
+    string? Icon,
+    string? Color) : ICommand;

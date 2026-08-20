@@ -39,6 +39,8 @@ internal sealed class UpdateAccountCommandHandler(IApplicationDbContext context)
 
         account.Name = command.Name;
         account.Type = command.Type;
+        account.Icon = command.Icon;
+        account.Color = command.Color;
 
         await context.SaveChangesAsync(cancellationToken);
 

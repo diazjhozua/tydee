@@ -30,7 +30,10 @@ internal sealed class ListAccounts : IEndpoint
                         a.Type.ToString(),
                         a.AllocationPercent,
                         a.Balance,
-                        a.IsArchived))
+                        a.IsArchived,
+                        a.DisplayOrder,
+                        a.Icon,
+                        a.Color))
                     .ToList()),
                 CustomResults.Problem);
         })

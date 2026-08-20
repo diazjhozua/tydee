@@ -34,7 +34,7 @@ internal sealed class GetDashboard : IEndpoint
                 d => Results.Ok(new DashboardResponse(
                     d.AccountBalances
                         .Select(a => new AccountBalanceItem(
-                            a.AccountId, a.Name, a.Type.ToString(), a.AllocationPercent, a.Balance))
+                            a.AccountId, a.Name, a.Type.ToString(), a.AllocationPercent, a.Balance, a.Icon, a.Color))
                         .ToList(),
                     d.TotalSpentThisMonth,
                     d.SpentByCategory

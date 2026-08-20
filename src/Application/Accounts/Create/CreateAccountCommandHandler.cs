@@ -22,6 +22,12 @@ internal sealed class CreateAccountCommandHandler(
             return Result.Failure<Guid>(AccountErrors.NameTaken);
         }
 
+        int nextDisplayOrder = await context.Accounts
+            .Where(a => a.UserId == command.UserId)
+            .Select(a => a.DisplayOrder)
+            .DefaultIfEmpty(-1)
+            .MaxAsync(cancellationToken) + 1;
+
         var account = new Account
         {
             Id = Guid.NewGuid(),
@@ -31,6 +37,9 @@ internal sealed class CreateAccountCommandHandler(
             AllocationPercent = command.AllocationPercent,
             IsArchived = false,
             CreatedAtUtc = dateTimeProvider.UtcNow,
+            DisplayOrder = nextDisplayOrder,
+            Icon = command.Icon,
+            Color = command.Color,
         };
 
         context.Accounts.Add(account);

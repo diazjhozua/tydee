@@ -9,4 +9,7 @@ public sealed class Account
     public decimal AllocationPercent { get; set; }
     public bool IsArchived { get; set; }
     public DateTime CreatedAtUtc { get; set; }
+    public int DisplayOrder { get; set; }
+    public string? Icon { get; set; }
+    public string? Color { get; set; }
 }

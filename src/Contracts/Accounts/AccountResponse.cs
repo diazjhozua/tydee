@@ -6,4 +6,7 @@ public sealed record AccountResponse(
     string Type,
     decimal AllocationPercent,
     decimal Balance,
-    bool IsArchived);
+    bool IsArchived,
+    int DisplayOrder,
+    string? Icon,
+    string? Color);

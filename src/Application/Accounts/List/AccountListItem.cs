@@ -8,4 +8,7 @@ public sealed record AccountListItem(
     AccountType Type,
     decimal AllocationPercent,
     decimal Balance,
-    bool IsArchived);
+    bool IsArchived,
+    int DisplayOrder,
+    string? Icon,
+    string? Color);

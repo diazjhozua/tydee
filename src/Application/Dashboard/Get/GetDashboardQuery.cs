@@ -18,7 +18,9 @@ public sealed record AccountBalance(
     string Name,
     AccountType Type,
     decimal AllocationPercent,
-    decimal Balance);
+    decimal Balance,
+    string? Icon,
+    string? Color);
 
 public sealed record Activity(
     Guid Id,

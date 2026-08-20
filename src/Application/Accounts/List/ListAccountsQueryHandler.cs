@@ -13,7 +13,8 @@ internal sealed class ListAccountsQueryHandler(IApplicationDbContext context)
     {
         List<Account> accounts = await context.Accounts
             .Where(a => a.UserId == query.UserId && (query.IncludeArchived || !a.IsArchived))
-            .OrderBy(a => a.CreatedAtUtc)
+            .OrderBy(a => a.DisplayOrder)
+            .ThenBy(a => a.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 
         Dictionary<Guid, decimal> balances = await BalanceCalculator.ForUserAsync(
@@ -26,7 +27,10 @@ internal sealed class ListAccountsQueryHandler(IApplicationDbContext context)
                 a.Type,
                 a.AllocationPercent,
                 balances.GetValueOrDefault(a.Id),
-                a.IsArchived))
+                a.IsArchived,
+                a.DisplayOrder,
+                a.Icon,
+                a.Color))
             .ToList();
     }
 }

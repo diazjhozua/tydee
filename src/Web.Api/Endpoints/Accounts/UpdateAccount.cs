@@ -31,7 +31,9 @@ internal sealed class UpdateAccount : IEndpoint
                 userContext.UserId,
                 accountId,
                 request.Name,
-                type.Value);
+                type.Value,
+                request.Icon,
+                request.Color);
 
             Result result = await handler.Handle(command, cancellationToken);
 

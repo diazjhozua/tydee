@@ -18,7 +18,7 @@ internal sealed class GetDashboardQueryHandler(
     {
         List<Account> accounts = await context.Accounts
             .Where(a => a.UserId == query.UserId && !a.IsArchived)
-            .OrderBy(a => a.CreatedAtUtc)
+            .OrderBy(a => a.DisplayOrder).ThenBy(a => a.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 
         Dictionary<Guid, decimal> balances = await BalanceCalculator.ForUserAsync(
@@ -26,7 +26,7 @@ internal sealed class GetDashboardQueryHandler(
 
         var accountBalances = accounts
             .Select(a => new AccountBalance(
-                a.Id, a.Name, a.Type, a.AllocationPercent, balances.GetValueOrDefault(a.Id)))
+                a.Id, a.Name, a.Type, a.AllocationPercent, balances.GetValueOrDefault(a.Id), a.Icon, a.Color))
             .ToList();
 
         DateTime now = dateTimeProvider.UtcNow;

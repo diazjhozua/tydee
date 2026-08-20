@@ -1,3 +1,8 @@
 namespace Contracts.Accounts;
 
-public sealed record CreateAccountRequest(string Name, string Type, decimal AllocationPercent);
+public sealed record CreateAccountRequest(
+    string Name,
+    string Type,
+    decimal AllocationPercent,
+    string? Icon,
+    string? Color);

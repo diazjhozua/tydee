@@ -13,6 +13,8 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
 
         builder.Property(a => a.Name).HasMaxLength(100);
         builder.Property(a => a.AllocationPercent).HasColumnType("numeric(5,2)");
+        builder.Property(a => a.Icon).HasMaxLength(30);
+        builder.Property(a => a.Color).HasMaxLength(20);
 
         builder.HasIndex(a => new { a.UserId, a.Name })
             .IsUnique()
