@@ -94,6 +94,13 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
     };
 
     if (isEdit) {
+      if (!isOnline) {
+        updateExpense.mutate({ expenseId: expense.id, request });
+        toast.info("Queued — will sync when you're back online");
+        onOpenChange(false);
+        return;
+      }
+
       updateExpense.mutate(
         { expenseId: expense.id, request },
         {
@@ -134,13 +141,24 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
     if (!isEdit) {
       return;
     }
-    deleteExpense.mutate(expense.id, {
-      onSuccess: () => {
-        toast.success("Expense deleted");
-        onOpenChange(false);
+
+    if (!isOnline) {
+      deleteExpense.mutate({ expenseId: expense.id, date: expense.date });
+      toast.info("Queued — will sync when you're back online");
+      onOpenChange(false);
+      return;
+    }
+
+    deleteExpense.mutate(
+      { expenseId: expense.id, date: expense.date },
+      {
+        onSuccess: () => {
+          toast.success("Expense deleted");
+          onOpenChange(false);
+        },
+        onError: handleError,
       },
-      onError: handleError,
-    });
+    );
   }
 
   const pending = createExpense.isPending || updateExpense.isPending || deleteExpense.isPending;
@@ -257,7 +275,7 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
               variant="destructive"
               className="h-12 rounded-xl px-5"
               onClick={remove}
-              disabled={pending || !isOnline}
+              disabled={pending}
             >
               Delete
             </Button>
@@ -265,7 +283,7 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
           <Button
             className="h-12 flex-1 rounded-xl text-base font-semibold"
             onClick={save}
-            disabled={!canSave || pending || (isEdit && !isOnline)}
+            disabled={!canSave || pending}
           >
             {pending ? "Saving..." : "Save"}
           </Button>
