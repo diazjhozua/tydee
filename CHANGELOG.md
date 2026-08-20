@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.12.0](https://github.com/diazjhozua/tydee/compare/v1.11.0...v1.12.0) (2026-08-20)
+
+
+### Features
+
+* **web-api:** add account display order, icon, and color ([1e3b3d1](https://github.com/diazjhozua/tydee/commit/1e3b3d16df25303622a4689263f70a78ec8194fc))
+* **web-client:** add account reorder/icon/color types, api, and hooks ([f446ce2](https://github.com/diazjhozua/tydee/commit/f446ce2b689080e7cc69c065a731775b83ab8473))
+* **web-client:** allow editing and deleting expenses/incomes offline ([2d3a1c7](https://github.com/diazjhozua/tydee/commit/2d3a1c7816ba29bd9ef317dcd232ee05f2d4db74))
+* **web-client:** let users reorder accounts and pick icon/color ([1d15296](https://github.com/diazjhozua/tydee/commit/1d15296ec4a946b557db52d65c60eb283863a730))
+* **web-client:** queue expense and income edits/deletes while offline ([968fa28](https://github.com/diazjhozua/tydee/commit/968fa2855fba2f5e375622ec019aa038e8e61514))
+
+
+### Bug Fixes
+
+* **web-client:** disable serwist reload-on-online ([d747f64](https://github.com/diazjhozua/tydee/commit/d747f64f3311ba673c5fbca1dfae8144c9b3f6ef))
+
 ## [1.11.0](https://github.com/diazjhozua/tydee/compare/v1.10.0...v1.11.0) (2026-08-13)
 
 
