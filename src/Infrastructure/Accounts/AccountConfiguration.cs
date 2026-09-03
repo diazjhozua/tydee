@@ -18,7 +18,7 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
 
         builder.HasIndex(a => new { a.UserId, a.Name })
             .IsUnique()
-            .HasFilter("[is_archived] = 0");
+            .HasFilter("\"is_archived\" = false");
 
         builder.HasOne<User>()
             .WithMany()
