@@ -1,0 +1,28 @@
+# VCS / tooling
+.git
+.gitignore
+.vscode
+.idea
+CLAUDE.md
+
+# .NET build output
+bin/
+obj/
+publish/
+*.user
+*.suo
+
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+src/Web.Client/.env*.local
+
+# Terraform / env (not present here, but never leak)
+*.tfvars
+
+# Runtime artifacts
+*.log
+.DS_Store
+Thumbs.db

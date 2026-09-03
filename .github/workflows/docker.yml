@@ -1,0 +1,63 @@
+name: Build & push Docker images to GHCR
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "Directory.Build.props"
+      - "Directory.Packages.props"
+      - ".dockerignore"
+      - ".github/workflows/docker.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: docker-images
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/Web.Api/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}/tydee-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/Web.Client/Dockerfile
+          push: true
+          tags: ${{ env.IMAGE_PREFIX }}/tydee-client:latest
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://tydee-api.diazjhozua.com
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
