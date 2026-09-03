@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/diazjhozua/tydee/compare/v1.13.0...v1.13.1) (2026-09-03)
+
+
+### Bug Fixes
+
+* **ci:** drop gha cache flags unsupported by docker driver ([1af6b9c](https://github.com/diazjhozua/tydee/commit/1af6b9c30b673bc234570e50b9b0d16e947554f8))
+
 ## [1.13.0](https://github.com/diazjhozua/tydee/compare/v1.12.0...v1.13.0) (2026-09-03)
 
 
