@@ -3,8 +3,8 @@ using System;
 using Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -17,17 +17,17 @@ namespace Infrastructure.Database.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("dbo")
+                .HasDefaultSchema("public")
                 .HasAnnotation("ProductVersion", "10.0.9")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Domain.Accounts.Account", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<decimal>("AllocationPercent")
@@ -36,38 +36,38 @@ namespace Infrastructure.Database.Migrations
 
                     b.Property<string>("Color")
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("color");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<int>("DisplayOrder")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("display_order");
 
                     b.Property<string>("Icon")
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("icon");
 
                     b.Property<bool>("IsArchived")
-                        .HasColumnType("bit")
+                        .HasColumnType("boolean")
                         .HasColumnName("is_archived");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
                     b.Property<int>("Type")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("type");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
@@ -76,20 +76,20 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("UserId", "Name")
                         .IsUnique()
                         .HasDatabaseName("ix_accounts_user_id_name")
-                        .HasFilter("[is_archived] = 0");
+                        .HasFilter("\"is_archived\" = false");
 
-                    b.ToTable("accounts", "dbo");
+                    b.ToTable("accounts", "public");
                 });
 
             modelBuilder.Entity("Domain.Adjustments.Adjustment", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<Guid>("AccountId")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("account_id");
 
                     b.Property<decimal>("Amount")
@@ -97,7 +97,7 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnName("amount");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateOnly>("Date")
@@ -105,7 +105,7 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnName("date");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
@@ -117,18 +117,18 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("UserId", "Date")
                         .HasDatabaseName("ix_adjustments_user_id_date");
 
-                    b.ToTable("adjustments", "dbo");
+                    b.ToTable("adjustments", "public");
                 });
 
             modelBuilder.Entity("Domain.Expenses.Expense", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<Guid>("AccountId")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("account_id");
 
                     b.Property<decimal>("Amount")
@@ -137,11 +137,11 @@ namespace Infrastructure.Database.Migrations
 
                     b.Property<string>("Category")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("category");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateOnly>("Date")
@@ -150,11 +150,11 @@ namespace Infrastructure.Database.Migrations
 
                     b.Property<string>("Note")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("note");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
@@ -166,14 +166,14 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("UserId", "Date")
                         .HasDatabaseName("ix_expenses_user_id_date");
 
-                    b.ToTable("expenses", "dbo");
+                    b.ToTable("expenses", "public");
                 });
 
             modelBuilder.Entity("Domain.Incomes.Income", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<decimal>("Amount")
@@ -181,7 +181,7 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnName("amount");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateOnly>("Date")
@@ -191,11 +191,11 @@ namespace Infrastructure.Database.Migrations
                     b.Property<string>("Source")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("source");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
@@ -204,18 +204,18 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("UserId", "Date")
                         .HasDatabaseName("ix_incomes_user_id_date");
 
-                    b.ToTable("incomes", "dbo");
+                    b.ToTable("incomes", "public");
                 });
 
             modelBuilder.Entity("Domain.Incomes.IncomeAllocation", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<Guid>("AccountId")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("account_id");
 
                     b.Property<decimal>("Amount")
@@ -223,7 +223,7 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnName("amount");
 
                     b.Property<Guid>("IncomeId")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("income_id");
 
                     b.HasKey("Id")
@@ -235,14 +235,14 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("IncomeId")
                         .HasDatabaseName("ix_income_allocations_income_id");
 
-                    b.ToTable("income_allocations", "dbo");
+                    b.ToTable("income_allocations", "public");
                 });
 
             modelBuilder.Entity("Domain.Transfers.Transfer", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<decimal>("Amount")
@@ -250,7 +250,7 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnName("amount");
 
                     b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
 
                     b.Property<DateOnly>("Date")
@@ -258,15 +258,15 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnName("date");
 
                     b.Property<Guid>("FromAccountId")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("from_account_id");
 
                     b.Property<Guid>("ToAccountId")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("to_account_id");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
@@ -281,32 +281,32 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("UserId", "Date")
                         .HasDatabaseName("ix_transfers_user_id_date");
 
-                    b.ToTable("transfers", "dbo");
+                    b.ToTable("transfers", "public");
                 });
 
             modelBuilder.Entity("Domain.Users.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<DateTime>("ExpiresOnUtc")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_on_utc");
 
                     b.Property<DateTime?>("RevokedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("revoked_at");
 
                     b.Property<string>("Token")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("token");
 
                     b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
@@ -319,75 +319,75 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_refresh_tokens_user_id");
 
-                    b.ToTable("refresh_tokens", "dbo");
+                    b.ToTable("refresh_tokens", "public");
                 });
 
             modelBuilder.Entity("Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier")
+                        .HasColumnType("uuid")
                         .HasColumnName("id");
 
                     b.Property<string>("Currency")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)")
+                        .HasColumnType("character varying(3)")
                         .HasDefaultValue("PHP")
                         .HasColumnName("currency");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)")
+                        .HasColumnType("character varying(256)")
                         .HasColumnName("email");
 
                     b.Property<string>("EmailVerificationToken")
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
+                        .HasColumnType("character varying(64)")
                         .HasColumnName("email_verification_token");
 
                     b.Property<DateTime?>("EmailVerificationTokenExpiresAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("email_verification_token_expires_at");
 
                     b.Property<int>("FailedLoginAttempts")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("failed_login_attempts");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("first_name");
 
                     b.Property<bool>("IsEmailVerified")
-                        .HasColumnType("bit")
+                        .HasColumnType("boolean")
                         .HasColumnName("is_email_verified");
 
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("last_name");
 
                     b.Property<DateTime?>("LockoutEndUtc")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("lockout_end_utc");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("password_hash");
 
                     b.Property<DateTime?>("PasswordResetTokenExpiresAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("password_reset_token_expires_at");
 
                     b.Property<string>("PasswordResetTokenHash")
                         .HasMaxLength(64)
-                        .HasColumnType("nvarchar(64)")
+                        .HasColumnType("character varying(64)")
                         .HasColumnName("password_reset_token_hash");
 
                     b.HasKey("Id")
@@ -400,9 +400,9 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("EmailVerificationToken")
                         .IsUnique()
                         .HasDatabaseName("ix_users_email_verification_token")
-                        .HasFilter("[email_verification_token] IS NOT NULL");
+                        .HasFilter("\"email_verification_token\" IS NOT NULL");
 
-                    b.ToTable("users", "dbo");
+                    b.ToTable("users", "public");
                 });
 
             modelBuilder.Entity("Domain.Accounts.Account", b =>
