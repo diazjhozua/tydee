@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.13.0](https://github.com/diazjhozua/tydee/compare/v1.12.0...v1.13.0) (2026-09-03)
+
+
+### Features
+
+* **deploy:** add dockerfiles and ghcr image build workflow ([ef76ddc](https://github.com/diazjhozua/tydee/commit/ef76ddc4b22d4733e87fe0538f867374ae04ec1b))
+* **infrastructure:** regenerate migrations for postgres ([f5ebd96](https://github.com/diazjhozua/tydee/commit/f5ebd96fc24d7d7ada7e522340f1bf3a9e2bdf9e))
+* **infrastructure:** register npgsql provider and use public schema ([9af6a98](https://github.com/diazjhozua/tydee/commit/9af6a98773cbdf6f7a21862c68d033fd6fdd0d9c))
+* **infrastructure:** swap ef core and health check packages for postgres ([5603270](https://github.com/diazjhozua/tydee/commit/560327061a4df82da7e661bf0ea754f438483c97))
+
 ## [1.12.0](https://github.com/diazjhozua/tydee/compare/v1.11.0...v1.12.0) (2026-08-20)
 
 
