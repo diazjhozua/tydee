@@ -39,8 +39,6 @@ jobs:
           file: src/Web.Api/Dockerfile
           push: true
           tags: ${{ env.IMAGE_PREFIX }}/tydee-api:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
   client:
     runs-on: ubuntu-latest
@@ -59,5 +57,3 @@ jobs:
           tags: ${{ env.IMAGE_PREFIX }}/tydee-client:latest
           build-args: |
             NEXT_PUBLIC_API_URL=https://tydee-api.diazjhozua.com
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
