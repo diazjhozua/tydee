@@ -1,2 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- DTO records use List<T> deliberately for JSON contracts; CA1002 is a false positive here. -->
+    <NoWarn>$(NoWarn);CA1002</NoWarn>
+  </PropertyGroup>
 </Project>
