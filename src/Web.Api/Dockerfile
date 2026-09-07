@@ -3,7 +3,9 @@
 ########################
 # Build
 ########################
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+# Pinned to the SDK used by local dev: newer 10.0 feature bands add API-design
+# analyzers that trip this repo's AnalysisMode=All + TreatWarningsAsErrors.
+FROM mcr.microsoft.com/dotnet/sdk:10.0.400 AS build
 WORKDIR /src
 
 # Restore with the project graph so package/props files plus project refs
