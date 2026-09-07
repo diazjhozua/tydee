@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.2](https://github.com/diazjhozua/tydee/compare/v1.13.1...v1.13.2) (2026-09-07)
+
+
+### Bug Fixes
+
+* **ci:** suppress sdk-drift CA rules in SharedKernel; drop stale azure deploy workflows ([cb0a3cb](https://github.com/diazjhozua/tydee/commit/cb0a3cbf86e9598ffc9475016e09acb5f150faaf))
+* **contracts:** suppress CA1002 for dto list contracts ([a53ec46](https://github.com/diazjhozua/tydee/commit/a53ec46593b16bdb17f0b73f172a4db4f8050b43))
+
 ## [1.13.1](https://github.com/diazjhozua/tydee/compare/v1.13.0...v1.13.1) (2026-09-03)
 
 
