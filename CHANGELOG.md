@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.3](https://github.com/diazjhozua/tydee/compare/v1.13.2...v1.13.3) (2026-09-08)
+
+
+### Bug Fixes
+
+* **docker:** pin build sdk to 10.0.400 to stop analyzer drift ([4349c48](https://github.com/diazjhozua/tydee/commit/4349c4888f2c62969f6e5ea1200e34f8963355d1))
+
 ## [1.13.2](https://github.com/diazjhozua/tydee/compare/v1.13.1...v1.13.2) (2026-09-07)
 
 
