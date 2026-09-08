@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.4](https://github.com/diazjhozua/tydee/compare/v1.13.3...v1.13.4) (2026-09-08)
+
+
+### Bug Fixes
+
+* **docker:** copy editorconfig into build stage to honor analyzer severities ([ed9480f](https://github.com/diazjhozua/tydee/commit/ed9480f09449cfd3f841eb1f1056cda77603141a))
+
 ## [1.13.3](https://github.com/diazjhozua/tydee/compare/v1.13.2...v1.13.3) (2026-09-08)
 
 
