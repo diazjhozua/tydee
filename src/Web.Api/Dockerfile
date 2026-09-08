@@ -3,15 +3,14 @@
 ########################
 # Build
 ########################
-# Pinned to the SDK used by local dev: newer 10.0 feature bands add API-design
-# analyzers that trip this repo's AnalysisMode=All + TreatWarningsAsErrors.
 FROM mcr.microsoft.com/dotnet/sdk:10.0.400 AS build
 WORKDIR /src
 
 # Restore with the project graph so package/props files plus project refs
 # (SharedKernel, Domain, Contracts, Application, Infrastructure) are pulled
-# down once, before copying source.
-COPY Directory.Build.props Directory.Packages.props tydee.slnx ./
+# down once, before copying source. .editorconfig carries the analyzer
+# severity=none overrides (e.g. CA1002/CA1008) that local builds rely on.
+COPY .editorconfig Directory.Build.props Directory.Packages.props tydee.slnx ./
 COPY src/SharedKernel/SharedKernel.csproj src/SharedKernel/
 COPY src/Domain/Domain.csproj src/Domain/
 COPY src/Contracts/Contracts.csproj src/Contracts/
