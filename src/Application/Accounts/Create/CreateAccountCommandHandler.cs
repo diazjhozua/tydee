@@ -22,11 +22,12 @@ internal sealed class CreateAccountCommandHandler(
             return Result.Failure<Guid>(AccountErrors.NameTaken);
         }
 
-        int nextDisplayOrder = await context.Accounts
+        int maxDisplayOrder = await context.Accounts
             .Where(a => a.UserId == command.UserId)
-            .Select(a => a.DisplayOrder)
-            .DefaultIfEmpty(-1)
-            .MaxAsync(cancellationToken) + 1;
+            .MaxAsync(a => (int?)a.DisplayOrder, cancellationToken)
+            ?? -1;
+
+        int nextDisplayOrder = maxDisplayOrder + 1;
 
         var account = new Account
         {
