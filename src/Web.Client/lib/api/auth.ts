@@ -1,49 +1,27 @@
-import {
-  WAKE_UP_PROBLEM,
-  coldStartDelay,
-  dismissWakeUpNotice,
-  showWakeUpNotice,
-} from "@/lib/api/coldStart";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { ApiError } from "@/lib/types/api";
 import { AuthTokens, LoginRequest, RegisterRequest } from "@/lib/types/auth";
 
 async function post<T>(path: string, body?: unknown): Promise<T> {
-  const attempt = async (): Promise<Response | null> => {
-    try {
-      return await fetch(path, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: body === undefined ? undefined : JSON.stringify(body),
-      });
-    } catch {
-      return null;
-    }
-  };
+  let res: Response | null;
 
-  let res = await attempt();
-
-  // Cold start on the free tier: give the API a moment to boot, try again.
-  if (res === null || res.status === 503) {
-    showWakeUpNotice();
-    await coldStartDelay();
-    try {
-      res = await attempt();
-    } finally {
-      dismissWakeUpNotice();
-    }
+  try {
+    res = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch {
+    throw new ApiError(0, {});
   }
 
   if (res === null) {
-    throw new ApiError(503, WAKE_UP_PROBLEM);
+    throw new ApiError(0, {});
   }
 
   const data = res.status === 204 ? null : await res.json().catch(() => null);
 
   if (!res.ok) {
-    if (res.status === 503 && data === null) {
-      throw new ApiError(503, WAKE_UP_PROBLEM);
-    }
     throw new ApiError(res.status, data ?? {});
   }
 
@@ -99,17 +77,7 @@ export function refreshAccessToken(): Promise<string | null> {
 }
 
 async function doRefresh(): Promise<string | null> {
-  let res = await fetch("/api/auth/refresh", { method: "POST" });
-
-  if (res.status === 503) {
-    showWakeUpNotice();
-    await coldStartDelay();
-    try {
-      res = await fetch("/api/auth/refresh", { method: "POST" });
-    } finally {
-      dismissWakeUpNotice();
-    }
-  }
+  const res = await fetch("/api/auth/refresh", { method: "POST" });
 
   if (!res.ok) {
     if (res.status === 401) {

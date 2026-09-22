@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { serviceUnavailable } from "../serviceUnavailable";
+
+export const maxDuration = 60;
 
 const API_URL = process.env.API_URL;
 
@@ -14,14 +15,10 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     });
   } catch {
-    return serviceUnavailable();
+    return NextResponse.json({}, { status: 503 });
   }
 
   const data = await res.json().catch(() => null);
-
-  if (res.status === 503 && data === null) {
-    return serviceUnavailable();
-  }
 
   return NextResponse.json(data ?? {}, { status: res.status });
 }

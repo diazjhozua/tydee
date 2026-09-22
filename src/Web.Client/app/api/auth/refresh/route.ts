@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { serviceUnavailable } from "../serviceUnavailable";
+
+export const maxDuration = 60;
 
 const API_URL = process.env.API_URL;
 const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 7;
@@ -19,15 +20,12 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({ refreshToken }),
     });
   } catch {
-    return serviceUnavailable();
+    return NextResponse.json({}, { status: 503 });
   }
 
   const data = await res.json().catch(() => null);
 
   if (!res.ok) {
-    if (res.status === 503 && data === null) {
-      return serviceUnavailable();
-    }
     const response = NextResponse.json(data ?? {}, { status: res.status });
 
     // Only a real 401 ends the session; transient failures keep the cookie.
