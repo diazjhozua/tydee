@@ -10,6 +10,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   Archive,
+  ChevronRight,
   Globe,
   GripVertical,
   LogOut,
@@ -19,6 +20,7 @@ import {
   Percent,
   Scale,
 } from "lucide-react";
+import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
@@ -43,6 +45,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { LEGAL_LINKS } from "@/lib/legal/constants";
 import {
   useAccounts,
   useArchiveAccount,
@@ -395,6 +398,23 @@ export default function SettingsPage() {
               <LogOut className="size-4" /> Log out
             </Button>
           </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Legal">
+        <div className="space-y-1">
+          {LEGAL_LINKS.map(({ href, label }) => (
+            <Button
+              key={href}
+              render={<Link href={href} />}
+              nativeButton={false}
+              variant="ghost"
+              className="w-full justify-between rounded-xl px-2"
+            >
+              <span className="text-sm font-medium">{label}</span>
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </Button>
+          ))}
         </div>
       </SectionCard>
 
