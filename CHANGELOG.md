@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.14.0](https://github.com/diazjhozua/tydee/compare/v1.13.4...v1.14.0) (2026-09-24)
+
+
+### Features
+
+* **client:** add cookie consent banner ([5ebf674](https://github.com/diazjhozua/tydee/commit/5ebf674768694176128fc1b15043e0441d900230))
+* **client:** add public legal pages and shared footer ([d423e8a](https://github.com/diazjhozua/tydee/commit/d423e8a8021fb1a6fb5ca5cc491f482053e4aa9f))
+* **client:** expose legal routes and centralize legal metadata ([c6fca10](https://github.com/diazjhozua/tydee/commit/c6fca1027931d5e41622d101e34291772ce780f4))
+* **client:** link legal pages from settings and the auth screen ([23ef4be](https://github.com/diazjhozua/tydee/commit/23ef4be001c45d1f9bf7718563a9a0e183bdfd29))
+
 ## [1.13.4](https://github.com/diazjhozua/tydee/compare/v1.13.3...v1.13.4) (2026-09-08)
 
 
