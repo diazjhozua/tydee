@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.15.0](https://github.com/diazjhozua/tydee/compare/v1.14.0...v1.15.0) (2026-09-25)
+
+
+### Features
+
+* **client:** add marketing landing page ([5687528](https://github.com/diazjhozua/tydee/commit/568752825c2f98fcb4b955e967f217a7b93ff0bf))
+* **client:** index landing page in robots and sitemap ([ca7a8d4](https://github.com/diazjhozua/tydee/commit/ca7a8d4291a52f5ce44772d577c2090b175d8081))
+* **client:** move app routes under /app ([44441dd](https://github.com/diazjhozua/tydee/commit/44441dd40f69a03358be23837c3bd28692f3c567))
+
+
+### Bug Fixes
+
+* **client:** route public shell and legal pages through landing and history ([03bc5ee](https://github.com/diazjhozua/tydee/commit/03bc5ee60eeb10283b7fe779bb37d5f4e6ecb9ab))
+
 ## [1.14.0](https://github.com/diazjhozua/tydee/compare/v1.13.4...v1.14.0) (2026-09-24)
 
 
