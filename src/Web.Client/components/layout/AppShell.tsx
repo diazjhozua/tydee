@@ -16,14 +16,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [incomeOpen, setIncomeOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
 
-  const showFabs = pathname === "/";
+  const showFabs = pathname === "/app";
 
   return (
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-10 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <OfflineBanner />
         <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
-          <Link href="/" className="text-xl font-bold tracking-tight text-primary">
+          <Link href="/app" className="text-xl font-bold tracking-tight text-primary">
             Tydee
           </Link>
           <Button

@@ -22,7 +22,7 @@ export function useLogin() {
     mutationFn: login,
     onSuccess: (tokens) => {
       setTokens(tokens.accessToken, tokens.accessTokenExpiresAt);
-      router.push(searchParams.get("next") ?? "/");
+      router.push(searchParams.get("next") ?? "/app");
     },
   });
 }

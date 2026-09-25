@@ -96,7 +96,7 @@ export default function SetupPage() {
       );
       await queryClient.invalidateQueries();
       toast.success("You're all set!");
-      router.replace("/");
+      router.replace("/app");
     } catch (err) {
       toast.error(err instanceof ApiError ? err.displayMessage : "Something went wrong.");
     } finally {
