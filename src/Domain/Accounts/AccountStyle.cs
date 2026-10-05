@@ -5,7 +5,7 @@ public static class AccountStyle
     public static readonly string[] ValidIcons =
     [
         "wallet", "piggy-bank", "home", "car", "plane", "graduation-cap",
-        "heart", "gift", "briefcase", "shopping-bag", "credit-card", "landmark",
+        "heart", "gift", "briefcase", "shopping-bag", "utensils", "credit-card", "landmark",
     ];
 
     public static readonly string[] ValidColors =

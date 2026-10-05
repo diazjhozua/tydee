@@ -10,6 +10,7 @@ import {
   PiggyBank,
   Plane,
   ShoppingBag,
+  Utensils,
   Wallet,
 } from "lucide-react";
 import { AccountType } from "@/lib/types/account";
@@ -29,6 +30,7 @@ export const ACCOUNT_ICON_OPTIONS: {
   { key: "gift", icon: Gift },
   { key: "briefcase", icon: Briefcase },
   { key: "shopping-bag", icon: ShoppingBag },
+  { key: "utensils", icon: Utensils },
   { key: "credit-card", icon: CreditCard },
   { key: "landmark", icon: Landmark },
 ];
