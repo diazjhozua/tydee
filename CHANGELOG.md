@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.17.0](https://github.com/diazjhozua/tydee/compare/v1.16.0...v1.17.0) (2026-10-05)
+
+
+### Features
+
+* **accounts:** add food icon to account picker ([259a430](https://github.com/diazjhozua/tydee/commit/259a4308b4f4294ac197f8acf9e2390d1b0ef105))
+* **accounts:** hide balances with an eye toggle ([f7d68d6](https://github.com/diazjhozua/tydee/commit/f7d68d64d3597714847525ed09432744258debd6))
+
 ## [1.16.0](https://github.com/diazjhozua/tydee/compare/v1.15.0...v1.16.0) (2026-10-05)
 
 
