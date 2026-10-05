@@ -33,7 +33,8 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
   },
   icons: {
-    apple: "/apple-touch-icon.png",
+    icon: [{ url: "/icon", type: "image/png", sizes: "32x32" }],
+    apple: "/apple-icon",
   },
   openGraph: {
     title: "Tydee",
@@ -54,7 +55,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#019966",
+  themeColor: "#059669",
 };
 
 export default function RootLayout({

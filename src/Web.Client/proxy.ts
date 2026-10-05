@@ -42,5 +42,8 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next|api|favicon.ico|.*\\..*).*)"],
+  // `icon` and `apple-icon` are Next's extensionless metadata routes (the
+  // generated favicon / apple-touch icon); they must skip the auth guard, just
+  // like dotted asset paths do.
+  matcher: ["/((?!_next|api|icon|apple-icon|favicon.ico|.*\\..*).*)"],
 };
