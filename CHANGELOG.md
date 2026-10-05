@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.16.0](https://github.com/diazjhozua/tydee/compare/v1.15.0...v1.16.0) (2026-10-05)
+
+
+### Features
+
+* **client:** generate PWA icons from one brand mark ([72a9f7e](https://github.com/diazjhozua/tydee/commit/72a9f7e1c3aa6b57a34822c63d2c81d3563603d3))
+* **client:** guide users to install the PWA ([76842e4](https://github.com/diazjhozua/tydee/commit/76842e450235dd2d802d1d8dd4895d53b1257d1f))
+
 ## [1.15.0](https://github.com/diazjhozua/tydee/compare/v1.14.0...v1.15.0) (2026-09-25)
 
 
