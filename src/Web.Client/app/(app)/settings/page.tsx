@@ -11,6 +11,7 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   Archive,
   ChevronRight,
+  Download,
   Globe,
   GripVertical,
   LogOut,
@@ -27,6 +28,7 @@ import { toast } from "sonner";
 import { AccountDialog } from "@/components/accounts/AccountDialog";
 import { SetBalanceSheet } from "@/components/accounts/SetBalanceSheet";
 import { AccountIcon } from "@/components/shared/AccountIcon";
+import { InstallSteps } from "@/components/shared/InstallSteps";
 import { Money } from "@/components/shared/Money";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,6 +55,7 @@ import {
   useUpdateAllocationTemplate,
 } from "@/lib/hooks/useAccounts";
 import { useLogout } from "@/lib/hooks/useAuth";
+import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
 import { useMe, useUpdateCurrency } from "@/lib/hooks/useMe";
 import { Account } from "@/lib/types/account";
 import { ApiError } from "@/lib/types/api";
@@ -165,6 +168,7 @@ export default function SettingsPage() {
   const updateTemplate = useUpdateAllocationTemplate();
   const updateCurrency = useUpdateCurrency();
   const logout = useLogout();
+  const install = useInstallPrompt();
   const { theme, setTheme } = useTheme();
   // False during SSR and hydration, true after - the theme select would
   // otherwise mismatch the server-rendered markup.
@@ -399,6 +403,32 @@ export default function SettingsPage() {
             </Button>
           </div>
         </div>
+      </SectionCard>
+
+      <SectionCard title="Install app">
+        {install.isInstalled ? (
+          <p className="py-1.5 text-sm text-muted-foreground">
+            Tydee is installed on this device. Open it from your home screen or app list.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <span className="flex items-center gap-2.5 text-sm font-medium">
+                <Download className="size-4 text-muted-foreground" /> Add Tydee to your device
+              </span>
+              {install.canPrompt && (
+                <Button
+                  size="sm"
+                  className="rounded-full font-semibold"
+                  onClick={install.promptInstall}
+                >
+                  Install
+                </Button>
+              )}
+            </div>
+            {!install.canPrompt && <InstallSteps platform={install.platform} />}
+          </div>
+        )}
       </SectionCard>
 
       <SectionCard title="Legal">

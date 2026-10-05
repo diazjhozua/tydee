@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { InstallPromo } from "@/components/shared/InstallPromo";
 import { Button } from "@/components/ui/button";
 
 export function CtaSection() {
@@ -23,6 +24,8 @@ export function CtaSection() {
         >
           Get started free
         </Button>
+
+        <InstallPromo className="mt-8" />
       </div>
     </section>
   );
