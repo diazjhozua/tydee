@@ -12,6 +12,8 @@ import {
   Archive,
   ChevronRight,
   Download,
+  Eye,
+  EyeOff,
   Globe,
   GripVertical,
   LogOut,
@@ -57,6 +59,7 @@ import {
 import { useLogout } from "@/lib/hooks/useAuth";
 import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
 import { useMe, useUpdateCurrency } from "@/lib/hooks/useMe";
+import { useBalanceVisibilityStore } from "@/lib/stores/balanceVisibilityStore";
 import { Account } from "@/lib/types/account";
 import { ApiError } from "@/lib/types/api";
 import { cn } from "@/lib/utils";
@@ -108,7 +111,7 @@ function SortableAccountRow({
         <p className="truncate text-sm font-semibold">{account.name}</p>
         <p className="text-xs text-muted-foreground">{account.type}</p>
       </div>
-      <Money value={account.balance} currency={currency} size="sm" />
+      <Money value={account.balance} currency={currency} size="sm" hideable />
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
@@ -124,7 +127,7 @@ function SortableAccountRow({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={onEdit}>
-            <Pencil className="size-4" /> Rename
+            <Pencil className="size-4" /> Edit
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onSetBalance}>
             <Scale className="size-4" /> Set balance
@@ -170,6 +173,8 @@ export default function SettingsPage() {
   const logout = useLogout();
   const install = useInstallPrompt();
   const { theme, setTheme } = useTheme();
+  const hideBalances = useBalanceVisibilityStore((state) => state.hideBalances);
+  const setHideBalances = useBalanceVisibilityStore((state) => state.setHidden);
   // False during SSR and hydration, true after - the theme select would
   // otherwise mismatch the server-rendered markup.
   const mounted = useSyncExternalStore(emptySubscribe, isClient, isServer);
@@ -381,6 +386,30 @@ export default function SettingsPage() {
                   <SelectItem value="system">System</SelectItem>
                 </SelectContent>
               </Select>
+            )}
+          </div>
+
+          <Separator className="my-1 opacity-50" />
+
+          <div className="flex items-center justify-between py-1.5">
+            <span className="flex items-center gap-2.5 text-sm font-medium">
+              {hideBalances ? (
+                <EyeOff className="size-4 text-muted-foreground" />
+              ) : (
+                <Eye className="size-4 text-muted-foreground" />
+              )}{" "}
+              Hide balances
+            </span>
+            {mounted && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-28 rounded-xl"
+                onClick={() => setHideBalances(!hideBalances)}
+                aria-pressed={hideBalances}
+              >
+                {hideBalances ? "Hidden" : "Visible"}
+              </Button>
             )}
           </div>
 

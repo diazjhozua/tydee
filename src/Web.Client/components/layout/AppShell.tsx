@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight, Plus, Settings, TrendingUp } from "lucide-react";
+import { ArrowLeftRight, Eye, EyeOff, Plus, Settings, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -11,12 +11,15 @@ import { InstallBanner } from "@/components/shared/InstallBanner";
 import { OfflineBanner } from "@/components/shared/OfflineBanner";
 import { TransferSheet } from "@/components/transfers/TransferSheet";
 import { Button } from "@/components/ui/button";
+import { useBalanceVisibilityStore } from "@/lib/stores/balanceVisibilityStore";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [incomeOpen, setIncomeOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
+  const hideBalances = useBalanceVisibilityStore((state) => state.hideBalances);
+  const toggleBalances = useBalanceVisibilityStore((state) => state.toggle);
 
   const showFabs = pathname === "/app";
 
@@ -29,16 +32,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/app">
             <Logo />
           </Link>
-          <Button
-            render={<Link href="/settings" />}
-            nativeButton={false}
-            variant="ghost"
-            size="icon"
-            className="rounded-full"
-            aria-label="Settings"
-          >
-            <Settings className="size-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              onClick={toggleBalances}
+              aria-label={hideBalances ? "Show balances" : "Hide balances"}
+              aria-pressed={hideBalances}
+            >
+              {hideBalances ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+            </Button>
+            <Button
+              render={<Link href="/settings" />}
+              nativeButton={false}
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              aria-label="Settings"
+            >
+              <Settings className="size-5" />
+            </Button>
+          </div>
         </div>
       </header>
 

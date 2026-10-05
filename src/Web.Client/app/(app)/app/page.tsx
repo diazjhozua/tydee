@@ -269,7 +269,7 @@ export default function HomePage() {
                   )}
                 </div>
                 <div className="text-right">
-                  <Money value={account.balance} currency={currency} size="md" />
+                  <Money value={account.balance} currency={currency} size="md" hideable />
                   {isSpending && (
                     <p className="text-[11px] font-medium text-muted-foreground">left</p>
                   )}
