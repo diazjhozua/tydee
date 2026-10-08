@@ -5,5 +5,6 @@ namespace Application.Users.Register;
 public sealed record RegisterUserCommand(
     string Email,
     string Password,
+    string ConfirmPassword,
     string FirstName,
     string LastName) : ICommand<Guid>;

@@ -21,7 +21,7 @@ public class ResetPasswordCommandHandlerTests
         Seed.User(db);
 
         var result = await Handler(db, clock).Handle(
-            new ResetPasswordCommand("nope", "NewPassword1"), CancellationToken.None);
+            new ResetPasswordCommand("nope", "NewPassword1", "NewPassword1"), CancellationToken.None);
 
         result.Error.ShouldBe(UserErrors.InvalidResetToken);
     }
@@ -37,7 +37,7 @@ public class ResetPasswordCommandHandlerTests
         db.SaveChanges();
 
         var result = await Handler(db, clock).Handle(
-            new ResetPasswordCommand("reset-raw", "NewPassword1"), CancellationToken.None);
+            new ResetPasswordCommand("reset-raw", "NewPassword1", "NewPassword1"), CancellationToken.None);
 
         result.Error.ShouldBe(UserErrors.InvalidResetToken);
     }
@@ -62,7 +62,7 @@ public class ResetPasswordCommandHandlerTests
         db.SaveChanges();
 
         var result = await Handler(db, clock).Handle(
-            new ResetPasswordCommand("reset-raw", "NewPassword1"), CancellationToken.None);
+            new ResetPasswordCommand("reset-raw", "NewPassword1", "NewPassword1"), CancellationToken.None);
 
         result.IsSuccess.ShouldBeTrue();
         User saved = db.Users.Single();
@@ -84,9 +84,9 @@ public class ResetPasswordCommandHandlerTests
         db.SaveChanges();
 
         var handler = Handler(db, clock);
-        await handler.Handle(new ResetPasswordCommand("reset-raw", "NewPassword1"), CancellationToken.None);
+        await handler.Handle(new ResetPasswordCommand("reset-raw", "NewPassword1", "NewPassword1"), CancellationToken.None);
         var replay = await handler.Handle(
-            new ResetPasswordCommand("reset-raw", "AnotherPass1"), CancellationToken.None);
+            new ResetPasswordCommand("reset-raw", "AnotherPass1", "AnotherPass1"), CancellationToken.None);
 
         replay.Error.ShouldBe(UserErrors.InvalidResetToken);
     }

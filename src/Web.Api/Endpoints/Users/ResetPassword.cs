@@ -17,7 +17,7 @@ internal sealed class ResetPassword : IEndpoint
             CancellationToken cancellationToken) =>
         {
             Result result = await handler.Handle(
-                new ResetPasswordCommand(request.Token, request.NewPassword),
+                new ResetPasswordCommand(request.Token, request.NewPassword, request.ConfirmPassword),
                 cancellationToken);
 
             return result.Match(Results.NoContent, CustomResults.Problem);

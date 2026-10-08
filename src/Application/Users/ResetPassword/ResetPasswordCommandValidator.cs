@@ -8,5 +8,8 @@ internal sealed class ResetPasswordCommandValidator : AbstractValidator<ResetPas
     {
         RuleFor(c => c.Token).NotEmpty();
         RuleFor(c => c.NewPassword).NotEmpty().MinimumLength(8).MaximumLength(128);
+        RuleFor(c => c.ConfirmPassword)
+            .Equal(c => c.NewPassword)
+            .WithMessage("Passwords do not match.");
     }
 }

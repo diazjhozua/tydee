@@ -19,6 +19,7 @@ internal sealed class Register : IEndpoint
             var command = new RegisterUserCommand(
                 request.Email,
                 request.Password,
+                request.ConfirmPassword,
                 request.FirstName,
                 request.LastName);
 
