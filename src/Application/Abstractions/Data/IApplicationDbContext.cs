@@ -3,6 +3,7 @@ using Domain.Adjustments;
 using Domain.Transfers;
 using Domain.Expenses;
 using Domain.Incomes;
+using Domain.Suggestions;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,6 +19,7 @@ public interface IApplicationDbContext
     DbSet<Expense> Expenses { get; }
     DbSet<Adjustment> Adjustments { get; }
     DbSet<Transfer> Transfers { get; }
+    DbSet<Suggestion> Suggestions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

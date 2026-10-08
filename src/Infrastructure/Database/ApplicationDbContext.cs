@@ -4,6 +4,7 @@ using Domain.Adjustments;
 using Domain.Transfers;
 using Domain.Expenses;
 using Domain.Incomes;
+using Domain.Suggestions;
 using Domain.Users;
 using Infrastructure.DomainEvents;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,8 @@ public sealed class ApplicationDbContext(
     public DbSet<Adjustment> Adjustments { get; set; }
 
     public DbSet<Transfer> Transfers { get; set; }
+
+    public DbSet<Suggestion> Suggestions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
