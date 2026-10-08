@@ -45,8 +45,15 @@ export function useResendVerification() {
 
 export function useResetPassword() {
   return useMutation({
-    mutationFn: ({ token, newPassword }: { token: string; newPassword: string }) =>
-      resetPassword(token, newPassword),
+    mutationFn: ({
+      token,
+      newPassword,
+      confirmPassword,
+    }: {
+      token: string;
+      newPassword: string;
+      confirmPassword: string;
+    }) => resetPassword(token, newPassword, confirmPassword),
   });
 }
 

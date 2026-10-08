@@ -17,6 +17,7 @@ function ResetPasswordForm() {
   const token = searchParams.get("token");
   const resetPassword = useResetPassword();
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   if (!token) {
     return (
@@ -53,9 +54,9 @@ function ResetPasswordForm() {
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
-            if (password.length >= 8) {
+            if (password.length >= 8 && password === confirmPassword) {
               resetPassword.mutate(
-                { token, newPassword: password },
+                { token, newPassword: password, confirmPassword },
                 { onSuccess: () => setTimeout(() => router.push("/login"), 2500) },
               );
             }
@@ -76,12 +77,28 @@ function ResetPasswordForm() {
             )}
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirm password</Label>
+            <Input
+              id="confirm-password"
+              type="password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
+            {confirmPassword !== "" && confirmPassword !== password && (
+              <p className="text-sm text-destructive">Passwords do not match.</p>
+            )}
+          </div>
+
           {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
 
           <Button
             type="submit"
             className="w-full"
-            disabled={password.length < 8 || resetPassword.isPending}
+            disabled={
+              password.length < 8 || password !== confirmPassword || resetPassword.isPending
+            }
           >
             {resetPassword.isPending ? "Saving..." : "Reset password"}
           </Button>

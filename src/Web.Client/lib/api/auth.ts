@@ -47,10 +47,15 @@ export function forgotPassword(email: string): Promise<{ message: string }> {
   );
 }
 
-export function resetPassword(token: string, newPassword: string): Promise<null> {
+export function resetPassword(
+  token: string,
+  newPassword: string,
+  confirmPassword: string,
+): Promise<null> {
   return post<null>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/reset-password`, {
     token,
     newPassword,
+    confirmPassword,
   });
 }
 
