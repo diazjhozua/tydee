@@ -4,4 +4,5 @@ export type Me = {
   firstName: string;
   lastName: string;
   currency: string;
+  isAdmin: boolean;
 };

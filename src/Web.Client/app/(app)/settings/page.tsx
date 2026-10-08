@@ -29,6 +29,7 @@ import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { AccountDialog } from "@/components/accounts/AccountDialog";
 import { SetBalanceSheet } from "@/components/accounts/SetBalanceSheet";
+import { SuggestionSheet } from "@/components/suggestions/SuggestionSheet";
 import { AccountIcon } from "@/components/shared/AccountIcon";
 import { InstallSteps } from "@/components/shared/InstallSteps";
 import { Money } from "@/components/shared/Money";
@@ -182,6 +183,7 @@ export default function SettingsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | undefined>();
   const [balanceAccount, setBalanceAccount] = useState<Account | undefined>();
+  const [suggestionOpen, setSuggestionOpen] = useState(false);
   const [percents, setPercents] = useState<Record<string, string>>({});
   const [seededAccounts, setSeededAccounts] = useState<Account[] | undefined>();
 
@@ -477,6 +479,30 @@ export default function SettingsPage() {
         </div>
       </SectionCard>
 
+      <SectionCard title="Feedback">
+        <div className="space-y-1">
+          <Button
+            variant="ghost"
+            className="w-full justify-between rounded-xl px-2"
+            onClick={() => setSuggestionOpen(true)}
+          >
+            <span className="text-sm font-medium">Send feedback</span>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </Button>
+          {me?.isAdmin && (
+            <Button
+              render={<Link href="/admin" />}
+              nativeButton={false}
+              variant="ghost"
+              className="w-full justify-between rounded-xl px-2"
+            >
+              <span className="text-sm font-medium">Admin</span>
+              <ChevronRight className="size-4 text-muted-foreground" />
+            </Button>
+          )}
+        </div>
+      </SectionCard>
+
       <a
         href="https://github.com/diazjhozua/tydee/releases"
         target="_blank"
@@ -493,6 +519,8 @@ export default function SettingsPage() {
         onOpenChange={(open) => !open && setBalanceAccount(undefined)}
         account={balanceAccount}
       />
+
+      <SuggestionSheet open={suggestionOpen} onOpenChange={setSuggestionOpen} />
     </div>
   );
 }
