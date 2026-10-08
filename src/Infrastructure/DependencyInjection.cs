@@ -83,6 +83,14 @@ public static class DependencyInjection
 
         services.AddSingleton(jwtSettings);
 
+        AdminSettings adminSettings = configuration
+            .GetSection(AdminSettings.SectionName)
+            .Get<AdminSettings>()
+            ?? new AdminSettings();
+
+        services.AddSingleton(adminSettings);
+        services.AddSingleton<IAdminProvider, AdminProvider>();
+
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(o =>
             {
@@ -119,7 +127,9 @@ public static class DependencyInjection
 
     private static IServiceCollection AddAuthorizationInternal(this IServiceCollection services)
     {
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+            options.AddPolicy("Admin", policy =>
+                policy.RequireAuthenticatedUser().RequireRole("Admin")));
 
         return services;
     }

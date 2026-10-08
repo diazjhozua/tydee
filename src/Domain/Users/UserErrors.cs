@@ -35,4 +35,8 @@ public static class UserErrors
     public static readonly Error TokenReuseDetected = Error.Unauthorized(
         "Users.TokenReuseDetected",
         "Suspicious activity detected. All sessions have been revoked.");
+
+    public static readonly Error NotFound = Error.NotFound(
+        "Users.NotFound",
+        "The user was not found.");
 }
