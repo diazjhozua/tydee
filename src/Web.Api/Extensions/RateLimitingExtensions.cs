@@ -7,6 +7,7 @@ namespace Web.Api.Extensions;
 public static class RateLimitingExtensions
 {
     public const string AuthPolicy = "auth";
+    public const string SuggestionPolicy = "suggestion";
 
     public static IServiceCollection AddRateLimitingInternal(
         this IServiceCollection services,
@@ -16,6 +17,8 @@ public static class RateLimitingExtensions
         int globalWindow = configuration.GetValue("RateLimiting:Global:WindowInSeconds", 60);
         int authPermit = configuration.GetValue("RateLimiting:Auth:PermitLimit", 10);
         int authWindow = configuration.GetValue("RateLimiting:Auth:WindowInSeconds", 60);
+        int suggestionPermit = configuration.GetValue("RateLimiting:Suggestion:PermitLimit", 5);
+        int suggestionWindow = configuration.GetValue("RateLimiting:Suggestion:WindowInSeconds", 60);
 
         services.AddRateLimiter(options =>
         {
@@ -48,6 +51,15 @@ public static class RateLimitingExtensions
                     {
                         PermitLimit = authPermit,
                         Window = TimeSpan.FromSeconds(authWindow),
+                    }));
+
+            options.AddPolicy(SuggestionPolicy, context =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    ClientKey(context),
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = suggestionPermit,
+                        Window = TimeSpan.FromSeconds(suggestionWindow),
                     }));
         });
 
