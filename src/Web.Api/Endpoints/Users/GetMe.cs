@@ -22,7 +22,7 @@ internal sealed class GetMe : IEndpoint
                 cancellationToken);
 
             return result.Match(
-                me => Results.Ok(new MeResponse(me.Id, me.Email, me.FirstName, me.LastName, me.Currency)),
+                me => Results.Ok(new MeResponse(me.Id, me.Email, me.FirstName, me.LastName, me.Currency, me.IsAdmin)),
                 CustomResults.Problem);
         })
         .WithTags(Tags.Auth)

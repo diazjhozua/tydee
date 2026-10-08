@@ -5,4 +5,5 @@ public sealed record MeResponse(
     string Email,
     string FirstName,
     string LastName,
-    string Currency);
+    string Currency,
+    bool IsAdmin);

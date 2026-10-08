@@ -10,8 +10,14 @@ public class LoginCommandHandlerTests
 {
     private static LoginCommandHandler Handler(
         Infrastructure.Database.ApplicationDbContext db,
-        FixedDateTimeProvider? clock = null) =>
-        new(db, new FakePasswordHasher(), new FakeTokenProvider(), clock ?? new FixedDateTimeProvider());
+        FixedDateTimeProvider? clock = null,
+        FakeAdminProvider? adminProvider = null) =>
+        new(
+            db,
+            new FakePasswordHasher(),
+            new FakeTokenProvider(),
+            adminProvider ?? new FakeAdminProvider(),
+            clock ?? new FixedDateTimeProvider());
 
     [Fact]
     public async Task Wrong_email_and_wrong_password_return_the_same_error()
@@ -99,5 +105,19 @@ public class LoginCommandHandlerTests
 
         result.IsSuccess.ShouldBeTrue();
         db.RefreshTokens.Single().Token.ShouldBe($"h:{result.Value.RefreshToken}");
+    }
+
+    [Fact]
+    public async Task Allowlisted_email_is_granted_admin_on_login()
+    {
+        using var db = TestDb.Create();
+        var user = Seed.User(db, "admin@example.com");
+        user.IsAdmin.ShouldBeFalse();
+
+        var result = await Handler(db, adminProvider: new FakeAdminProvider("Admin@Example.com")).Handle(
+            new LoginCommand(user.Email, "Password123!"), CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
+        db.Users.Single().IsAdmin.ShouldBeTrue();
     }
 }

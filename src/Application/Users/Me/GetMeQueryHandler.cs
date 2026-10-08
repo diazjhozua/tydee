@@ -12,7 +12,7 @@ internal sealed class GetMeQueryHandler(IApplicationDbContext context)
     {
         MeResult? me = await context.Users
             .Where(u => u.Id == query.UserId)
-            .Select(u => new MeResult(u.Id, u.Email, u.FirstName, u.LastName, u.Currency))
+            .Select(u => new MeResult(u.Id, u.Email, u.FirstName, u.LastName, u.Currency, u.IsAdmin))
             .SingleOrDefaultAsync(cancellationToken);
 
         return me is not null

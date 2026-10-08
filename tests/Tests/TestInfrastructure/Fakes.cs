@@ -23,6 +23,16 @@ internal sealed class FakeTokenProvider : ITokenProvider
     public string HashRefreshToken(string rawToken) => $"h:{rawToken}";
 }
 
+internal sealed class FakeAdminProvider : IAdminProvider
+{
+    private readonly HashSet<string> _emails;
+
+    public FakeAdminProvider(params string[] emails) =>
+        _emails = new HashSet<string>(emails, StringComparer.OrdinalIgnoreCase);
+
+    public bool IsAdmin(string email) => _emails.Contains(email);
+}
+
 internal sealed class FixedDateTimeProvider : IDateTimeProvider
 {
     public DateTime UtcNow { get; set; } = new(2026, 8, 6, 12, 0, 0, DateTimeKind.Utc);

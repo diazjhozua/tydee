@@ -11,6 +11,7 @@ internal sealed class LoginCommandHandler(
     IApplicationDbContext context,
     IPasswordHasher passwordHasher,
     ITokenProvider tokenProvider,
+    IAdminProvider adminProvider,
     IDateTimeProvider dateTimeProvider)
     : ICommandHandler<LoginCommand, AuthTokensResponse>
 {
@@ -63,6 +64,13 @@ internal sealed class LoginCommandHandler(
         if (!user.IsEmailVerified)
         {
             return Result.Failure<AuthTokensResponse>(UserErrors.EmailNotVerified);
+        }
+
+        // The config allowlist can grant admin on login; it never revokes, so a
+        // manually flipped DB flag is not clobbered by a stale allowlist entry.
+        if (adminProvider.IsAdmin(user.Email))
+        {
+            user.IsAdmin = true;
         }
 
         user.RefreshTokens.RemoveAll(t => t.IsExpired(dateTimeProvider.UtcNow));
