@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.18.0](https://github.com/diazjhozua/tydee/compare/v1.17.0...v1.18.0) (2026-10-09)
+
+
+### Features
+
+* **admin:** add admin and suggestion API endpoints ([e832932](https://github.com/diazjhozua/tydee/commit/e832932b2f5c473645aa191c8d3f7e59a28d9530))
+* **admin:** add admin dashboard, users and suggestions pages ([e8bca3a](https://github.com/diazjhozua/tydee/commit/e8bca3a3891efc3fe7abde0d74afec1a5e8232e7))
+* **admin:** add admin flag, config allowlist and role claim ([7ebc4a5](https://github.com/diazjhozua/tydee/commit/7ebc4a5369279f5ecf7947ccec17b4e100da894f))
+* **admin:** add migration for admin flag and suggestions table ([12e66f6](https://github.com/diazjhozua/tydee/commit/12e66f6e4340afa0277691422ababc6e5078e87d))
+* **admin:** grant admin on login and expose isAdmin on me ([8b7421d](https://github.com/diazjhozua/tydee/commit/8b7421dea80f31adffe7b5903bfa703200e34e48))
+* **auth:** add confirm password field to register and reset forms ([d6aa9cc](https://github.com/diazjhozua/tydee/commit/d6aa9ccda7e6f025a3145e17fd82061000506c91))
+* **auth:** add confirm password to register and reset requests ([4826ebf](https://github.com/diazjhozua/tydee/commit/4826ebf17e0f417a1a86e1d4ea3b488fca9f8191))
+* **suggestions:** add feedback submission UI in settings ([451bcf6](https://github.com/diazjhozua/tydee/commit/451bcf61a41bf29e2997fa92ae0eb7fe28d5402d))
+* **suggestions:** add suggestion domain and handlers ([357c205](https://github.com/diazjhozua/tydee/commit/357c20583e6f3257ed53b02b33fd115b914e7968))
+
 ## [1.17.0](https://github.com/diazjhozua/tydee/compare/v1.16.0...v1.17.0) (2026-10-05)
 
 
