@@ -3,6 +3,7 @@ using Domain.Adjustments;
 using Domain.Transfers;
 using Domain.Expenses;
 using Domain.Incomes;
+using Domain.RecurringExpenses;
 using Domain.Suggestions;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ public interface IApplicationDbContext
     DbSet<Income> Incomes { get; }
     DbSet<IncomeAllocation> IncomeAllocations { get; }
     DbSet<Expense> Expenses { get; }
+    DbSet<RecurringExpense> RecurringExpenses { get; }
     DbSet<Adjustment> Adjustments { get; }
     DbSet<Transfer> Transfers { get; }
     DbSet<Suggestion> Suggestions { get; }

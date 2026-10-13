@@ -1,5 +1,6 @@
 using Domain.Accounts;
 using Domain.Expenses;
+using Domain.RecurringExpenses;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -18,6 +19,12 @@ internal sealed class ExpenseConfiguration : IEntityTypeConfiguration<Expense>
 
         builder.HasIndex(e => new { e.UserId, e.Date });
         builder.HasIndex(e => e.AccountId);
+        builder.HasIndex(e => e.RecurringExpenseId);
+
+        builder.HasOne<RecurringExpense>()
+            .WithMany()
+            .HasForeignKey(e => e.RecurringExpenseId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasOne<User>()
             .WithMany()

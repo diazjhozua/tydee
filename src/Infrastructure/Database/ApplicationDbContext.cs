@@ -4,6 +4,7 @@ using Domain.Adjustments;
 using Domain.Transfers;
 using Domain.Expenses;
 using Domain.Incomes;
+using Domain.RecurringExpenses;
 using Domain.Suggestions;
 using Domain.Users;
 using Infrastructure.DomainEvents;
@@ -28,6 +29,8 @@ public sealed class ApplicationDbContext(
     public DbSet<IncomeAllocation> IncomeAllocations { get; set; }
 
     public DbSet<Expense> Expenses { get; set; }
+
+    public DbSet<RecurringExpense> RecurringExpenses { get; set; }
 
     public DbSet<Adjustment> Adjustments { get; set; }
 

@@ -153,6 +153,10 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("note");
 
+                    b.Property<Guid?>("RecurringExpenseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recurring_expense_id");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
@@ -162,6 +166,9 @@ namespace Infrastructure.Database.Migrations
 
                     b.HasIndex("AccountId")
                         .HasDatabaseName("ix_expenses_account_id");
+
+                    b.HasIndex("RecurringExpenseId")
+                        .HasDatabaseName("ix_expenses_recurring_expense_id");
 
                     b.HasIndex("UserId", "Date")
                         .HasDatabaseName("ix_expenses_user_id_date");
@@ -236,6 +243,61 @@ namespace Infrastructure.Database.Migrations
                         .HasDatabaseName("ix_income_allocations_income_id");
 
                     b.ToTable("income_allocations", "public");
+                });
+
+            modelBuilder.Entity("Domain.RecurringExpenses.RecurringExpense", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("Category")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("category");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("note");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_recurring_expenses");
+
+                    b.HasIndex("AccountId")
+                        .HasDatabaseName("ix_recurring_expenses_account_id");
+
+                    b.HasIndex("UserId", "IsArchived")
+                        .HasDatabaseName("ix_recurring_expenses_user_id_is_archived");
+
+                    b.ToTable("recurring_expenses", "public");
                 });
 
             modelBuilder.Entity("Domain.Suggestions.Suggestion", b =>
@@ -498,6 +560,12 @@ namespace Infrastructure.Database.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_expenses_accounts_account_id");
 
+                    b.HasOne("Domain.RecurringExpenses.RecurringExpense", null)
+                        .WithMany()
+                        .HasForeignKey("RecurringExpenseId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_expenses_recurring_expenses_recurring_expense_id");
+
                     b.HasOne("Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -531,6 +599,23 @@ namespace Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_income_allocations_incomes_income_id");
+                });
+
+            modelBuilder.Entity("Domain.RecurringExpenses.RecurringExpense", b =>
+                {
+                    b.HasOne("Domain.Accounts.Account", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_recurring_expenses_accounts_account_id");
+
+                    b.HasOne("Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_recurring_expenses_users_user_id");
                 });
 
             modelBuilder.Entity("Domain.Suggestions.Suggestion", b =>

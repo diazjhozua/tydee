@@ -9,5 +9,6 @@ public sealed class Expense
     public string? Note { get; set; }
     public string? Category { get; set; }
     public DateOnly Date { get; set; }
+    public Guid? RecurringExpenseId { get; set; }
     public DateTime CreatedAtUtc { get; set; }
 }
