@@ -58,6 +58,24 @@ export const viewport: Viewport = {
   themeColor: "#059669",
 };
 
+/**
+ * Applies the stored theme to <html> before first paint so the page never
+ * flashes the wrong colours. Runs as a Server Component tag, so React never
+ * renders a <script> on the client. ThemeProvider then mirrors this decision
+ * into React state on hydration.
+ */
+const themeScript = `
+(function () {
+  try {
+    var stored = localStorage.getItem("theme");
+    var theme = stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+    var dark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.classList.toggle("dark", dark);
+    document.documentElement.style.colorScheme = dark ? "dark" : "light";
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -69,6 +87,9 @@ export default function RootLayout({
       className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="min-h-full flex flex-col bg-background">
         <ThemeProvider>
           <QueryProvider>

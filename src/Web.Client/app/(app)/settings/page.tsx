@@ -10,7 +10,7 @@ import {
   Moon,
 } from "lucide-react";
 import Link from "next/link";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/providers/ThemeProvider";
 import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { SuggestionSheet } from "@/components/suggestions/SuggestionSheet";
