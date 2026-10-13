@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { ExpenseDialog } from "@/components/expenses/ExpenseDialog";
 import { IncomeDialog } from "@/components/incomes/IncomeDialog";
+import { BottomNav } from "@/components/layout/BottomNav";
 import { InstallBanner } from "@/components/shared/InstallBanner";
 import { OfflineBanner } from "@/components/shared/OfflineBanner";
 import { TransferSheet } from "@/components/transfers/TransferSheet";
@@ -22,6 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const toggleBalances = useBalanceVisibilityStore((state) => state.toggle);
 
   const showFabs = pathname === "/app";
+  const showNav = !pathname.startsWith("/setup");
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -44,12 +46,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {hideBalances ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
             </Button>
             <Button
-              render={<Link href="/settings" />}
-              nativeButton={false}
               variant="ghost"
               size="icon"
               className="rounded-full"
               aria-label="Settings"
+              render={<Link href="/settings" />}
+              nativeButton={false}
             >
               <Settings className="size-5" />
             </Button>
@@ -57,10 +59,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-md flex-1 px-4 py-5 pb-32">{children}</main>
+      <main className="mx-auto w-full max-w-md flex-1 px-4 py-5 pb-40">{children}</main>
 
       {showFabs && (
-        <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-6 z-10">
+        <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-20 z-10">
           <div className="mx-auto flex max-w-md items-center justify-end gap-3 px-5">
             <button
               type="button"
@@ -90,6 +92,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       )}
+
+      {showNav && <BottomNav />}
 
       <ExpenseDialog open={expenseOpen} onOpenChange={setExpenseOpen} />
       <IncomeDialog open={incomeOpen} onOpenChange={setIncomeOpen} />
