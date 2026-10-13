@@ -5,6 +5,7 @@ export async function listExpenses(params: {
   accountId?: string;
   page?: number;
   pageSize?: number;
+  recurringExpenseId?: string;
 }): Promise<Expense[]> {
   const res = await apiClient.get<Expense[]>("/api/v1/expenses", { params });
   return res.data;

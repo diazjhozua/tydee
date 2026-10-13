@@ -1,9 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AmountInput } from "@/components/shared/AmountInput";
+import { CategoryIcon } from "@/components/shared/CategoryIcon";
 import { EntrySheet } from "@/components/shared/EntrySheet";
+import { Money } from "@/components/shared/Money";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +19,7 @@ import {
 } from "@/lib/hooks/useExpenses";
 import { useMe } from "@/lib/hooks/useMe";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
+import { useRecurringExpenses } from "@/lib/hooks/useRecurringExpenses";
 import { ApiError } from "@/lib/types/api";
 import { Expense } from "@/lib/types/expense";
 import { cn } from "@/lib/utils";
@@ -26,6 +30,8 @@ const LAST_ACCOUNT_KEY = "tydee.lastExpenseAccount";
 
 const PRESET_CATEGORIES = ["Bills", "Groceries", "Food", "Transport", "House", "Fun", "Other"];
 
+const COLLAPSED_TEMPLATE_COUNT = 4;
+
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -35,6 +41,7 @@ type Props = {
 export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
   const { data: accounts } = useAccounts();
   const { data: me } = useMe();
+  const { data: recurringExpenses } = useRecurringExpenses();
   const createExpense = useCreateExpense();
   const updateExpense = useUpdateExpense();
   const deleteExpense = useDeleteExpense();
@@ -46,16 +53,29 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
   const [date, setDate] = useState(today());
   const [category, setCategory] = useState("");
   const [customCategory, setCustomCategory] = useState(false);
+  const [recurringExpenseId, setRecurringExpenseId] = useState("");
+  const [showAllTemplates, setShowAllTemplates] = useState(false);
   const [prevOpen, setPrevOpen] = useState(false);
 
   const isEdit = expense !== undefined;
   const activeAccounts = accounts ?? [];
   const { data: usedCategories } = useExpenseCategories(open);
 
+  const templates = (recurringExpenses ?? []).filter((t) =>
+    activeAccounts.some((a) => a.id === t.accountId),
+  );
+
+  const collapsed = !showAllTemplates && templates.length > COLLAPSED_TEMPLATE_COUNT;
+  const visibleTemplates = collapsed
+    ? templates.slice(0, COLLAPSED_TEMPLATE_COUNT - 1)
+    : templates;
+
   if (open !== prevOpen) {
     setPrevOpen(open);
     if (open) {
       setCustomCategory(false);
+      setRecurringExpenseId("");
+      setShowAllTemplates(false);
       if (expense) {
         setAmount(String(expense.amount));
         setNote(expense.note ?? "");
@@ -114,14 +134,19 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
     } else {
       localStorage.setItem(LAST_ACCOUNT_KEY, accountId);
 
+      const createRequest = {
+        ...request,
+        recurringExpenseId: recurringExpenseId === "" ? null : recurringExpenseId,
+      };
+
       if (!isOnline) {
-        createExpense.mutate(request);
+        createExpense.mutate(createRequest);
         toast.info("Queued — will sync when you're back online");
         onOpenChange(false);
         return;
       }
 
-      createExpense.mutate(request, {
+      createExpense.mutate(createRequest, {
         onSuccess: () => {
           const account = activeAccounts.find((a) => a.id === accountId);
           const newBalance = account ? account.balance - parsedAmount : null;
@@ -161,6 +186,18 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
     );
   }
 
+  function applyTemplate(template: (typeof templates)[number]) {
+    if (recurringExpenseId === template.id) {
+      setRecurringExpenseId("");
+      return;
+    }
+    setRecurringExpenseId(template.id);
+    setAmount(String(template.amount));
+    setAccountId(template.accountId);
+    setCategory(template.category ?? "");
+    setNote(template.note ?? "");
+  }
+
   const pending = createExpense.isPending || updateExpense.isPending || deleteExpense.isPending;
 
   const categoryOptions = [...PRESET_CATEGORIES];
@@ -177,6 +214,59 @@ export function ExpenseDialog({ open, onOpenChange, expense }: Props) {
       title={isEdit ? "Edit expense" : "Add expense"}
     >
       <div className="space-y-5">
+        {!isEdit && templates.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Saved expenses</Label>
+              <Link
+                href="/recurring"
+                onClick={() => onOpenChange(false)}
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                Manage
+              </Link>
+            </div>
+            <div className={cn(showAllTemplates && "max-h-64 overflow-y-auto overscroll-contain")}>
+              <div className="grid grid-cols-2 gap-2">
+                {visibleTemplates.map((template) => (
+                  <button
+                    key={template.id}
+                    type="button"
+                    aria-pressed={recurringExpenseId === template.id}
+                    onClick={() => applyTemplate(template)}
+                    className={cn(
+                      "flex min-w-0 items-center gap-2.5 rounded-2xl border px-3 py-2.5 text-left transition-colors",
+                      recurringExpenseId === template.id
+                        ? "border-primary bg-primary/10 ring-1 ring-primary"
+                        : "border-border/60 bg-muted/40 hover:bg-muted",
+                    )}
+                  >
+                    <CategoryIcon category={template.category} className="size-8" />
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold">{template.name}</div>
+                      <Money
+                        value={template.amount}
+                        currency={me?.currency ?? "PHP"}
+                        size="sm"
+                        hideable
+                      />
+                    </div>
+                  </button>
+                ))}
+                {collapsed && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllTemplates(true)}
+                    className="flex items-center justify-center rounded-2xl border border-dashed border-border px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    {`+${templates.length - (COLLAPSED_TEMPLATE_COUNT - 1)} more`}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <AmountInput
           value={amount}
           onChange={setAmount}

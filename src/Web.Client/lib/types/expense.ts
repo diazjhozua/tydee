@@ -6,6 +6,7 @@ export type Expense = {
   note: string | null;
   category: string | null;
   date: string;
+  recurringExpenseId: string | null;
 };
 
 export type ExpenseRequest = {
@@ -14,4 +15,5 @@ export type ExpenseRequest = {
   note: string | null;
   category: string | null;
   date: string;
+  recurringExpenseId?: string | null;
 };

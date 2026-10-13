@@ -22,7 +22,9 @@ function useInvalidateMoneyData() {
   };
 }
 
-export function useExpenses(params: { accountId?: string; page?: number; pageSize?: number } = {}) {
+export function useExpenses(
+  params: { accountId?: string; page?: number; pageSize?: number; recurringExpenseId?: string } = {},
+) {
   return useQuery({
     queryKey: ["expenses", params],
     queryFn: () => listExpenses(params),
