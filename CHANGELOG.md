@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.19.0](https://github.com/diazjhozua/tydee/compare/v1.18.0...v1.19.0) (2026-10-13)
+
+
+### Features
+
+* **expenses:** carry the saved expense id through create and list ([31947f4](https://github.com/diazjhozua/tydee/commit/31947f4d67d6187b85c59afda2fa76f6d4766496))
+* **recurring-expenses:** add create, update, archive and list handlers ([6475874](https://github.com/diazjhozua/tydee/commit/647587470616146f2fe8f581ae76fdedafa0b137))
+* **recurring-expenses:** add the RecurringExpense domain model ([8ed1b96](https://github.com/diazjhozua/tydee/commit/8ed1b961effac04fb25f43081555376f4c51d589))
+* **recurring-expenses:** expose the recurring expense API ([3d22b98](https://github.com/diazjhozua/tydee/commit/3d22b9812e3078c85c5eaef480d7470f0e606202))
+* **recurring-expenses:** persist recurring expenses and link them to expenses ([e64c58f](https://github.com/diazjhozua/tydee/commit/e64c58f3d49978a89b6007f096ad89abc5303413))
+* **web-client:** add an accounts page with the allocation template ([29aaca8](https://github.com/diazjhozua/tydee/commit/29aaca855ac1cf91f82b0a399198caa9e4a3c70b))
+* **web-client:** add bottom navigation for home, accounts and saved ([f253114](https://github.com/diazjhozua/tydee/commit/f253114d84af926e85e64ce6d532d1f196603cf5))
+* **web-client:** add the saved expenses page ([6a81de8](https://github.com/diazjhozua/tydee/commit/6a81de8a17d1df365b9d00a947ad1e01290d494e))
+* **web-client:** apply a saved expense from the expense sheet ([d3b805e](https://github.com/diazjhozua/tydee/commit/d3b805e510a58ebfc940e6846bb1dd46105496cc))
+
+
+### Bug Fixes
+
+* **api:** return 400 instead of 500 for malformed requests ([27bcb21](https://github.com/diazjhozua/tydee/commit/27bcb217ff537ba57ef646ae2477f8e2dca9cf1f))
+* **web-client:** replace next-themes with an in-app theme provider ([b0d120f](https://github.com/diazjhozua/tydee/commit/b0d120fc3d3e20a78a3151286b53de0c36eaa61b))
+
 ## [1.18.0](https://github.com/diazjhozua/tydee/compare/v1.17.0...v1.18.0) (2026-10-09)
 
 
