@@ -6,6 +6,7 @@ internal static class Tags
     internal const string Accounts = "Accounts";
     internal const string Incomes = "Incomes";
     internal const string Expenses = "Expenses";
+    internal const string RecurringExpenses = "RecurringExpenses";
     internal const string Dashboard = "Dashboard";
     internal const string Suggestions = "Suggestions";
     internal const string Admin = "Admin";
