@@ -8,4 +8,5 @@ public sealed record CreateExpenseCommand(
     decimal Amount,
     string? Note,
     string? Category,
-    DateOnly Date) : ICommand<Guid>;
+    DateOnly Date,
+    Guid? RecurringExpenseId = null) : ICommand<Guid>;

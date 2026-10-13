@@ -7,4 +7,5 @@ public sealed record ExpenseResponse(
     decimal Amount,
     string? Note,
     string? Category,
-    DateOnly Date);
+    DateOnly Date,
+    Guid? RecurringExpenseId);

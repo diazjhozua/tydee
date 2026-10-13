@@ -21,6 +21,7 @@ internal sealed class ListExpensesQueryHandler(IApplicationDbContext context)
         return await context.Expenses
             .Where(e => e.UserId == query.UserId &&
                         (query.AccountId == null || e.AccountId == query.AccountId) &&
+                        (query.RecurringExpenseId == null || e.RecurringExpenseId == query.RecurringExpenseId) &&
                         (monthStart == null || e.Date >= monthStart && e.Date < monthEnd))
             .OrderByDescending(e => e.Date)
             .ThenByDescending(e => e.CreatedAtUtc)
@@ -30,7 +31,7 @@ internal sealed class ListExpensesQueryHandler(IApplicationDbContext context)
                 context.Accounts,
                 e => e.AccountId,
                 a => a.Id,
-                (e, a) => new ExpenseListItem(e.Id, e.AccountId, a.Name, e.Amount, e.Note, e.Category, e.Date))
+                (e, a) => new ExpenseListItem(e.Id, e.AccountId, a.Name, e.Amount, e.Note, e.Category, e.Date, e.RecurringExpenseId))
             .ToListAsync(cancellationToken);
     }
 }

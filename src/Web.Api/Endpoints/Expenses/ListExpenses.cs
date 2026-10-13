@@ -18,18 +18,19 @@ internal sealed class ListExpenses : IEndpoint
             int? month,
             int? page,
             int? pageSize,
+            Guid? recurringExpenseId,
             IUserContext userContext,
             IQueryHandler<ListExpensesQuery, List<ExpenseListItem>> handler,
             CancellationToken cancellationToken) =>
         {
             Result<List<ExpenseListItem>> result = await handler.Handle(
-                new ListExpensesQuery(userContext.UserId, accountId, year, month, page ?? 1, pageSize ?? 20),
+                new ListExpensesQuery(userContext.UserId, accountId, year, month, page ?? 1, pageSize ?? 20, recurringExpenseId),
                 cancellationToken);
 
             return result.Match(
                 items => Results.Ok(items
                     .Select(e => new ExpenseResponse(
-                        e.Id, e.AccountId, e.AccountName, e.Amount, e.Note, e.Category, e.Date))
+                        e.Id, e.AccountId, e.AccountName, e.Amount, e.Note, e.Category, e.Date, e.RecurringExpenseId))
                     .ToList()),
                 CustomResults.Problem);
         })

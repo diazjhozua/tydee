@@ -186,5 +186,39 @@ Authorization: Bearer {{token}}
 GET {{base}}/api/v1/incomes/sources
 Authorization: Bearer {{token}}
 
+### List recurring expenses (add ?includeArchived=true to see archived ones)
+GET {{base}}/api/v1/recurring-expenses
+Authorization: Bearer {{token}}
+
+### Create a recurring expense
+POST {{base}}/api/v1/recurring-expenses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Rent",
+  "accountId": "PASTE_ACCOUNT_ID",
+  "amount": 1200,
+  "category": "Housing",
+  "note": "Monthly"
+}
+
+### Update a recurring expense
+PUT {{base}}/api/v1/recurring-expenses/PASTE_RECURRING_EXPENSE_ID
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Rent",
+  "accountId": "PASTE_ACCOUNT_ID",
+  "amount": 1250,
+  "category": "Housing",
+  "note": "Monthly"
+}
+
+### Archive a recurring expense
+DELETE {{base}}/api/v1/recurring-expenses/PASTE_RECURRING_EXPENSE_ID
+Authorization: Bearer {{token}}
+
 ### Health
 GET {{base}}/health

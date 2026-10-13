@@ -8,7 +8,8 @@ public sealed record ListExpensesQuery(
     int? Year,
     int? Month,
     int Page,
-    int PageSize) : IQuery<List<ExpenseListItem>>;
+    int PageSize,
+    Guid? RecurringExpenseId = null) : IQuery<List<ExpenseListItem>>;
 
 public sealed record ExpenseListItem(
     Guid Id,
@@ -17,4 +18,5 @@ public sealed record ExpenseListItem(
     decimal Amount,
     string? Note,
     string? Category,
-    DateOnly Date);
+    DateOnly Date,
+    Guid? RecurringExpenseId);

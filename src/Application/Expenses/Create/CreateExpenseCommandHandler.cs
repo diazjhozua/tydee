@@ -2,6 +2,7 @@ using Application.Abstractions.Data;
 using Application.Abstractions.Messaging;
 using Domain.Accounts;
 using Domain.Expenses;
+using Domain.RecurringExpenses;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
 
@@ -28,6 +29,18 @@ internal sealed class CreateExpenseCommandHandler(
             return Result.Failure<Guid>(AccountErrors.Archived);
         }
 
+        if (command.RecurringExpenseId is not null)
+        {
+            bool templateExists = await context.RecurringExpenses.AnyAsync(
+                r => r.Id == command.RecurringExpenseId && r.UserId == command.UserId,
+                cancellationToken);
+
+            if (!templateExists)
+            {
+                return Result.Failure<Guid>(RecurringExpenseErrors.NotFound);
+            }
+        }
+
         var expense = new Expense
         {
             Id = Guid.NewGuid(),
@@ -37,6 +50,7 @@ internal sealed class CreateExpenseCommandHandler(
             Note = command.Note,
             Category = command.Category,
             Date = command.Date,
+            RecurringExpenseId = command.RecurringExpenseId,
             CreatedAtUtc = dateTimeProvider.UtcNow,
         };
 

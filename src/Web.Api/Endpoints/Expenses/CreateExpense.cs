@@ -24,7 +24,8 @@ internal sealed class CreateExpense : IEndpoint
                 request.Amount,
                 request.Note,
                 request.Category,
-                request.Date);
+                request.Date,
+                request.RecurringExpenseId);
 
             Result<Guid> result = await handler.Handle(command, cancellationToken);
 
