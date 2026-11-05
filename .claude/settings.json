@@ -1,0 +1,94 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)",
+      "Bash(dotnet run:*)",
+      "Bash(dotnet format:*)",
+      "Bash(docker compose up:*)",
+      "Bash(docker compose down:*)",
+      "Bash(npm --prefix src/Web.Client run dev)",
+      "Bash(npm --prefix src/Web.Client run build)",
+      "Bash(npm --prefix src/Web.Client run lint)",
+      "Bash(npm --prefix src/Web.Client run typecheck)",
+      "Bash(npm --prefix src/Web.Client test)",
+      "Bash(npm --prefix tests/e2e test)",
+      "Bash(git status:*)",
+      "Bash(git diff)",
+      "Bash(git diff --stat)",
+      "Bash(git log --oneline)",
+      "Bash(gh pr view:*)"
+    ],
+    "deny": [
+      "Read(./.env*)",
+      "Read(./src/Web.Client/.env*)",
+      "Read(./src/Web.Api/appsettings.Development.json)",
+      "Read(./**/bin/**)",
+      "Read(./**/obj/**)",
+      "Read(./**/node_modules/**)",
+      "Read(./src/Web.Client/.next/**)",
+      "Read(./tests/e2e/test-results/**)",
+      "Read(./tests/e2e/playwright-report/**)",
+      "Write(./src/Web.Client/.next/**)",
+      "Write(./**/bin/**)",
+      "Write(./**/obj/**)",
+      "Write(./**/node_modules/**)",
+      "Edit(./src/Web.Client/.next/**)",
+      "Edit(./**/bin/**)",
+      "Edit(./**/obj/**)",
+      "Edit(./**/node_modules/**)",
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git commit --no-verify:*)",
+      "Bash(rm -rf:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash.mjs\"",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-commit.mjs\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-write.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/verify-stop.mjs\"",
+            "timeout": 180
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "typescript-lsp@claude-plugins-official": true,
+    "csharp-lsp@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "frontend-design@claude-plugins-official": false,
+    "feature-dev@claude-plugins-official": false
+  }
+}

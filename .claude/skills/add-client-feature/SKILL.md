@@ -1,0 +1,28 @@
+---
+name: add-client-feature
+description: Add a screen, sheet, dialog, or form to the Tydee Next client using the existing types, API, TanStack Query, and styling patterns. Use for UI work under src/Web.Client.
+---
+
+# Add a client feature
+
+Match the accounts and home screens; read `src/Web.Client/CLAUDE.md` first.
+
+## Steps
+
+1. **Types** — extend or add `src/Web.Client/lib/types/<area>.ts`. Keep the wire shape identical to `src/Contracts`.
+2. **API module** — add the call to `lib/api/<area>.ts`. Use `apiClient` for bearer-token calls; surface `ApiError.displayMessage` in the UI. Do not call `fetch` directly outside the auth BFF.
+3. **TanStack hook** — add queries and mutations in `lib/hooks/use<Area>.ts`. Use a stable `queryKey`; invalidate the related money keys (`accounts`, `dashboard`, `expenses`, `incomes`) after mutations that change balances.
+4. **UI** — build the screen under `app/(app)/<route>/page.tsx` and components under `components/<area>/`. Reuse `components/ui` and `AppShell`. Use `Sheet` for mobile entry forms and `Dialog` for confirmations.
+5. **Route** — add the page and a nav entry in `components/layout/BottomNav.tsx` when it is a top-level destination.
+6. **Styling** — oklch tokens from `app/globals.css` only. No hex colors, no arbitrary color values. Use `Money` for all amounts and `hero-gradient` only for the spend hero and primary add action.
+7. **Forms** — React Hook Form with the Zod resolver, explicit submit, inline errors, labels associated with inputs, focus ring preserved.
+8. **Base UI** — components take a `render` prop instead of `asChild`; pass `nativeButton={false}` when rendering a link through `Button`.
+9. **Tests** — colocated `*.test.tsx` next to the component, using React Testing Library. Cover validation, the happy path, and the empty/error state.
+10. **Check** — run `npm --prefix src/Web.Client run typecheck`, `npm --prefix src/Web.Client run lint`, `npm --prefix src/Web.Client test`, and confirm no horizontal scroll at 375px.
+
+## Rules
+
+- Server data lives in PostgreSQL and is scoped by the authenticated user; the client persists only local UI state through Zustand (`authStore`, `balanceVisibilityStore`, `consentStore`).
+- TanStack Query persists paused mutations to localStorage for offline replay; new mutations that should replay offline need `setMutationDefaults` in `providers/QueryProvider.tsx`.
+- Keep amounts as numbers end-to-end; format only through `lib/utils/currency.ts` or `Money`.
+- Do not introduce a new styling system, state library, or fetch wrapper.

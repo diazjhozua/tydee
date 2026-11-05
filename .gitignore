@@ -513,3 +513,14 @@ $RECYCLE.BIN/
 
 # Docker volumes
 .containers/
+
+# Claude Code local-only harness files
+.claude/settings.local.json
+.claude/plans/
+.claude/cache/
+
+# Playwright
+tests/e2e/node_modules/
+tests/e2e/test-results/
+tests/e2e/playwright-report/
+tests/e2e/.e2e-state.json
