@@ -27,7 +27,7 @@ internal sealed class ListAccounts : IEndpoint
                     .Select(a => new AccountResponse(
                         a.Id,
                         a.Name,
-                        a.Type.ToString(),
+                        a.Type,
                         a.AllocationPercent,
                         a.Balance,
                         a.IsArchived,

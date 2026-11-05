@@ -24,7 +24,7 @@ internal sealed class ListAccountsQueryHandler(IApplicationDbContext context)
             .Select(a => new AccountListItem(
                 a.Id,
                 a.Name,
-                a.Type,
+                a.Type.ToString(),
                 a.AllocationPercent,
                 balances.GetValueOrDefault(a.Id),
                 a.IsArchived,

@@ -26,7 +26,7 @@ internal sealed class GetDashboardQueryHandler(
 
         var accountBalances = accounts
             .Select(a => new AccountBalance(
-                a.Id, a.Name, a.Type, a.AllocationPercent, balances.GetValueOrDefault(a.Id), a.Icon, a.Color))
+                a.Id, a.Name, a.Type.ToString(), a.AllocationPercent, balances.GetValueOrDefault(a.Id), a.Icon, a.Color))
             .ToList();
 
         DateTime now = dateTimeProvider.UtcNow;

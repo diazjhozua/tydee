@@ -2,7 +2,6 @@ using Application.Abstractions.Authentication;
 using Application.Abstractions.Messaging;
 using Application.Accounts.Create;
 using Contracts.Accounts;
-using Domain.Accounts;
 using SharedKernel;
 using Web.Api.Extensions;
 using Web.Api.Infrastructure;
@@ -19,17 +18,10 @@ internal sealed class CreateAccount : IEndpoint
             ICommandHandler<CreateAccountCommand, Guid> handler,
             CancellationToken cancellationToken) =>
         {
-            Result<AccountType> type = AccountTypeParser.Parse(request.Type);
-
-            if (type.IsFailure)
-            {
-                return CustomResults.Problem(type);
-            }
-
             var command = new CreateAccountCommand(
                 userContext.UserId,
                 request.Name,
-                type.Value,
+                request.Type,
                 request.AllocationPercent,
                 request.Icon,
                 request.Color);

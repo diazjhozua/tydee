@@ -11,6 +11,13 @@ internal sealed class UpdateAccountCommandHandler(IApplicationDbContext context)
 {
     public async Task<Result> Handle(UpdateAccountCommand command, CancellationToken cancellationToken)
     {
+        Result<AccountType> type = AccountTypeParser.Parse(command.Type);
+
+        if (type.IsFailure)
+        {
+            return Result.Failure(type.Error);
+        }
+
         Account? account = await context.Accounts.SingleOrDefaultAsync(
             a => a.Id == command.AccountId && a.UserId == command.UserId,
             cancellationToken);
@@ -38,7 +45,7 @@ internal sealed class UpdateAccountCommandHandler(IApplicationDbContext context)
         }
 
         account.Name = command.Name;
-        account.Type = command.Type;
+        account.Type = type.Value;
         account.Icon = command.Icon;
         account.Color = command.Color;
 

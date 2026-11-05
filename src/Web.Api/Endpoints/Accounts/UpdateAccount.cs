@@ -2,7 +2,6 @@ using Application.Abstractions.Authentication;
 using Application.Abstractions.Messaging;
 using Application.Accounts.Update;
 using Contracts.Accounts;
-using Domain.Accounts;
 using SharedKernel;
 using Web.Api.Extensions;
 using Web.Api.Infrastructure;
@@ -20,18 +19,11 @@ internal sealed class UpdateAccount : IEndpoint
             ICommandHandler<UpdateAccountCommand> handler,
             CancellationToken cancellationToken) =>
         {
-            Result<AccountType> type = AccountTypeParser.Parse(request.Type);
-
-            if (type.IsFailure)
-            {
-                return CustomResults.Problem(type);
-            }
-
             var command = new UpdateAccountCommand(
                 userContext.UserId,
                 accountId,
                 request.Name,
-                type.Value,
+                request.Type,
                 request.Icon,
                 request.Color);
 

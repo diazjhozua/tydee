@@ -13,6 +13,13 @@ internal sealed class CreateAccountCommandHandler(
 {
     public async Task<Result<Guid>> Handle(CreateAccountCommand command, CancellationToken cancellationToken)
     {
+        Result<AccountType> type = AccountTypeParser.Parse(command.Type);
+
+        if (type.IsFailure)
+        {
+            return Result.Failure<Guid>(type.Error);
+        }
+
         bool nameTaken = await context.Accounts.AnyAsync(
             a => a.UserId == command.UserId && a.Name == command.Name && !a.IsArchived,
             cancellationToken);
@@ -34,7 +41,7 @@ internal sealed class CreateAccountCommandHandler(
             Id = Guid.NewGuid(),
             UserId = command.UserId,
             Name = command.Name,
-            Type = command.Type,
+            Type = type.Value,
             AllocationPercent = command.AllocationPercent,
             IsArchived = false,
             CreatedAtUtc = dateTimeProvider.UtcNow,

@@ -8,7 +8,7 @@ internal sealed class CreateAccountCommandValidator : AbstractValidator<CreateAc
     public CreateAccountCommandValidator()
     {
         RuleFor(c => c.Name).NotEmpty().MaximumLength(100);
-        RuleFor(c => c.Type).IsInEnum();
+        RuleFor(c => c.Type).NotEmpty();
         RuleFor(c => c.AllocationPercent).InclusiveBetween(0, 100);
         RuleFor(c => c.Icon).Must(i => i is null || AccountStyle.ValidIcons.Contains(i))
             .WithMessage("Unsupported icon.");

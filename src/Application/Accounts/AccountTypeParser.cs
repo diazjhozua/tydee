@@ -1,9 +1,9 @@
 using Domain.Accounts;
 using SharedKernel;
 
-namespace Web.Api.Endpoints.Accounts;
+namespace Application.Accounts;
 
-internal static class AccountTypeParser
+public static class AccountTypeParser
 {
     public static Result<AccountType> Parse(string type) =>
         Enum.TryParse(type, ignoreCase: true, out AccountType parsed) && Enum.IsDefined(parsed)

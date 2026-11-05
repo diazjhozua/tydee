@@ -1,5 +1,4 @@
 using Application.Abstractions.Messaging;
-using Domain.Accounts;
 
 namespace Application.Dashboard.Get;
 
@@ -16,7 +15,7 @@ public sealed record CategorySpend(string? Category, decimal Amount);
 public sealed record AccountBalance(
     Guid AccountId,
     string Name,
-    AccountType Type,
+    string Type,
     decimal AllocationPercent,
     decimal Balance,
     string? Icon,
