@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { LEGAL_EFFECTIVE_DATE } from "@/lib/legal/constants";
 
 type LegalPageProps = {
@@ -9,13 +9,14 @@ type LegalPageProps = {
   children: React.ReactNode;
 };
 
+const emptySubscribe = () => () => {};
+const hasBrowserHistory = () => window.history.length > 1;
+const noBrowserHistory = () => false;
+
 export default function LegalPage({ title, children }: LegalPageProps) {
   const router = useRouter();
-  const [hasHistory, setHasHistory] = useState(false);
-
-  useEffect(() => {
-    setHasHistory(window.history.length > 1);
-  }, []);
+  // False during SSR/hydration, then the real history length after mount.
+  const hasHistory = useSyncExternalStore(emptySubscribe, hasBrowserHistory, noBrowserHistory);
 
   return (
     <div className="mx-auto w-full max-w-md px-4 py-8">
