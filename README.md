@@ -25,7 +25,7 @@ src/
   Domain/           Entities and domain errors
   Contracts/        Request/response DTOs
   Application/      Commands, queries, handlers, validators (no MediatR - custom handler interfaces)
-  Infrastructure/   EF Core (SQL Server / Azure SQL), JWT, password hashing, SMTP email
+  Infrastructure/   EF Core (PostgreSQL), JWT, password hashing, SMTP email
   Web.Api/          Minimal API endpoints (.NET 10)
   Web.Client/       Next.js app (Tailwind v4, shadcn, TanStack Query, Zustand)
 tests/
@@ -36,14 +36,21 @@ tests/
 
 Requirements: .NET 10 SDK, Node.js, Docker.
 
-1. Start SQL Server (and optionally Seq for logs at http://localhost:8081):
+1. Start PostgreSQL (and optionally Seq for logs at http://localhost:8081):
 
    ```
-   docker compose up mssql -d
+   docker compose up -d postgres
    ```
 
-   In production the same code runs against Azure SQL Database (its serverless
-   free tier fits this app) — only the connection string changes.
+   The container creates the `tydee` database with the `tydee` user and the
+   password from `docker-compose.yml`. Point the API at it with:
+
+   ```
+   ConnectionStrings__Database=Host=localhost;Port=5432;Database=tydee;Username=tydee;Password=Tydee_Dev123!
+   ```
+
+   In production the same code runs against Azure Database for PostgreSQL —
+   only the connection string changes.
 
 2. Fill in the SMTP credentials in `src/Web.Api/appsettings.Development.json`
    (the file is gitignored). Any SMTP provider works — a Gmail app password or
@@ -56,7 +63,7 @@ Requirements: .NET 10 SDK, Node.js, Docker.
    dotnet user-secrets set "Smtp:Password" "your-smtp-password"
    ```
 
-3. Run the API. Migrations apply automatically on startup in development:
+3. Run the API. Migrations apply automatically on startup:
 
    ```
    dotnet run --project src/Web.Api
