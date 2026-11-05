@@ -1,12 +1,11 @@
-import { expect, test } from "@playwright/test";
+import { test } from "../fixtures";
+import { MarketingPage } from "../pages/marketing.page";
 
 test("shows the marketing page", async ({ page }) => {
-  await page.goto("/");
+  const marketing = new MarketingPage(page);
 
-  await expect(
-    page.getByRole("heading", { name: /split your income/i }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Get started free" }).first(),
-  ).toBeVisible();
+  await marketing.open();
+  await marketing.expectHero();
+  await marketing.expectSections();
+  await marketing.expectLoggedOutLinks();
 });
