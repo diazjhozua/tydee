@@ -155,6 +155,11 @@ api = spawn(
       ASPNETCORE_ENVIRONMENT: "Testing",
       ASPNETCORE_URLS: "http://localhost:5100",
       ConnectionStrings__Database: connectionString,
+      // The suite shares one client address, so the production limits would
+      // throttle it. These overrides apply to the disposable e2e API only.
+      RateLimiting__Global__PermitLimit: "100000",
+      RateLimiting__Auth__PermitLimit: "100000",
+      RateLimiting__Suggestion__PermitLimit: "100000",
     },
   },
 );
