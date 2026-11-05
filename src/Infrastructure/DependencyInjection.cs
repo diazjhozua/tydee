@@ -114,6 +114,15 @@ public static class DependencyInjection
 
     private static IServiceCollection AddEmail(this IServiceCollection services, IConfiguration configuration)
     {
+        string provider = configuration["Email:Provider"] ?? "Smtp";
+
+        if (string.Equals(provider, "Fake", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddTransient<IEmailSender, FakeEmailSender>();
+
+            return services;
+        }
+
         SmtpSettings smtpSettings = configuration
             .GetSection(SmtpSettings.SectionName)
             .Get<SmtpSettings>()
