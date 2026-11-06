@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.19.1](https://github.com/diazjhozua/tydee/compare/v1.19.0...v1.19.1) (2026-11-06)
+
+
+### Bug Fixes
+
+* **web-client:** derive history availability without an effect ([fa2cd48](https://github.com/diazjhozua/tydee/commit/fa2cd489b069336101c78eef24f618fd0f7bcb9d))
+
 ## [1.19.0](https://github.com/diazjhozua/tydee/compare/v1.18.0...v1.19.0) (2026-10-13)
 
 
