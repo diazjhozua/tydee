@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
+import Script from "next/script";
 import { Toaster } from "sonner";
 import { CookieBanner } from "@/components/legal/CookieBanner";
 import { AuthProvider } from "@/providers/AuthProvider";
@@ -60,9 +61,10 @@ export const viewport: Viewport = {
 
 /**
  * Applies the stored theme to <html> before first paint so the page never
- * flashes the wrong colours. Runs as a Server Component tag, so React never
- * renders a <script> on the client. ThemeProvider then mirrors this decision
- * into React state on hydration.
+ * flashes the wrong colours. Loaded through next/script with
+ * beforeInteractive so Next injects it into the initial HTML head instead of
+ * React rendering a raw <script> during hydration. ThemeProvider then mirrors
+ * this decision into React state on hydration.
  */
 const themeScript = `
 (function () {
@@ -88,7 +90,9 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <Script id="theme-init" strategy="beforeInteractive">
+          {themeScript}
+        </Script>
       </head>
       <body className="min-h-full flex flex-col bg-background">
         <ThemeProvider>
