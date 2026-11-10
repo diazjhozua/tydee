@@ -6,8 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { useResetPassword } from "@/lib/hooks/useAuth";
 import { ApiError } from "@/lib/types/api";
 
@@ -64,9 +64,8 @@ function ResetPasswordForm() {
         >
           <div className="space-y-2">
             <Label htmlFor="new-password">New password</Label>
-            <Input
+            <PasswordInput
               id="new-password"
-              type="password"
               autoComplete="new-password"
               autoFocus
               value={password}
@@ -79,10 +78,10 @@ function ResetPasswordForm() {
 
           <div className="space-y-2">
             <Label htmlFor="confirm-password">Confirm password</Label>
-            <Input
+            <PasswordInput
               id="confirm-password"
-              type="password"
               autoComplete="new-password"
+              toggleLabel="confirm password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
