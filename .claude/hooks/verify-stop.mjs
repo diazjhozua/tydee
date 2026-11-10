@@ -65,10 +65,12 @@ if (status.status !== 0 || (status.stdout ?? '').trim() === '') {
   process.exit(0)
 }
 
+// Windows cold runs are slow: tsc takes over 120s and lint measured 59.5s
+// against the old 60s budget, so give each step real headroom.
 const steps = [
-  ['npm', ['--prefix', 'src/Web.Client', 'run', 'typecheck'], 90_000],
-  ['npm', ['--prefix', 'src/Web.Client', 'run', 'lint'], 60_000],
-  ['dotnet', ['build', 'tydee.slnx'], 150_000],
+  ['npm', ['--prefix', 'src/Web.Client', 'run', 'typecheck'], 180_000],
+  ['npm', ['--prefix', 'src/Web.Client', 'run', 'lint'], 120_000],
+  ['dotnet', ['build', 'tydee.slnx'], 240_000],
 ]
 
 for (const [file, args, timeout] of steps) {
