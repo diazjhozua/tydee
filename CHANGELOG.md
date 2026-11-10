@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.21.0](https://github.com/diazjhozua/tydee/compare/v1.20.0...v1.21.0) (2026-11-10)
+
+
+### Features
+
+* **auth:** use password input on auth forms ([2643058](https://github.com/diazjhozua/tydee/commit/2643058e92b77dac424b0a7accb471e05adaf4a0))
+* **ui:** add password input with visibility toggle ([73ece64](https://github.com/diazjhozua/tydee/commit/73ece647a058328f804d802295f8567b4c9c7054))
+
 ## [1.20.0](https://github.com/diazjhozua/tydee/compare/v1.19.1...v1.20.0) (2026-11-10)
 
 
