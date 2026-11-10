@@ -7,7 +7,7 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
 - Routes: marketing `/`; auth `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`; app `/app`, `/accounts`, `/recurring`, `/recurring/[id]`, `/settings`, `/admin`, `/setup`; public legal pages. The app layout is `components/layout/AppShell`.
 - Server state belongs to TanStack Query hooks in `lib/hooks/`. Do not introduce another data store.
 - Zustand holds local UI state only:
-  - `lib/stores/authStore.ts` — in-memory access token and expiry. The refresh token is an httpOnly cookie set by the BFF.
+  - `lib/stores/authStore.ts` — in-memory access token and expiry. The refresh token is an httpOnly cookie set by the BFF. It is a session cookie unless the user ticks "Remember me" on the login page; `lib/auth/cookies.ts` owns both cookies and the 7-day max age, and the refresh route preserves the choice through the `remember_me` companion.
   - `lib/stores/balanceVisibilityStore.ts` — persisted "hide balances" flag.
   - `lib/stores/consentStore.ts` — persisted cookie-banner choice.
 - `providers/AuthProvider.tsx` rehydrates the access token once on cold load by calling `refreshAccessToken()`. `providers/QueryProvider.tsx` owns the query client, persistence, and offline replay.

@@ -18,9 +18,15 @@ export default function CookiePolicyPage() {
       <h2 className="text-base font-semibold text-foreground">Cookies we use</h2>
       <ul className="list-disc space-y-1.5 pl-5">
         <li>
-          <strong className="font-medium text-foreground">Strictly necessary — session</strong> — an
+          <strong className="font-medium text-foreground">Strictly necessary — sign-in</strong> — an
           httpOnly <code>refresh_token</code> cookie that keeps you signed in. It is set only after
-          you log in and is required for the app to function. No consent is required for this cookie.
+          you log in and is required for the app to function. By default it is a session cookie and
+          is discarded when you close your browser. If you tick{" "}
+          <strong className="font-medium text-foreground">Remember me for 7 days</strong> on the
+          login page, it is kept for 7 days and that window restarts each time the app refreshes
+          your session. An optional httpOnly <code>remember_me</code> cookie records that choice; it
+          is set only when you tick the box and is not required for the app to work. No consent is
+          required for either cookie.
         </li>
       </ul>
 
