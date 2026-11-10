@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { applySessionCookies } from "@/lib/auth/cookies";
 
 export const maxDuration = 60;
 
 const API_URL = process.env.API_URL;
-const REFRESH_TOKEN_MAX_AGE = 60 * 60 * 24 * 7;
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  const { email, password, rememberMe } = await request.json();
 
   let res: Response;
   try {
     res = await fetch(`${API_URL}/api/v1/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ email, password }),
     });
   } catch {
     return NextResponse.json({}, { status: 503 });
@@ -29,13 +29,7 @@ export async function POST(request: NextRequest) {
 
   // The refresh token never reaches browser JS - it lives in this cookie only.
   const response = NextResponse.json({ accessToken, accessTokenExpiresAt });
-  response.cookies.set("refresh_token", refreshToken, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: REFRESH_TOKEN_MAX_AGE,
-    secure: process.env.NODE_ENV === "production",
-  });
+  applySessionCookies(response.cookies, refreshToken, rememberMe === true);
 
   return response;
 }
