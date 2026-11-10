@@ -18,7 +18,9 @@ export class RegisterPage extends BasePage {
     await this.page.getByLabel("Last name").fill(input.lastName);
     await this.page.getByLabel("Email").fill(input.email);
     await this.page.getByLabel("Password", { exact: true }).fill(input.password);
-    await this.page.getByLabel("Confirm password").fill(input.confirmPassword ?? input.password);
+    await this.page
+      .getByLabel("Confirm password", { exact: true })
+      .fill(input.confirmPassword ?? input.password);
   }
 
   async submit(): Promise<void> {

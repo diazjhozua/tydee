@@ -27,6 +27,19 @@ test("rejects a wrong password", async ({ page, verifiedUser }) => {
   await expect(page).toHaveURL(/\/login/);
 });
 
+test("reveals the password without losing the typed value", async ({ page }) => {
+  const login = new LoginPage(page);
+
+  await login.open();
+  await login.fill("nobody@example.com", "Secret123!");
+  await login.expectPasswordMasked();
+
+  await login.revealPassword();
+
+  await login.expectPasswordRevealed("Secret123!");
+  await expect(page).toHaveURL(/\/login/);
+});
+
 test("offers to resend verification for an unverified account", async ({ page }) => {
   const user = await createUnverifiedUser();
   const login = new LoginPage(page);

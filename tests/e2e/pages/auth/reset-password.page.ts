@@ -12,7 +12,7 @@ export class ResetPasswordPage extends BasePage {
 
   async fill(password: string): Promise<void> {
     await this.page.getByLabel("New password").fill(password);
-    await this.page.getByLabel("Confirm password").fill(password);
+    await this.page.getByLabel("Confirm password", { exact: true }).fill(password);
   }
 
   async submit(): Promise<void> {

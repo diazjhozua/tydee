@@ -16,6 +16,32 @@ export class LoginPage extends BasePage {
     await this.page.getByRole("button", { name: "Log in" }).click();
   }
 
+  async expectPasswordMasked(): Promise<void> {
+    await expect(this.page.getByLabel("Password", { exact: true })).toHaveAttribute(
+      "type",
+      "password",
+    );
+    await expect(this.page.getByRole("button", { name: "Show password" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  }
+
+  async revealPassword(): Promise<void> {
+    await this.page.getByRole("button", { name: "Show password" }).click();
+  }
+
+  async expectPasswordRevealed(value: string): Promise<void> {
+    const input = this.page.getByLabel("Password", { exact: true });
+
+    await expect(input).toHaveAttribute("type", "text");
+    await expect(input).toHaveValue(value);
+    await expect(this.page.getByRole("button", { name: "Hide password" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  }
+
   rememberMe() {
     return this.page.getByRole("checkbox", { name: "Remember me for 7 days" });
   }
