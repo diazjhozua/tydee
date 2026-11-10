@@ -5,6 +5,9 @@ import packageJson from "./package.json";
 const withSerwist = withSerwistInit({
   swSrc: "app/sw.ts",
   swDest: "public/sw.js",
+  // A dev-mode service worker caches stale chunks across restarts, which
+  // surfaces as "module factory is not available" after an edit.
+  disable: process.env.NODE_ENV === "development",
   // Defaults to true, which reloads the page on every reconnect — that
   // races paused mutations' own resume-on-'online' listener and can abort
   // a queued PUT/DELETE mid-flight before it reaches the server.
