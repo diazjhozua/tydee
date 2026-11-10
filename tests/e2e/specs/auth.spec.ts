@@ -72,6 +72,79 @@ test("shows the missing-token state for password reset", async ({ page }) => {
   await reset.expectMissingToken();
 });
 
+const DAY_SECONDS = 24 * 60 * 60;
+
+function expectRememberedForAWeek(cookie: { expires: number } | undefined, now: number) {
+  expect(cookie?.expires).toBeGreaterThan(now + 6 * DAY_SECONDS);
+  expect(cookie?.expires).toBeLessThan(now + 8 * DAY_SECONDS);
+}
+
+test("keeps the session only until the browser closes by default", async ({
+  page,
+  seed,
+  verifiedUser,
+}) => {
+  await seed.withAccounts();
+
+  const login = new LoginPage(page);
+
+  await login.open();
+  await expect(login.rememberMe()).not.toBeChecked();
+  await login.fill(verifiedUser.email, verifiedUser.password);
+  await login.submit();
+
+  await new DashboardPage(page).expectReady();
+
+  expect((await login.cookie("refresh_token"))?.expires).toBe(-1);
+  expect(await login.cookie("remember_me")).toBeUndefined();
+
+  // A refresh must not upgrade the session cookie into a persistent one.
+  const tokenBeforeReload = (await login.cookie("refresh_token"))?.value;
+
+  await page.reload();
+  await new DashboardPage(page).expectReady();
+
+  expect((await login.cookie("refresh_token"))?.value).not.toBe(tokenBeforeReload);
+  expect((await login.cookie("refresh_token"))?.expires).toBe(-1);
+  expect(await login.cookie("remember_me")).toBeUndefined();
+});
+
+test("remembers the session for 7 days when checked", async ({ page, seed, verifiedUser }) => {
+  await seed.withAccounts();
+
+  const login = new LoginPage(page);
+
+  await login.open();
+  await login.checkRememberMe();
+  await login.fill(verifiedUser.email, verifiedUser.password);
+  await login.submit();
+
+  await new DashboardPage(page).expectReady();
+
+  const now = Date.now() / 1000;
+  expectRememberedForAWeek(await login.cookie("refresh_token"), now);
+  expectRememberedForAWeek(await login.cookie("remember_me"), now);
+
+  // Rotation through the BFF keeps both cookies persistent.
+  const tokenBeforeReload = (await login.cookie("refresh_token"))?.value;
+
+  await page.reload();
+  await new DashboardPage(page).expectReady();
+
+  expect((await login.cookie("refresh_token"))?.value).not.toBe(tokenBeforeReload);
+  expectRememberedForAWeek(await login.cookie("refresh_token"), now);
+  expectRememberedForAWeek(await login.cookie("remember_me"), now);
+
+  const settings = new SettingsPage(page);
+
+  await settings.open();
+  await settings.logout();
+  await expect(page).toHaveURL(/\/login/);
+
+  expect(await login.cookie("refresh_token")).toBeUndefined();
+  expect(await login.cookie("remember_me")).toBeUndefined();
+});
+
 test("logs in and logs out", async ({ page, seed, verifiedUser }) => {
   await seed.withAccounts();
 

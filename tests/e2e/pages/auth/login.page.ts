@@ -16,6 +16,20 @@ export class LoginPage extends BasePage {
     await this.page.getByRole("button", { name: "Log in" }).click();
   }
 
+  rememberMe() {
+    return this.page.getByRole("checkbox", { name: "Remember me for 7 days" });
+  }
+
+  async checkRememberMe(): Promise<void> {
+    await this.rememberMe().check();
+  }
+
+  async cookie(name: string) {
+    const cookies = await this.page.context().cookies();
+
+    return cookies.find((cookie) => cookie.name === name);
+  }
+
   async expectWelcome(): Promise<void> {
     await expect(this.page.getByText("Welcome back")).toBeVisible();
   }
