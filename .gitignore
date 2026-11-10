@@ -518,6 +518,7 @@ $RECYCLE.BIN/
 .claude/settings.local.json
 .claude/plans/
 .claude/cache/
+.claude/worktrees/
 
 # Playwright
 tests/e2e/node_modules/
