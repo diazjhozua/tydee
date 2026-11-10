@@ -15,6 +15,7 @@ import { ApiError } from "@/lib/types/api";
 const schema = z.object({
   email: z.string().email("Enter a valid email"),
   password: z.string().min(1, "Password is required"),
+  rememberMe: z.boolean(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -29,7 +30,10 @@ function LoginForm() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) as Resolver<FormValues> });
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema) as Resolver<FormValues>,
+    defaultValues: { email: "", password: "", rememberMe: false },
+  });
 
   function onSubmit(values: FormValues) {
     setNotVerified(false);
@@ -78,6 +82,21 @@ function LoginForm() {
             {errors.password && (
               <p className="text-sm text-destructive">{errors.password.message}</p>
             )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              id="rememberMe"
+              type="checkbox"
+              className="size-4 shrink-0 accent-primary outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              {...register("rememberMe")}
+            />
+            <Label
+              htmlFor="rememberMe"
+              className="min-h-11 cursor-pointer font-normal text-muted-foreground"
+            >
+              Remember me for 7 days
+            </Label>
           </div>
 
           {notVerified && (
