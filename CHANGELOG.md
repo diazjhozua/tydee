@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.20.0](https://github.com/diazjhozua/tydee/compare/v1.19.1...v1.20.0) (2026-11-10)
+
+
+### Features
+
+* **client:** add a remember me option to the login form ([faf4984](https://github.com/diazjhozua/tydee/commit/faf4984208e0122ce3472d4260322d2067dafd41))
+* **client:** add session cookie helper for the auth BFF ([0ba284f](https://github.com/diazjhozua/tydee/commit/0ba284f8f094d6b72898fa6cfe278a9543b3c174))
+* **client:** keep the remember me choice across refresh ([3589b14](https://github.com/diazjhozua/tydee/commit/3589b145fcee49d69d3196fff7df435d66859003))
+
+
+### Bug Fixes
+
+* **client:** disable the service worker in development ([632341f](https://github.com/diazjhozua/tydee/commit/632341fb17c77caeffe58fd63ade48bc5804cf78))
+* **client:** load the theme init script through next/script ([f15af3e](https://github.com/diazjhozua/tydee/commit/f15af3ed1e1da7ce25695ca261d65edb78847903))
+
 ## [1.19.1](https://github.com/diazjhozua/tydee/compare/v1.19.0...v1.19.1) (2026-11-06)
 
 
