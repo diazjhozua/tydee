@@ -2,12 +2,12 @@
 
 import { Inbox, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { AccountsSection } from "@/components/dashboard/AccountsSection";
+import { CategoryBreakdown } from "@/components/dashboard/CategoryBreakdown";
 import { ExpenseDialog } from "@/components/expenses/ExpenseDialog";
 import { IncomeDialog } from "@/components/incomes/IncomeDialog";
-import { AccountIcon } from "@/components/shared/AccountIcon";
 import { ActivityIcon } from "@/components/shared/ActivityIcon";
-import { categoryBarColorClass, CategoryIcon } from "@/components/shared/CategoryIcon";
 import { Money } from "@/components/shared/Money";
 import {
   MonthPicker,
@@ -15,7 +15,7 @@ import {
   isCurrentMonth,
   monthLabel,
 } from "@/components/shared/MonthPicker";
-import { Card, CardContent } from "@/components/ui/card";
+import { SectionLabel } from "@/components/shared/SectionLabel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,19 +31,16 @@ import { useDashboard } from "@/lib/hooks/useDashboard";
 import { useExpenses } from "@/lib/hooks/useExpenses";
 import { useMe } from "@/lib/hooks/useMe";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
+import { useDashboardViewStore } from "@/lib/stores/dashboardViewStore";
 import { toast } from "sonner";
 import { ActivityItem } from "@/lib/types/dashboard";
 import { Expense } from "@/lib/types/expense";
 import { formatMoney } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-      {children}
-    </h2>
-  );
-}
+const emptySubscribe = () => () => {};
+const isClient = () => true;
+const isServer = () => false;
 
 export default function HomePage() {
   const router = useRouter();
@@ -61,6 +58,16 @@ export default function HomePage() {
   const [deletingTransfer, setDeletingTransfer] = useState<ActivityItem | undefined>();
   const deleteAdjustment = useDeleteAdjustment();
   const deleteTransfer = useDeleteTransfer();
+
+  const mounted = useSyncExternalStore(emptySubscribe, isClient, isServer);
+  const categoryView = useDashboardViewStore((state) => state.categoryView);
+  const accountsView = useDashboardViewStore((state) => state.accountsView);
+  const setCategoryView = useDashboardViewStore((state) => state.setCategoryView);
+  const setAccountsView = useDashboardViewStore((state) => state.setAccountsView);
+
+  // First paint is always the list; the persisted choice applies after hydration.
+  const resolvedCategoryView = mounted ? categoryView : "list";
+  const resolvedAccountsView = mounted ? accountsView : "list";
 
   const currency = me?.currency ?? "PHP";
   const viewingCurrentMonth = isCurrentMonth(month);
@@ -186,99 +193,26 @@ export default function HomePage() {
       </div>
 
       {spent > 0 && (
-        <section className="space-y-3">
-          <SectionLabel>Where it went</SectionLabel>
-          <div className="space-y-1 rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
-            {dashboard.spentByCategory.map((row) => {
-              const percent = Math.round((row.amount / spent) * 100);
-              const isSelected = categoryFilter === row.category;
-              const isDimmed = categoryFilter !== undefined && !isSelected;
-
-              return (
-                <button
-                  key={row.category ?? "__none"}
-                  type="button"
-                  onClick={() =>
-                    setCategoryFilter((prev) => (prev === row.category ? undefined : row.category))
-                  }
-                  className={
-                    "-mx-2 flex w-[calc(100%+1rem)] items-center gap-3 rounded-xl px-2 py-1.5 text-left transition" +
-                    (isSelected ? " bg-accent/60" : "") +
-                    (isDimmed ? " opacity-45" : "")
-                  }
-                >
-                  <CategoryIcon category={row.category} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-3">
-                      <span
-                        className={
-                          row.category
-                            ? "truncate text-sm font-medium"
-                            : "truncate text-sm text-muted-foreground"
-                        }
-                      >
-                        {row.category ?? "Uncategorized"}
-                      </span>
-                      <span className="flex items-baseline gap-1.5 whitespace-nowrap">
-                        <Money value={row.amount} currency={currency} size="sm" />
-                        <span className="text-xs text-muted-foreground">{percent}%</span>
-                      </span>
-                    </div>
-                    <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className={`h-full rounded-full ${categoryBarColorClass(row.category)}`}
-                        style={{ width: `${Math.min(percent, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+        <CategoryBreakdown
+          rows={dashboard.spentByCategory}
+          totalSpent={spent}
+          currency={currency}
+          view={resolvedCategoryView}
+          onViewChange={setCategoryView}
+          categoryFilter={categoryFilter}
+          onCategoryClick={(category) =>
+            setCategoryFilter((prev) => (prev === category ? undefined : category))
+          }
+        />
       )}
 
-      <section className="space-y-3">
-        <SectionLabel>Accounts</SectionLabel>
-        {dashboard.accountBalances.map((account) => {
-          const isSpending = account.type === "Spending";
-          const accountTotal = isSpending ? account.balance + spent : 0;
-
-          return (
-            <Card key={account.accountId} className="rounded-2xl border-border/60 py-0 shadow-sm">
-              <CardContent className="flex items-center gap-3 p-4">
-                <AccountIcon
-                  type={account.type === "Spending" ? "Spending" : "Saving"}
-                  icon={account.icon}
-                  color={account.color}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold">{account.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {account.type} · {account.allocationPercent}%
-                  </p>
-                  {isSpending && accountTotal > 0 && (
-                    <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full rounded-full bg-primary"
-                        style={{
-                          width: `${Math.max((account.balance / accountTotal) * 100, 0)}%`,
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="text-right">
-                  <Money value={account.balance} currency={currency} size="md" hideable />
-                  {isSpending && (
-                    <p className="text-[11px] font-medium text-muted-foreground">left</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </section>
+      <AccountsSection
+        accounts={dashboard.accountBalances}
+        spent={spent}
+        currency={currency}
+        view={resolvedAccountsView}
+        onViewChange={setAccountsView}
+      />
 
       <section className="space-y-3">
         <div className="flex items-center gap-2">

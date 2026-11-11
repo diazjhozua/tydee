@@ -10,6 +10,7 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
   - `lib/stores/authStore.ts` — in-memory access token and expiry. The refresh token is an httpOnly cookie set by the BFF. It is a session cookie unless the user ticks "Remember me" on the login page; `lib/auth/cookies.ts` owns both cookies and the 7-day max age, and the refresh route preserves the choice through the `remember_me` companion.
   - `lib/stores/balanceVisibilityStore.ts` — persisted "hide balances" flag.
   - `lib/stores/consentStore.ts` — persisted cookie-banner choice.
+  - `lib/stores/dashboardViewStore.ts` — persisted per-section list/grid choice for the dashboard's category breakdown and accounts.
 - `providers/AuthProvider.tsx` rehydrates the access token once on cold load by calling `refreshAccessToken()`. `providers/QueryProvider.tsx` owns the query client, persistence, and offline replay.
 - `useMe()` and `useDashboard()` are enabled only after the auth store has a token, so they do not fire before `AuthProvider` finishes.
 
@@ -66,5 +67,7 @@ npm run typecheck   # tsc --noEmit
 npm test            # Vitest, colocated *.test.ts(x)
 npm test -- lib/utils/currency.test.ts
 ```
+
+`next dev` writes to `.next-dev` and production builds to `.next` (`distDir` in `next.config.ts`). Do not merge them: `next build --webpack` and Turbopack dev produce incompatible route manifests, which shows up as 404s on every app route.
 
 Run commands from the repository root with `npm --prefix src/Web.Client ...` when you do not want to change directories.
