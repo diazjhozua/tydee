@@ -4,6 +4,7 @@
   "packages": {
     ".": {
       "release-type": "simple",
+      "exclude-paths": [".claude"],
       "extra-files": [
         {
           "type": "json",
