@@ -1,3 +1,5 @@
+export type DefaultPage = "Home" | "LogExpense";
+
 export type Me = {
   id: string;
   email: string;
@@ -5,4 +7,5 @@ export type Me = {
   lastName: string;
   currency: string;
   isAdmin: boolean;
+  defaultPage: DefaultPage | null;
 };
