@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.25.0](https://github.com/diazjhozua/tydee/compare/v1.24.0...v1.25.0) (2026-11-11)
+
+
+### Features
+
+* **client:** add default page preference types ([cbaae3f](https://github.com/diazjhozua/tydee/commit/cbaae3f09dc9f789d4a04652a4c592f68c2df9f0))
+* **client:** add the log expense page ([3f8c1b9](https://github.com/diazjhozua/tydee/commit/3f8c1b9d72c7da305de41a9004f1beb2efba0299))
+* **client:** open the default page on entry ([56e2fd1](https://github.com/diazjhozua/tydee/commit/56e2fd1f7a3c76f72427e2d8e4d31c86a28396f3))
+* **expenses:** filter the expense list by date ([bdb7eae](https://github.com/diazjhozua/tydee/commit/bdb7eae158d96fcad7a8feaeaa33a70f73e4c466))
+* **users:** add default page preference ([d408e3e](https://github.com/diazjhozua/tydee/commit/d408e3ec121edf5501871af9df565d71cf3e0861))
+
 ## [1.24.0](https://github.com/diazjhozua/tydee/compare/v1.23.0...v1.24.0) (2026-11-11)
 
 
