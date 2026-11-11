@@ -48,7 +48,8 @@ describe("AccountsSection", () => {
 
     expect(screen.getByRole("heading", { level: 2, name: "Accounts" })).toBeInTheDocument();
     expect(screen.getByText("Budget")).toBeInTheDocument();
-    expect(screen.getByText("Spending · 50%")).toBeInTheDocument();
+    expect(screen.getByText("Spending")).toBeInTheDocument();
+    expect(screen.getByText("50% of income")).toBeInTheDocument();
     expect(container.querySelector(".money")?.textContent).toBe("$400.00");
     expect(screen.getByText("Savings")).toBeInTheDocument();
   });

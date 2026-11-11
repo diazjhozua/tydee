@@ -90,8 +90,9 @@ export function AccountsSection({ accounts, spent, currency, view, onViewChange 
                   <AccountIcon type={account.type} icon={account.icon} color={account.color} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{account.name}</p>
+                    <p className="text-xs text-muted-foreground">{account.type}</p>
                     <p className="text-xs text-muted-foreground">
-                      {account.type} · {account.allocationPercent}%
+                      {account.allocationPercent}% of income
                     </p>
                     {isSpending && accountTotal > 0 && (
                       <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted">
