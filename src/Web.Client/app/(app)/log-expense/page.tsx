@@ -120,10 +120,10 @@ export default function LogExpensePage() {
                   <p className="truncate text-sm font-medium">
                     {expense.note ?? expense.category ?? "Expense"}
                   </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {expense.accountName}
-                    {expense.category ? ` · ${expense.category}` : ""}
-                  </p>
+                  <p className="truncate text-xs text-muted-foreground">{expense.accountName}</p>
+                  {expense.category && (
+                    <p className="truncate text-xs text-muted-foreground">{expense.category}</p>
+                  )}
                 </div>
                 <span className="flex shrink-0 items-baseline gap-0.5 text-sm font-semibold">
                   <span className="text-muted-foreground">−</span>
