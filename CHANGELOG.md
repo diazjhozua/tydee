@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.23.0](https://github.com/diazjhozua/tydee/compare/v1.22.0...v1.23.0) (2026-11-11)
+
+
+### Features
+
+* **skills:** add create-issue skill ([e028c50](https://github.com/diazjhozua/tydee/commit/e028c508bf2eb1e1ec357291a67cecb92052aad8))
+
 ## [1.22.0](https://github.com/diazjhozua/tydee/compare/v1.21.0...v1.22.0) (2026-11-11)
 
 
