@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.22.0](https://github.com/diazjhozua/tydee/compare/v1.21.0...v1.22.0) (2026-11-11)
+
+
+### Features
+
+* **ui:** add list and grid views to dashboard ([5cd6a3b](https://github.com/diazjhozua/tydee/commit/5cd6a3b988f129b874fb8bdfd55a883c14e74a11))
+
+
+### Bug Fixes
+
+* **build:** isolate dev output from production build ([fb9886d](https://github.com/diazjhozua/tydee/commit/fb9886d5aaa9f876dfd58dc43980f21245fb31c4))
+
 ## [1.21.0](https://github.com/diazjhozua/tydee/compare/v1.20.0...v1.21.0) (2026-11-10)
 
 
