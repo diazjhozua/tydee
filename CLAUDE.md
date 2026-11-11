@@ -112,6 +112,7 @@ Errors: expected failures use `Result`/`Error`/`ErrorType` from `SharedKernel`, 
 
 - Run the `verify` skill (`/verify`) before every commit: fast tier for a narrow edit, standard tier for code changes, full tier (adds Playwright) before a release.
 - The `review` skill (`/review`) is the pre-commit checklist for this repo; run it on the working diff.
+- The `create-issue` skill (`/create-issue`) files a GitHub issue as a bug, feature, or task: it verifies the claim with `code-explorer`, checks for duplicates, shows a preview, then creates it with `gh issue create` after confirmation.
 - `/feature-dev` is the entry point for multi-layer features: it explores with `code-explorer`, designs with `code-architect` (plus the `frontend-design` skill for UI), builds with the slice skills, reviews with `code-reviewer` + `architecture-reviewer` + `ui-reviewer`, and finishes with `verify`.
 - Sub-agents: `code-explorer` traces existing slices, `code-architect` writes blueprints, `code-reviewer` checks bugs and simplicity, `architecture-reviewer` for layer and DI checks, `feature-builder` for multi-file vertical slices, `test-runner` to diagnose failures, `ui-reviewer` for accessibility and token usage.
 - `add-api-endpoint` and `add-client-feature` encode the vertical-slice patterns used by the `IEndpoint` slices and the home/accounts screens; `code-architect` preloads both, and `code-reviewer` preloads `review`.
