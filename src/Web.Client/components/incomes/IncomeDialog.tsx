@@ -244,7 +244,7 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
             className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             <History className="size-3.5" />
-            Same as last time · {formatMoney(lastIncome.amount, currency)} · {lastIncome.source}
+            Same as last time: {formatMoney(lastIncome.amount, currency)} from {lastIncome.source}
           </button>
         )}
 
