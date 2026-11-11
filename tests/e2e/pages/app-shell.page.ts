@@ -10,7 +10,7 @@ export class AppShellPage extends BasePage {
     await this.page.getByRole("button", { name: "Settings" }).click();
   }
 
-  async nav(label: "Home" | "Accounts" | "Saved"): Promise<void> {
+  async nav(label: "Home" | "Log" | "Accounts" | "Saved"): Promise<void> {
     await this.page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: label }).click();
   }
 

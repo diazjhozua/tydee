@@ -14,7 +14,7 @@ export function createExpensesApi(http: HttpClient) {
   return {
     create: (payload: CreateExpensePayload) =>
       http.post<{ id: string }>("/api/v1/expenses", payload),
-    list: (params: { pageSize?: number; recurringExpenseId?: string } = {}) => {
+    list: (params: { pageSize?: number; recurringExpenseId?: string; date?: string } = {}) => {
       const query = new URLSearchParams();
 
       if (params.pageSize !== undefined) {
@@ -23,6 +23,10 @@ export function createExpensesApi(http: HttpClient) {
 
       if (params.recurringExpenseId) {
         query.set("recurringExpenseId", params.recurringExpenseId);
+      }
+
+      if (params.date) {
+        query.set("date", params.date);
       }
 
       const suffix = query.size > 0 ? `?${query.toString()}` : "";

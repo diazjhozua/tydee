@@ -3,6 +3,7 @@ import { test } from "../fixtures";
 import { LoginPage } from "../pages/auth/login.page";
 import { RegisterPage } from "../pages/auth/register.page";
 import { VerifyEmailPage } from "../pages/auth/verify-email.page";
+import { DefaultPagePrompt } from "../pages/overlays/default-page-prompt";
 import { SetupPage } from "../pages/setup.page";
 import { verificationToken } from "../support/db";
 
@@ -34,5 +35,10 @@ test("registers, verifies, logs in, and completes setup", async ({ page }) => {
   await setup.expectStep2();
   await setup.expectFinishEnabled(true);
   await setup.finish();
+
+  const prompt = new DefaultPagePrompt(page);
+
+  await prompt.expectVisible();
+  await prompt.choose("Home");
   await setup.expectDashboard(["Budget", "Savings", "Emergency Fund"]);
 });

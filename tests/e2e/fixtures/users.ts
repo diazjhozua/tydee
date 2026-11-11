@@ -7,6 +7,8 @@ import { API_URL } from "../support/env";
 
 export type UserSession = UserSpec & AuthResponse;
 
+export type DefaultPagePreference = "Home" | "LogExpense" | null;
+
 export async function createUnverifiedUser(spec: UserSpec = userSpec()): Promise<UserSpec> {
   const api = createApi(API_URL);
 
@@ -15,7 +17,10 @@ export async function createUnverifiedUser(spec: UserSpec = userSpec()): Promise
   return spec;
 }
 
-export async function createVerifiedUser(spec: UserSpec = userSpec()): Promise<UserSession> {
+export async function createVerifiedUser(
+  spec: UserSpec = userSpec(),
+  options: { defaultPage?: DefaultPagePreference } = { defaultPage: "Home" },
+): Promise<UserSession> {
   const api = createApi(API_URL);
 
   await api.auth.register(spec);
@@ -25,6 +30,10 @@ export async function createVerifiedUser(spec: UserSpec = userSpec()): Promise<U
 
   const auth = await api.auth.login(spec.email, spec.password);
 
+  if (options.defaultPage) {
+    await createApi(API_URL, auth.accessToken).me.updateDefaultPage(options.defaultPage);
+  }
+
   return { ...spec, ...auth };
 }
 
@@ -32,7 +41,10 @@ export async function createVerifiedUser(spec: UserSpec = userSpec()): Promise<U
  * Admin promotion is a database flag, and the role claim is only added when a
  * token is issued, so the user must log in again after the update.
  */
-export async function createAdminUser(spec: UserSpec = userSpec("e2e-admin")): Promise<UserSession> {
+export async function createAdminUser(
+  spec: UserSpec = userSpec("e2e-admin"),
+  options: { defaultPage?: DefaultPagePreference } = { defaultPage: "Home" },
+): Promise<UserSession> {
   const api = createApi(API_URL);
 
   await api.auth.register(spec);
@@ -43,6 +55,10 @@ export async function createAdminUser(spec: UserSpec = userSpec("e2e-admin")): P
   await promoteToAdmin(spec.email);
 
   const auth = await api.auth.login(spec.email, spec.password);
+
+  if (options.defaultPage) {
+    await createApi(API_URL, auth.accessToken).me.updateDefaultPage(options.defaultPage);
+  }
 
   return { ...spec, ...auth };
 }

@@ -8,6 +8,10 @@ export type TestFixtures = {
   userApi: TydeeApi;
   adminUser: UserSession;
   adminApi: TydeeApi;
+  unconfiguredUser: UserSession;
+  unconfiguredApi: TydeeApi;
+  unconfiguredSeed: Seed;
+  unconfiguredSignedIn: { page: Page; user: UserSession };
   seed: Seed;
   signedIn: { page: Page; user: UserSession };
   adminSignedIn: { page: Page; user: UserSession };

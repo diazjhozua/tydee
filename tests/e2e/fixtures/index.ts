@@ -16,6 +16,23 @@ export const test = base.extend<TestFixtures>({
     await use(createApi(API_URL, verifiedUser.accessToken));
   },
 
+  unconfiguredUser: async ({}, use) => {
+    await use(await createVerifiedUser(undefined, { defaultPage: null }));
+  },
+
+  unconfiguredApi: async ({ unconfiguredUser }, use) => {
+    await use(createApi(API_URL, unconfiguredUser.accessToken));
+  },
+
+  unconfiguredSeed: async ({ unconfiguredApi }, use) => {
+    await use(new Seed(unconfiguredApi));
+  },
+
+  unconfiguredSignedIn: async ({ page, unconfiguredUser }, use) => {
+    await signInThroughBff(page, unconfiguredUser);
+    await use({ page, user: unconfiguredUser });
+  },
+
   adminUser: async ({}, use) => {
     await use(await createAdminUser());
   },

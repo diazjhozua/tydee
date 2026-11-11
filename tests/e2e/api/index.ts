@@ -24,7 +24,11 @@ export function createApi(baseUrl = API_URL, token?: string) {
     dashboard: createDashboardApi(http),
     admin: createAdminApi(http),
     suggestions: createSuggestionsApi(http),
-    me: () => http.get<MeResponse>("/api/v1/me"),
+    me: {
+      get: () => http.get<MeResponse>("/api/v1/me"),
+      updateDefaultPage: (defaultPage: "Home" | "LogExpense") =>
+        http.put<void>("/api/v1/me/default-page", { defaultPage }),
+    },
   };
 }
 

@@ -22,6 +22,15 @@ export class SettingsPage extends BasePage {
     await chooseOption(this.page, row.getByRole("combobox"), code);
   }
 
+  async selectDefaultPage(label: "Home" | "Log expense"): Promise<void> {
+    const row = this.page
+      .locator("div.flex.items-center.justify-between")
+      .filter({ hasText: "Default page" })
+      .last();
+
+    await chooseOption(this.page, row.getByRole("combobox"), label);
+  }
+
   async toggleHideBalances(): Promise<void> {
     await this.page.getByRole("button", { name: /^(Visible|Hidden)$/ }).click();
   }

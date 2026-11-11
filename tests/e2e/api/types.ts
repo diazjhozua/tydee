@@ -15,6 +15,7 @@ export type MeResponse = {
   lastName: string;
   currency: string;
   isAdmin: boolean;
+  defaultPage: "Home" | "LogExpense" | null;
 };
 
 export type AccountResponse = {
