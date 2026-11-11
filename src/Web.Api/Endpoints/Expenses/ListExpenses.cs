@@ -19,12 +19,14 @@ internal sealed class ListExpenses : IEndpoint
             int? page,
             int? pageSize,
             Guid? recurringExpenseId,
+            DateOnly? date,
             IUserContext userContext,
             IQueryHandler<ListExpensesQuery, List<ExpenseListItem>> handler,
             CancellationToken cancellationToken) =>
         {
             Result<List<ExpenseListItem>> result = await handler.Handle(
-                new ListExpensesQuery(userContext.UserId, accountId, year, month, page ?? 1, pageSize ?? 20, recurringExpenseId),
+                new ListExpensesQuery(
+                    userContext.UserId, accountId, year, month, page ?? 1, pageSize ?? 20, recurringExpenseId, date),
                 cancellationToken);
 
             return result.Match(
@@ -35,7 +37,7 @@ internal sealed class ListExpenses : IEndpoint
                 CustomResults.Problem);
         })
         .WithTags(Tags.Expenses)
-        .WithSummary("List expenses, newest first. Filter by account with ?accountId=.")
+        .WithSummary("List expenses, newest first. Filter by account with ?accountId= and by day with ?date=YYYY-MM-DD.")
         .RequireAuthorization();
     }
 }

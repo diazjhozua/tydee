@@ -22,6 +22,7 @@ internal sealed class ListExpensesQueryHandler(IApplicationDbContext context)
             .Where(e => e.UserId == query.UserId &&
                         (query.AccountId == null || e.AccountId == query.AccountId) &&
                         (query.RecurringExpenseId == null || e.RecurringExpenseId == query.RecurringExpenseId) &&
+                        (query.Date == null || e.Date == query.Date) &&
                         (monthStart == null || e.Date >= monthStart && e.Date < monthEnd))
             .OrderByDescending(e => e.Date)
             .ThenByDescending(e => e.CreatedAtUtc)

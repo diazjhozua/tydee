@@ -9,7 +9,8 @@ public sealed record ListExpensesQuery(
     int? Month,
     int Page,
     int PageSize,
-    Guid? RecurringExpenseId = null) : IQuery<List<ExpenseListItem>>;
+    Guid? RecurringExpenseId = null,
+    DateOnly? Date = null) : IQuery<List<ExpenseListItem>>;
 
 public sealed record ExpenseListItem(
     Guid Id,
