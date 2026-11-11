@@ -1,12 +1,13 @@
 "use client";
 
-import { Bookmark, House, Wallet } from "lucide-react";
+import { Bookmark, House, PenLine, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { href: "/app", label: "Home", icon: House },
+  { href: "/log-expense", label: "Log", icon: PenLine },
   { href: "/accounts", label: "Accounts", icon: Wallet },
   { href: "/recurring", label: "Saved", icon: Bookmark },
 ];
@@ -19,7 +20,7 @@ export function BottomNav() {
       aria-label="Primary"
       className="safe-bottom fixed inset-x-0 bottom-0 z-20 border-t border-border/50 bg-background/90 backdrop-blur-md"
     >
-      <div className="mx-auto grid h-16 max-w-md grid-cols-3">
+      <div className="mx-auto grid h-16 max-w-md grid-cols-4">
         {tabs.map((tab) => {
           const active = pathname === tab.href || pathname.startsWith(tab.href + "/");
           const Icon = tab.icon;

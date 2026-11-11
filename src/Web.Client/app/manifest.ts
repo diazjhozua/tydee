@@ -33,7 +33,7 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         name: "Log expense",
         short_name: "Expense",
-        url: "/app",
+        url: "/log-expense",
         icons: [{ src: "/icon-192.png", sizes: "192x192", type: "image/png" }],
       },
       {

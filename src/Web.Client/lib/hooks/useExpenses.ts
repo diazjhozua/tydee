@@ -23,7 +23,13 @@ function useInvalidateMoneyData() {
 }
 
 export function useExpenses(
-  params: { accountId?: string; page?: number; pageSize?: number; recurringExpenseId?: string } = {},
+  params: {
+    accountId?: string;
+    page?: number;
+    pageSize?: number;
+    recurringExpenseId?: string;
+    date?: string;
+  } = {},
 ) {
   return useQuery({
     queryKey: ["expenses", params],
