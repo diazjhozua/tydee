@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { safeNextPath } from "@/lib/utils/defaultPage";
 
 const PUBLIC_PATHS = [
   "/login",
@@ -21,11 +22,14 @@ export function proxy(request: NextRequest) {
   const hasSession = request.cookies.has("refresh_token");
 
   // The landing page owns "/". Logged-in users skip straight to the app.
+  // The `open=1` marker tells AppOpenRedirect to apply the user's default page;
+  // the proxy has no access token, so it cannot read the preference itself.
   if (pathname === "/") {
     if (!hasSession) {
       return NextResponse.next();
     }
-    return NextResponse.redirect(new URL("/app", request.url));
+    const next = safeNextPath(request.nextUrl.searchParams.get("next"));
+    return NextResponse.redirect(new URL(next ?? "/app?open=1", request.url));
   }
 
   if (PUBLIC_PATHS.some((path) => pathname.startsWith(path))) {

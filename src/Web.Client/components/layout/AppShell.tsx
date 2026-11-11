@@ -7,7 +7,9 @@ import { useState } from "react";
 import { Logo } from "@/components/brand/Logo";
 import { ExpenseDialog } from "@/components/expenses/ExpenseDialog";
 import { IncomeDialog } from "@/components/incomes/IncomeDialog";
+import { AppOpenRedirect } from "@/components/layout/AppOpenRedirect";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { DefaultPagePrompt } from "@/components/layout/DefaultPagePrompt";
 import { InstallBanner } from "@/components/shared/InstallBanner";
 import { OfflineBanner } from "@/components/shared/OfflineBanner";
 import { TransferSheet } from "@/components/transfers/TransferSheet";
@@ -98,6 +100,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <ExpenseDialog open={expenseOpen} onOpenChange={setExpenseOpen} />
       <IncomeDialog open={incomeOpen} onOpenChange={setIncomeOpen} />
       <TransferSheet open={transferOpen} onOpenChange={setTransferOpen} />
+      <AppOpenRedirect />
+      <DefaultPagePrompt />
     </div>
   );
 }

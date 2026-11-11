@@ -6,6 +6,7 @@ import {
   Eye,
   EyeOff,
   Globe,
+  House,
   LogOut,
   Moon,
 } from "lucide-react";
@@ -28,10 +29,12 @@ import { Separator } from "@/components/ui/separator";
 import { LEGAL_LINKS } from "@/lib/legal/constants";
 import { useLogout } from "@/lib/hooks/useAuth";
 import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
-import { useMe, useUpdateCurrency } from "@/lib/hooks/useMe";
+import { useMe, useUpdateCurrency, useUpdateDefaultPage } from "@/lib/hooks/useMe";
 import { useBalanceVisibilityStore } from "@/lib/stores/balanceVisibilityStore";
 import { ApiError } from "@/lib/types/api";
+import { DefaultPage } from "@/lib/types/me";
 import { SUPPORTED_CURRENCIES } from "@/lib/utils/currency";
+import { DEFAULT_PAGE_OPTIONS } from "@/lib/utils/defaultPage";
 
 const emptySubscribe = () => () => {};
 const isClient = () => true;
@@ -62,6 +65,7 @@ function SectionCard({
 export default function SettingsPage() {
   const { data: me } = useMe();
   const updateCurrency = useUpdateCurrency();
+  const updateDefaultPage = useUpdateDefaultPage();
   const logout = useLogout();
   const install = useInstallPrompt();
   const { theme, setTheme } = useTheme();
@@ -99,7 +103,7 @@ export default function SettingsPage() {
                 });
               }}
             >
-              <SelectTrigger className="w-28 rounded-xl">
+              <SelectTrigger aria-label="Currency" className="w-28 rounded-xl">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -116,11 +120,44 @@ export default function SettingsPage() {
 
           <div className="flex items-center justify-between py-1.5">
             <span className="flex items-center gap-2.5 text-sm font-medium">
+              <House className="size-4 text-muted-foreground" /> Default page
+            </span>
+            <Select
+              value={me?.defaultPage ?? "Home"}
+              disabled={updateDefaultPage.isPending}
+              onValueChange={(value) => {
+                if (!value) {
+                  return;
+                }
+                const option = DEFAULT_PAGE_OPTIONS.find((item) => item.value === value);
+                updateDefaultPage.mutate(value as DefaultPage, {
+                  onSuccess: () => toast.success(`Tydee opens on ${option?.label ?? value}`),
+                  onError: handleError,
+                });
+              }}
+            >
+              <SelectTrigger aria-label="Default page" className="w-32 rounded-xl">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DEFAULT_PAGE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Separator className="my-1 opacity-50" />
+
+          <div className="flex items-center justify-between py-1.5">
+            <span className="flex items-center gap-2.5 text-sm font-medium">
               <Moon className="size-4 text-muted-foreground" /> Theme
             </span>
             {mounted && (
               <Select value={theme ?? "system"} onValueChange={(v) => v && setTheme(v)}>
-                <SelectTrigger className="w-28 rounded-xl">
+                <SelectTrigger aria-label="Theme" className="w-28 rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

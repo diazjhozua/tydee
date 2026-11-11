@@ -11,18 +11,37 @@ import {
   resetPassword,
   verifyEmail,
 } from "@/lib/api/auth";
+import { getMe } from "@/lib/api/me";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { defaultPagePath, safeNextPath } from "@/lib/utils/defaultPage";
 
 export function useLogin() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const setTokens = useAuthStore((s) => s.setTokens);
 
   return useMutation({
     mutationFn: login,
-    onSuccess: (tokens) => {
+    onSuccess: async (tokens) => {
       setTokens(tokens.accessToken, tokens.accessTokenExpiresAt);
-      router.push(searchParams.get("next") ?? "/app");
+
+      const next = safeNextPath(searchParams.get("next"));
+      if (next) {
+        router.push(next);
+        return;
+      }
+
+      try {
+        const me = await queryClient.fetchQuery({
+          queryKey: ["me"],
+          queryFn: getMe,
+          staleTime: 0,
+        });
+        router.push(defaultPagePath(me.defaultPage));
+      } catch {
+        router.push("/app");
+      }
     },
   });
 }
