@@ -5,26 +5,32 @@ description: Run Tydee's verification tiers before committing or when asked to c
 
 # Verify
 
-Run the cheapest tier that covers the change, then report exact results. Never claim green without running the command.
+Run the cheapest tier that covers the change, then report exact results. Never claim green without running the command. Tiers are cumulative: standard includes fast, full includes standard.
 
 All commands run from the repository root.
 
-## Fast tier (client-only or docs edits)
+## Fast tier (docs or a narrow client edit)
 
 ```bash
 npm --prefix src/Web.Client run typecheck
 npm --prefix src/Web.Client run lint
+npm --prefix src/Web.Client test
 dotnet build tydee.slnx
 ```
 
 ## Standard tier (any backend or shared change, required before commit)
 
+Fast tier plus:
+
 ```bash
 dotnet test tydee.slnx
-npm --prefix src/Web.Client test
 ```
 
+Typecheck and lint stay in the standard run: a backend-only change can still break a shared client type, and the Stop hook runs typecheck anyway.
+
 ## Full tier (before a release or when touching auth, onboarding, routing, or Playwright)
+
+Standard tier plus:
 
 ```bash
 npm --prefix tests/e2e test

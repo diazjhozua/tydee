@@ -7,7 +7,7 @@ description: Create a GitHub issue in this repository as a bug, feature, or task
 
 Turn a request into one well-formed GitHub issue. Verify the claim against the codebase, check for duplicates, show the draft, and create only after the user confirms.
 
-This skill only creates issues. It never assigns, milestones, closes, edits, links pull requests, or comments on an existing issue.
+This skill only creates issues. It never sets milestones, closes, edits, links pull requests, or comments on an existing issue. To comment on and close a resolved issue, use the `close-issue` skill.
 
 ## Step 1: Preconditions
 

@@ -6,7 +6,7 @@ argument-hint: Optional feature description
 
 # Feature Development
 
-Adapted from the `feature-dev` plugin (Apache-2.0, see `LICENSE`) and wired to Tydee's own agents and skills. Work in phases, wait for the user at each gate, and track progress with TodoWrite.
+Adapted from the `feature-dev` plugin (Apache-2.0, see `LICENSE`) and wired to Tydee's own agents and skills. Work in phases, wait for the user at each gate, and keep a visible plan: use `TodoWrite` or the Task tools (`TaskCreate`/`TaskUpdate`) when the harness provides them, otherwise keep a short numbered plan in the reply and update it as phases complete.
 
 Initial request: $ARGUMENTS
 
@@ -26,11 +26,11 @@ Initial request: $ARGUMENTS
 | Build | main thread with `add-api-endpoint` / `add-client-feature`; `feature-builder` for a large, approved, self-contained slice |
 | Review | `code-reviewer`, `architecture-reviewer` (backend touched), `ui-reviewer` (client touched) in parallel |
 | Verify | `verify` skill; `test-runner` on failures |
-| Ship | `/commit` (only when the user asks) |
+| Ship | `/commit` (only when the user asks); `/close-issue` once the fix is merged and the work tracks an issue |
 
 ## Phase 1: Discovery
 
-1. Create the todo list with all phases.
+1. Create the plan with all phases (`TodoWrite` or `TaskCreate` when available).
 2. If the request is unclear, ask what problem it solves, what it should do, and any constraints.
 3. Classify the scope: backend only, client only, or full slice (domain -> application -> infrastructure -> endpoint -> `lib/api` -> TanStack hook -> screen). Note whether it touches auth, persistence and migrations, balances, offline behavior, or routing.
 4. Summarize your understanding and confirm with the user.
@@ -50,7 +50,9 @@ Do not skip. List concrete questions about edge cases, error handling and `Error
 
 ## Phase 4: Architecture design — **Gate**
 
-1. Launch 2-3 `code-architect` agents in parallel, one per focus: `minimal`, `balanced`, `maximal`. All three obey the same Clean Architecture layering; that is a fixed constraint, not an option. The focus changes only how much new abstraction the design introduces.
+1. Launch `code-architect` agents in parallel, one per focus: `minimal`, `balanced`, `maximal`. All three obey the same Clean Architecture layering; that is a fixed constraint, not an option. The focus changes only how much new abstraction the design introduces.
+
+   Scale the fan-out to the decision: one `balanced` architect is enough for a narrow, well-understood change; use all three when the design is genuinely open or the feature spans several layers. Do not spend three blueprints on a one-file fix.
 
    | Focus | Optimizes | Pick when |
    |---|---|---|
@@ -84,4 +86,4 @@ Run the `verify` skill: standard tier for code changes, full tier when auth, rou
 
 ## Phase 8: Summary
 
-Mark todos complete and summarize what was built, key decisions, files changed, verification results, and next steps. Offer `/commit`; do not commit unless asked.
+Mark the plan complete and summarize what was built, key decisions, files changed, verification results, and next steps. Offer `/commit`; do not commit unless asked. If the work resolves a tracked GitHub issue, say that `/close-issue` is available after the commits are pushed or the pull request is merged; do not close it yourself unless asked.
