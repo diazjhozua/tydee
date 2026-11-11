@@ -15,6 +15,11 @@ const withSerwist = withSerwistInit({
 });
 
 const nextConfig: NextConfig = {
+  // Keep Turbopack dev artifacts out of the production `.next` directory.
+  // `next build --webpack` and `next dev` write incompatible manifests; sharing
+  // one directory leaves stale route manifests and 404s every app route until
+  // `.next` is deleted.
+  distDir: process.env.NODE_ENV === "development" ? ".next-dev" : ".next",
   env: {
     NEXT_PUBLIC_APP_VERSION: packageJson.version,
   },

@@ -9,6 +9,8 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    // Turbopack dev output (next.config.ts switches distDir in development).
+    ".next-dev/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
