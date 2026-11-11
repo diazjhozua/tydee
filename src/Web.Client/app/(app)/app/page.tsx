@@ -266,17 +266,21 @@ export default function HomePage() {
                 <ActivityIcon kind={item.kind} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{item.description}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(item.date)}
-                    {item.category ? ` · ${item.category}` : ""}
-                    {item.kind === "adjustment" ? " · Balance set" : ""}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{formatDate(item.date)}</p>
+                  {item.category && (
+                    <p className="text-xs text-muted-foreground">{item.category}</p>
+                  )}
+                  {item.kind === "adjustment" && (
+                    <p className="text-xs text-muted-foreground">Balance set</p>
+                  )}
                   {item.allocations.length > 0 && (
-                    <p className="money mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                      {item.allocations
-                        .map((a) => `${a.accountName} ${formatMoney(a.amount, currency)}`)
-                        .join(" · ")}
-                    </p>
+                    <ul className="money mt-0.5 space-y-0.5 text-xs leading-relaxed text-muted-foreground">
+                      {item.allocations.map((a) => (
+                        <li key={a.accountName}>
+                          {a.accountName} {formatMoney(a.amount, currency)}
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </div>
                 {item.pendingSync ? (
