@@ -70,7 +70,7 @@ export default function RecurringExpenseHistoryPage() {
                 <p className="truncate text-sm font-medium">{expense.accountName}</p>
                 <p className="truncate text-xs text-muted-foreground">
                   {formatDate(expense.date)}
-                  {expense.note ? ` · ${expense.note}` : ""}
+                  {expense.note ? `: ${expense.note}` : ""}
                 </p>
               </div>
               <Money value={expense.amount} currency={currency} size="sm" hideable />
