@@ -30,6 +30,8 @@ If a design truly needs a new token, propose it as an addition to `globals.css` 
 
 Avoid generated-UI tells: identical rounded cards for everything, all-caps eyebrow labels, accenting a single word in a headline, `A · B · C` meta strings, `→` appended to buttons, gradient washes, and a monospace face for small labels.
 
+For `A · B` meta strings specifically: do not join facts with middle dots or parentheses inside one line. Put each fact on its own line or in its own element (for example, the account type on one line and the allocation on the next). A middle dot is allowed only in typographic chrome such as the legal footer and the page-title template, never in content rows.
+
 ## Process
 
 1. **Brief** — state the screen's user, primary job, and the data it shows, using real Tydee content (accounts, income allocations, expenses, categories, balances).
