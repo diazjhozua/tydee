@@ -6,14 +6,23 @@ type Props = {
   onChange: (value: string) => void;
   currencySymbol: string;
   autoFocus?: boolean;
+  inputRef?: React.Ref<HTMLInputElement>;
 };
 
-export function AmountInput({ id, value, onChange, currencySymbol, autoFocus }: Props) {
+export function AmountInput({
+  id,
+  value,
+  onChange,
+  currencySymbol,
+  autoFocus,
+  inputRef,
+}: Props) {
   return (
     <div className="flex items-baseline justify-center gap-1 py-2">
       <span className="text-xl font-semibold text-muted-foreground">{currencySymbol}</span>
       <input
         id={id}
+        ref={inputRef}
         type="number"
         inputMode="decimal"
         min="0"
