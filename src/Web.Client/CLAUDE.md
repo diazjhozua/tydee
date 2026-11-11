@@ -4,7 +4,7 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
 
 ## State
 
-- Routes: marketing `/`; auth `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`; app `/app`, `/accounts`, `/recurring`, `/recurring/[id]`, `/settings`, `/admin`, `/setup`; public legal pages. The app layout is `components/layout/AppShell`.
+- Routes: marketing `/`; auth `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email`; app `/app`, `/log-expense`, `/accounts`, `/recurring`, `/recurring/[id]`, `/settings`, `/admin`, `/setup`; public legal pages. The app layout is `components/layout/AppShell`.
 - Server state belongs to TanStack Query hooks in `lib/hooks/`. Do not introduce another data store.
 - Zustand holds local UI state only:
   - `lib/stores/authStore.ts` — in-memory access token and expiry. The refresh token is an httpOnly cookie set by the BFF. It is a session cookie unless the user ticks "Remember me" on the login page; `lib/auth/cookies.ts` owns both cookies and the 7-day max age, and the refresh route preserves the choice through the `remember_me` companion.
@@ -13,6 +13,7 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
   - `lib/stores/dashboardViewStore.ts` — persisted per-section list/grid choice for the dashboard's category breakdown and accounts.
 - `providers/AuthProvider.tsx` rehydrates the access token once on cold load by calling `refreshAccessToken()`. `providers/QueryProvider.tsx` owns the query client, persistence, and offline replay.
 - `useMe()` and `useDashboard()` are enabled only after the auth store has a token, so they do not fire before `AuthProvider` finishes.
+- The per-user `defaultPage` preference (`"Home"` or `"LogExpense"`) lives on `GET /api/v1/me` and is set with `PUT /api/v1/me/default-page`. `useLogin` applies it when there is no explicit `next`; `AppOpenRedirect` applies it once when the proxy sends `/` to `/app?open=1`; `DefaultPagePrompt` forces a choice while it is `null`. Redirect policy and `safeNextPath` live in `lib/utils/defaultPage.ts`.
 
 ## Query keys and invalidation
 
