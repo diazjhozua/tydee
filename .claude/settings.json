@@ -17,7 +17,10 @@
       "Bash(git diff)",
       "Bash(git diff --stat)",
       "Bash(git log --oneline)",
-      "Bash(gh pr view:*)"
+      "Bash(gh pr view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh search issues:*)",
+      "Bash(gh auth status)"
     ],
     "deny": [
       "Read(./.env*)",
