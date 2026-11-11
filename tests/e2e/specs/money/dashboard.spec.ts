@@ -36,6 +36,46 @@ test("summarizes spending by category and filters activity", async ({ signedIn, 
   await dashboard.expectActivity("Bus");
 });
 
+test("toggles each section between list and grid and remembers the choice", async ({
+  signedIn,
+  seed,
+}) => {
+  await seed.withAccounts();
+  await seed.incomeFromTemplate(1000);
+  await seed.expense(expenseSpec("Budget", 100, { category: "Food", note: "Groceries" }));
+  await seed.expense(expenseSpec("Budget", 50, { category: "Transport", note: "Bus" }));
+
+  const app = signedIn.page;
+  const dashboard = new DashboardPage(app);
+
+  await dashboard.open();
+  await dashboard.expectView("Where it went", "list");
+  await dashboard.expectView("Accounts", "list");
+
+  await dashboard.setView("Where it went", "grid");
+  await dashboard.expectView("Where it went", "grid");
+  await dashboard.expectView("Accounts", "list");
+  await dashboard.expectGridView("Where it went");
+  await dashboard.expectCategory("Food", 67);
+  await dashboard.expectCategory("Transport", 33);
+
+  await dashboard.filterByCategory("Food");
+  await dashboard.expectActivity("Groceries");
+  await dashboard.expectNoActivity("Bus");
+  await dashboard.filterByCategory("Food");
+  await dashboard.expectActivity("Bus");
+
+  await dashboard.setView("Accounts", "grid");
+  await dashboard.expectView("Accounts", "grid");
+  await dashboard.expectGridView("Accounts");
+  await dashboard.expectAccountBalance("Budget", "₱350.00");
+
+  await app.reload();
+  await dashboard.expectReady();
+  await dashboard.expectView("Where it went", "grid");
+  await dashboard.expectView("Accounts", "grid");
+});
+
 test("navigates to the previous month", async ({ app }) => {
   const dashboard = new DashboardPage(app);
   const previous = previousYearMonth();

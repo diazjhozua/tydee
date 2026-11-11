@@ -118,9 +118,32 @@ export class DashboardPage extends BasePage {
     await expect(this.page.getByText("••••").first()).toBeVisible();
   }
 
+  viewButton(section: "Where it went" | "Accounts", view: "list" | "grid"): Locator {
+    return this.page.getByRole("button", { name: `${section}: ${view} view`, exact: true });
+  }
+
+  async setView(section: "Where it went" | "Accounts", view: "list" | "grid"): Promise<void> {
+    await this.viewButton(section, view).click();
+  }
+
+  async expectView(section: "Where it went" | "Accounts", view: "list" | "grid"): Promise<void> {
+    await expect(this.viewButton(section, view)).toHaveAttribute("aria-pressed", "true");
+  }
+
+  async expectGridView(section: "Where it went" | "Accounts"): Promise<void> {
+    const scope = section === "Accounts" ? this.accountsSection() : this.whereItWentSection();
+    await expect(scope.locator('[data-view="grid"]')).toBeVisible();
+  }
+
   private whereItWentSection(): Locator {
     return this.page
       .locator("section")
       .filter({ has: this.page.getByRole("heading", { name: "Where it went" }) });
+  }
+
+  private accountsSection(): Locator {
+    return this.page
+      .locator("section")
+      .filter({ has: this.page.getByRole("heading", { name: "Accounts" }) });
   }
 }
