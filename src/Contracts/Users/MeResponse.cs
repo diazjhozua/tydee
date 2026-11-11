@@ -6,4 +6,5 @@ public sealed record MeResponse(
     string FirstName,
     string LastName,
     string Currency,
-    bool IsAdmin);
+    bool IsAdmin,
+    string? DefaultPage);

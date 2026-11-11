@@ -452,6 +452,11 @@ namespace Infrastructure.Database.Migrations
                         .HasDefaultValue("PHP")
                         .HasColumnName("currency");
 
+                    b.Property<string>("DefaultPage")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("default_page");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)

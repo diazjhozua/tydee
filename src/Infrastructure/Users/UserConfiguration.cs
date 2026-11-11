@@ -17,6 +17,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.LastName).HasMaxLength(100);
 
         builder.Property(u => u.Currency).HasMaxLength(3).HasDefaultValue("PHP");
+        builder.Property(u => u.DefaultPage).HasMaxLength(20);
 
         builder.Property(u => u.EmailVerificationToken).HasMaxLength(64);
         builder.Property(u => u.PasswordResetTokenHash).HasMaxLength(64);

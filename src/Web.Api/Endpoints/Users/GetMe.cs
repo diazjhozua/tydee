@@ -22,7 +22,8 @@ internal sealed class GetMe : IEndpoint
                 cancellationToken);
 
             return result.Match(
-                me => Results.Ok(new MeResponse(me.Id, me.Email, me.FirstName, me.LastName, me.Currency, me.IsAdmin)),
+                me => Results.Ok(new MeResponse(
+                    me.Id, me.Email, me.FirstName, me.LastName, me.Currency, me.IsAdmin, me.DefaultPage)),
                 CustomResults.Problem);
         })
         .WithTags(Tags.Auth)

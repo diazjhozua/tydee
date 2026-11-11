@@ -10,4 +10,5 @@ public sealed record MeResult(
     string FirstName,
     string LastName,
     string Currency,
-    bool IsAdmin);
+    bool IsAdmin,
+    string? DefaultPage);
