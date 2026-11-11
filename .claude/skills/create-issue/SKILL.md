@@ -102,10 +102,23 @@ Write the body to `.claude/cache/create-issue-body.md` (local only, gitignored, 
 gh issue create --repo <owner/repo> \
   --title "<title>" \
   --body-file .claude/cache/create-issue-body.md \
-  --label <label>
+  --label <label> \
+  --assignee "@me"
 ```
 
-Omit `--label` for tasks. Do not pass `--assignee`, `--milestone`, or `--project`.
+Omit `--label` for tasks. Always assign the issue to the person who asked, through `--assignee "@me"`.
+
+Then set the GitHub issue type. Labels do not populate this field; the repository defines `Task`, `Bug`, and `Feature` as issue types.
+
+```bash
+gh api graphql -f query='{ repository(owner: "<owner>", name: "<repo>") { issueTypes(first: 20) { nodes { id name } } } }'
+gh api repos/<owner>/<repo>/issues/<number> --jq .node_id
+gh api graphql -f query='mutation { updateIssueIssueType(input: { issueId: "<node-id>", issueTypeId: "<type-id>" }) { issue { number } } }'
+```
+
+Map the type to the repository's issue type by name: bug to `Bug`, feature to `Feature`, task to `Task`. Inline the IDs; do not use GraphQL variables, because a `$` inside the query trips the Bash guard. If the repository has no matching issue type, skip this step and say so.
+
+Do not pass `--milestone` or `--project`.
 
 If creation fails, quote the shortest decisive error line and keep the draft. Do not retry blindly. If the label does not exist on the repository, create the issue without it and say so.
 
