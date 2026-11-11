@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.24.0](https://github.com/diazjhozua/tydee/compare/v1.23.0...v1.24.0) (2026-11-11)
+
+
+### Features
+
+* **skills:** assign and type created issues ([ca99a8f](https://github.com/diazjhozua/tydee/commit/ca99a8f2a15a40570b390b5ecce1cfd7a894ad06))
+
 ## [1.23.0](https://github.com/diazjhozua/tydee/compare/v1.22.0...v1.23.0) (2026-11-11)
 
 
