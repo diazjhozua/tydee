@@ -75,8 +75,10 @@ function writeCache(cache) {
 }
 
 // The key covers HEAD (so a commit or pull invalidates it) plus the content of
-// every changed file the step reads. Dependencies such as node_modules are not
-// hashed; run CLAUDE_SKIP_VERIFY=1 or delete the cache after changing them.
+// every changed file the step reads. Lockfiles and central package versions are
+// inputs too: a dependency bump is a change even when no source file moved.
+// node_modules and the NuGet cache are not hashed; delete the cache after
+// installing packages by hand outside a lockfile change.
 function fingerprint(head, step) {
   const hash = createHash('sha256').update(`${head}\n${step.label}`)
   for (const file of step.files) {
@@ -129,9 +131,11 @@ const head = spawnSync('git', ['rev-parse', 'HEAD'], {
 
 const clientFiles = changed.filter((p) =>
   /^src\/Web\.Client\/.*\.(ts|tsx|js|jsx|mjs|mts)$/.test(p) ||
-  /^src\/Web\.Client\/(package\.json|tsconfig\.json|eslint\.config\.\w+|next\.config\.\w+)$/.test(p),
+  /^src\/Web\.Client\/(package\.json|package-lock\.json|tsconfig\.json|eslint\.config\.\w+|next\.config\.\w+)$/.test(p),
 )
-const dotnetFiles = changed.filter((p) => /\.(cs|csproj|props|targets|slnx)$/.test(p))
+const dotnetFiles = changed.filter((p) =>
+  /\.(cs|csproj|props|targets|slnx)$/.test(p),
+)
 
 // Windows cold runs are slow: tsc takes over 120s and lint measured 59.5s
 // against the old 60s budget, so give each step real headroom.
