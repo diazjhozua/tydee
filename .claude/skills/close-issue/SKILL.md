@@ -24,7 +24,7 @@ Close one GitHub issue only after its fix is merged and verified. Show the exact
 - Accept a number, URL, or title from the user.
 - If the message names no issue, use the issue discussed in this session. If that is ambiguous or missing, ask for the number and stop.
 - Run `gh issue view <number> --repo <owner/repo> --json number,title,state,stateReason,url,labels`.
-- If the issue is already closed, report its state and stop. Do not add a second closing comment.
+- If the issue is already closed, report its state and stop. Do not add a second closing comment. The `close-released-issues` job in `.github/workflows/release.yml` closes issues referenced with `Refs #n` when a release ships, so an issue may already be closed.
 - If the issue is closed as not planned but the user wants it reopened, that is out of scope; say so.
 
 ## Step 3: Confirm the fix landed
@@ -36,7 +36,7 @@ Closing is outward-facing. Do not close on the strength of local edits alone.
    - `git fetch origin`
    - `git merge-base --is-ancestor <sha> origin/main` for each cited commit, or
    - a merged pull request: `gh pr view <pr-number> --repo <owner/repo> --json state,mergedAt,url`.
-   - If the merge squashed the commits, the original SHAs will not be ancestors. In that case find the merged pull request (`gh pr list --repo <owner/repo> --state merged --search "<issue number>"`) and cite that instead.
+   - This repo merges with merge commits, so branch commits stay ancestors of `origin/main`. If a squash merge ever happens, the SHAs will not match; find the merged pull request (`gh pr list --repo <owner/repo> --state merged --search "<issue number>"`) and cite that instead.
 3. If the fix is only local or sits on an unmerged branch, stop and tell the user what is missing. Do not push or merge from this skill.
 4. Use verification that already ran in this session. If none ran, run the `verify` skill at the cheapest tier that covers the change (fast for docs or a narrow client edit, standard for code) or ask the user to accept the risk of closing unverified. Never claim a test result that was not observed.
 
