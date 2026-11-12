@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.26.0](https://github.com/diazjhozua/tydee/compare/v1.25.0...v1.26.0) (2026-11-12)
+
+
+### Features
+
+* **accounts:** add card variant with shared actions menu ([ca98610](https://github.com/diazjhozua/tydee/commit/ca9861015e40594e798bca2aaa43cf2c8ad316f3))
+* **accounts:** show accounts in a grid on desktop ([4dd5e53](https://github.com/diazjhozua/tydee/commit/4dd5e5385f4b99020b47218be72420f3faaaf1a7))
+* **dashboard:** add list and grid toggle for recent activity ([cf2a600](https://github.com/diazjhozua/tydee/commit/cf2a600f9e584c3db05523dea7b857a8773fbb61))
+* **dashboard:** extract recent activity list with grid view ([93ebc68](https://github.com/diazjhozua/tydee/commit/93ebc68778ed9f3018dfe32f04e8aba7b706c930))
+* **dashboard:** persist a view choice for recent activity ([9dd671d](https://github.com/diazjhozua/tydee/commit/9dd671d495683b458fbd572069e5e40af70c1e29))
+* **hooks:** add md breakpoint hook ([a71297c](https://github.com/diazjhozua/tydee/commit/a71297cb11fcf8c974d04b9525d631a8b84c7096))
+* **layout:** add desktop sidebar and widen app shell ([4742000](https://github.com/diazjhozua/tydee/commit/4742000338da13a5f90a6cdffc14a63a2d90d3a0))
+* **layout:** add desktop sidebar and wider layout ([51d6afd](https://github.com/diazjhozua/tydee/commit/51d6afdbe37df8e2303c02036f27fa81ea162861))
+
 ## [1.25.0](https://github.com/diazjhozua/tydee/compare/v1.24.0...v1.25.0) (2026-11-11)
 
 
