@@ -8,6 +8,7 @@ type Props = {
   label: string;
   value: DashboardView;
   onChange: (view: DashboardView) => void;
+  className?: string;
 };
 
 const OPTIONS = [
@@ -15,12 +16,15 @@ const OPTIONS = [
   { value: "grid", Icon: LayoutGrid },
 ] as const;
 
-export function ViewToggle({ label, value, onChange }: Props) {
+export function ViewToggle({ label, value, onChange, className }: Props) {
   return (
     <div
       role="group"
       aria-label={`${label} layout`}
-      className="flex shrink-0 items-center gap-0.5 rounded-full border border-border/60 bg-muted/50 p-0.5"
+      className={cn(
+        "flex shrink-0 items-center gap-0.5 rounded-full border border-border/60 bg-muted/50 p-0.5",
+        className,
+      )}
     >
       {OPTIONS.map(({ value: option, Icon }) => (
         <button

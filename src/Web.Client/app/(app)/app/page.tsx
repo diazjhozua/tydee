@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { AccountsSection } from "@/components/dashboard/AccountsSection";
 import { CategoryBreakdown } from "@/components/dashboard/CategoryBreakdown";
+import { RecentActivityList } from "@/components/dashboard/RecentActivityList";
+import { ViewToggle } from "@/components/dashboard/ViewToggle";
 import { ExpenseDialog } from "@/components/expenses/ExpenseDialog";
 import { IncomeDialog } from "@/components/incomes/IncomeDialog";
-import { ActivityIcon } from "@/components/shared/ActivityIcon";
 import { Money } from "@/components/shared/Money";
 import {
   MonthPicker,
@@ -29,6 +30,7 @@ import { useDeleteAdjustment } from "@/lib/hooks/useAdjustments";
 import { useDeleteTransfer } from "@/lib/hooks/useTransfers";
 import { useDashboard } from "@/lib/hooks/useDashboard";
 import { useExpenses } from "@/lib/hooks/useExpenses";
+import { useIsMdUp } from "@/lib/hooks/useIsMdUp";
 import { useMe } from "@/lib/hooks/useMe";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { useDashboardViewStore } from "@/lib/stores/dashboardViewStore";
@@ -36,7 +38,6 @@ import { toast } from "sonner";
 import { ActivityItem } from "@/lib/types/dashboard";
 import { Expense } from "@/lib/types/expense";
 import { formatMoney } from "@/lib/utils/currency";
-import { formatDate } from "@/lib/utils/date";
 
 const emptySubscribe = () => () => {};
 const isClient = () => true;
@@ -60,14 +61,19 @@ export default function HomePage() {
   const deleteTransfer = useDeleteTransfer();
 
   const mounted = useSyncExternalStore(emptySubscribe, isClient, isServer);
+  const isDesktop = useIsMdUp();
   const categoryView = useDashboardViewStore((state) => state.categoryView);
   const accountsView = useDashboardViewStore((state) => state.accountsView);
   const setCategoryView = useDashboardViewStore((state) => state.setCategoryView);
   const setAccountsView = useDashboardViewStore((state) => state.setAccountsView);
+  const activityView = useDashboardViewStore((state) => state.activityView);
+  const setActivityView = useDashboardViewStore((state) => state.setActivityView);
 
   // First paint is always the list; the persisted choice applies after hydration.
   const resolvedCategoryView = mounted ? categoryView : "list";
   const resolvedAccountsView = mounted ? accountsView : "list";
+  // The grid is a desktop-only option; phones always show the list.
+  const resolvedActivityView = mounted && isDesktop ? activityView : "list";
 
   const currency = me?.currency ?? "PHP";
   const viewingCurrentMonth = isCurrentMonth(month);
@@ -227,6 +233,12 @@ export default function HomePage() {
               <X className="size-3" />
             </button>
           )}
+          <ViewToggle
+            label="Recent"
+            value={resolvedActivityView}
+            onChange={setActivityView}
+            className="ml-auto hidden md:flex"
+          />
         </div>
 
         {categoryFilter !== undefined && visibleActivity.length === 0 ? (
@@ -250,64 +262,12 @@ export default function HomePage() {
             </div>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
-            {visibleActivity.map((item, index) => (
-              <button
-                key={`${item.kind}-${item.id}`}
-                type="button"
-                onClick={() => onActivityClick(item)}
-                disabled={item.pendingSync}
-                className={
-                  "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/50 active:scale-[0.99]" +
-                  (index > 0 ? " border-t border-border/50" : "") +
-                  (item.pendingSync ? " opacity-60" : "")
-                }
-              >
-                <ActivityIcon kind={item.kind} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{item.description}</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(item.date)}</p>
-                  {item.category && (
-                    <p className="text-xs text-muted-foreground">{item.category}</p>
-                  )}
-                  {item.kind === "adjustment" && (
-                    <p className="text-xs text-muted-foreground">Balance set</p>
-                  )}
-                  {item.allocations.length > 0 && (
-                    <ul className="money mt-0.5 space-y-0.5 text-xs leading-relaxed text-muted-foreground">
-                      {item.allocations.map((a) => (
-                        <li key={a.accountName}>
-                          {a.accountName} {formatMoney(a.amount, currency)}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                {item.pendingSync ? (
-                  <span className="text-xs font-medium text-muted-foreground">Syncing…</span>
-                ) : (
-                  <span
-                    className={
-                      item.kind === "income"
-                        ? "money text-sm font-semibold text-emerald-600 dark:text-emerald-400"
-                        : item.kind === "adjustment"
-                          ? "money text-sm font-semibold text-sky-600 dark:text-sky-400"
-                          : item.kind === "transfer"
-                            ? "money text-sm font-semibold text-violet-600 dark:text-violet-400"
-                            : "money text-sm font-semibold"
-                    }
-                  >
-                    {item.kind === "transfer"
-                      ? ""
-                      : item.kind === "expense" || item.amount < 0
-                        ? "−"
-                        : "+"}
-                    {formatMoney(Math.abs(item.amount), currency)}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+          <RecentActivityList
+            items={visibleActivity}
+            currency={currency}
+            view={resolvedActivityView}
+            onItemClick={onActivityClick}
+          />
         )}
       </section>
 
