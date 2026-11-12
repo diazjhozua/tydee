@@ -1,7 +1,12 @@
 "use client";
 
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  arrayMove,
+  rectSortingStrategy,
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -22,6 +27,7 @@ import {
   useReorderAccounts,
   useUpdateAllocationTemplate,
 } from "@/lib/hooks/useAccounts";
+import { useIsMdUp } from "@/lib/hooks/useIsMdUp";
 import { useMe } from "@/lib/hooks/useMe";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { Account } from "@/lib/types/account";
@@ -47,6 +53,9 @@ export default function AccountsPage() {
   const total = activeAccounts.reduce((sum, a) => sum + a.balance, 0);
   const percentTotal = activeAccounts.reduce((sum, a) => sum + (Number(percents[a.id]) || 0), 0);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
+  // Desktop shows account tiles in a grid; phones keep the vertical list.
+  // Only one of the two is rendered, so they never share a sortable context.
+  const isDesktop = useIsMdUp();
 
   if (accounts !== seededAccounts) {
     setSeededAccounts(accounts);
@@ -117,9 +126,9 @@ export default function AccountsPage() {
       </div>
 
       <Card className="rounded-2xl border-border/60 shadow-sm">
-        <CardContent className="space-y-1">
+        <CardContent className={isDesktop ? "grid grid-cols-2 gap-3 lg:grid-cols-3" : "space-y-1"}>
           {isPending && (
-            <div className="space-y-2 py-1.5">
+            <div className="col-span-full space-y-2 py-1.5">
               {[0, 1, 2].map((i) => (
                 <Skeleton key={i} className="h-12 w-full rounded-xl" />
               ))}
@@ -130,14 +139,15 @@ export default function AccountsPage() {
             <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
               <SortableContext
                 items={activeAccounts.map((a) => a.id)}
-                strategy={verticalListSortingStrategy}
+                strategy={isDesktop ? rectSortingStrategy : verticalListSortingStrategy}
               >
                 {activeAccounts.map((account, index) => (
                   <div key={account.id}>
-                    {index > 0 && <Separator className="my-1 opacity-50" />}
+                    {!isDesktop && index > 0 && <Separator className="my-1 opacity-50" />}
                     <SortableAccountRow
                       account={account}
                       currency={currency}
+                      variant={isDesktop ? "card" : "row"}
                       archiveDisabled={!isOnline}
                       onEdit={() => {
                         setEditingAccount(account);
@@ -153,7 +163,7 @@ export default function AccountsPage() {
           )}
 
           {!isPending && activeAccounts.length === 0 && (
-            <div className="space-y-3 py-4 text-center">
+            <div className="col-span-full space-y-3 py-4 text-center">
               <p className="text-sm text-muted-foreground">No accounts yet.</p>
               <Button
                 render={<Link href="/setup" />}

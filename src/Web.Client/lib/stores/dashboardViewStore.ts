@@ -6,8 +6,10 @@ export type DashboardView = "list" | "grid";
 type DashboardViewState = {
   categoryView: DashboardView;
   accountsView: DashboardView;
+  activityView: DashboardView;
   setCategoryView: (view: DashboardView) => void;
   setAccountsView: (view: DashboardView) => void;
+  setActivityView: (view: DashboardView) => void;
 };
 
 export const useDashboardViewStore = create<DashboardViewState>()(
@@ -15,8 +17,10 @@ export const useDashboardViewStore = create<DashboardViewState>()(
     (set) => ({
       categoryView: "list",
       accountsView: "list",
+      activityView: "list",
       setCategoryView: (categoryView) => set({ categoryView }),
       setAccountsView: (accountsView) => set({ accountsView }),
+      setActivityView: (activityView) => set({ activityView }),
     }),
     {
       name: "tydee-dashboard-view",
@@ -24,6 +28,7 @@ export const useDashboardViewStore = create<DashboardViewState>()(
       partialize: (state) => ({
         categoryView: state.categoryView,
         accountsView: state.accountsView,
+        activityView: state.activityView,
       }),
     },
   ),

@@ -118,16 +118,20 @@ export class DashboardPage extends BasePage {
     await expect(this.page.getByText("••••").first()).toBeVisible();
   }
 
-  viewButton(section: "Where it went" | "Accounts", view: "list" | "grid"): Locator {
+  viewButton(section: "Where it went" | "Accounts" | "Recent", view: "list" | "grid"): Locator {
     return this.page.getByRole("button", { name: `${section}: ${view} view`, exact: true });
   }
 
-  async setView(section: "Where it went" | "Accounts", view: "list" | "grid"): Promise<void> {
+  async setView(section: "Where it went" | "Accounts" | "Recent", view: "list" | "grid"): Promise<void> {
     await this.viewButton(section, view).click();
   }
 
-  async expectView(section: "Where it went" | "Accounts", view: "list" | "grid"): Promise<void> {
+  async expectView(section: "Where it went" | "Accounts" | "Recent", view: "list" | "grid"): Promise<void> {
     await expect(this.viewButton(section, view)).toHaveAttribute("aria-pressed", "true");
+  }
+
+  async expectActivityGrid(): Promise<void> {
+    await expect(this.page.locator('ul[data-view="grid"]')).toBeVisible();
   }
 
   async expectGridView(section: "Where it went" | "Accounts"): Promise<void> {
