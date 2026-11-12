@@ -10,6 +10,7 @@ import { IncomeDialog } from "@/components/incomes/IncomeDialog";
 import { AppOpenRedirect } from "@/components/layout/AppOpenRedirect";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { DefaultPagePrompt } from "@/components/layout/DefaultPagePrompt";
+import { Sidebar } from "@/components/layout/Sidebar";
 import { InstallBanner } from "@/components/shared/InstallBanner";
 import { OfflineBanner } from "@/components/shared/OfflineBanner";
 import { TransferSheet } from "@/components/transfers/TransferSheet";
@@ -28,15 +29,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const showNav = !pathname.startsWith("/setup");
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col md:pl-56">
       <header className="sticky top-0 z-10 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <OfflineBanner />
         <InstallBanner />
-        <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
-          <Link href="/app">
+        <div className="mx-auto flex h-14 w-full max-w-md items-center justify-between px-4 md:max-w-3xl md:px-6 lg:max-w-5xl">
+          <Link href="/app" className="md:hidden">
             <Logo />
           </Link>
-          <div className="flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
@@ -50,8 +51,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full"
               aria-label="Settings"
+              className="rounded-full md:hidden"
               render={<Link href="/settings" />}
               nativeButton={false}
             >
@@ -61,11 +62,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-md flex-1 px-4 py-5 pb-40">{children}</main>
+      <main className="mx-auto w-full max-w-md flex-1 px-4 py-5 pb-40 md:max-w-3xl md:px-6 md:pb-10 lg:max-w-5xl">
+        {children}
+      </main>
 
       {showFabs && (
-        <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-20 z-10">
-          <div className="mx-auto flex max-w-md items-center justify-end gap-3 px-5">
+        <div className="safe-bottom pointer-events-none fixed inset-x-0 bottom-20 z-10 md:bottom-6 md:left-56">
+          <div className="mx-auto flex max-w-md items-center justify-end gap-3 px-5 md:max-w-3xl md:px-6 lg:max-w-5xl">
             <button
               type="button"
               aria-label="Transfer"
@@ -95,6 +98,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
+      {showNav && <Sidebar />}
       {showNav && <BottomNav />}
 
       <ExpenseDialog open={expenseOpen} onOpenChange={setExpenseOpen} />
