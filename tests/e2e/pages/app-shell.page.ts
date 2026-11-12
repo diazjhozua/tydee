@@ -6,8 +6,13 @@ export class AppShellPage extends BasePage {
     await this.page.getByRole("button", { name: /^(Hide|Show) balances$/ }).click();
   }
 
+  // The header icon is a button on phones; the sidebar entry is a link on
+  // desktop. Playwright skips hidden elements, so only the visible one matches.
   async openSettings(): Promise<void> {
-    await this.page.getByRole("button", { name: "Settings" }).click();
+    await this.page
+      .getByRole("button", { name: "Settings" })
+      .or(this.page.getByRole("link", { name: "Settings", exact: true }))
+      .click();
   }
 
   async nav(label: "Home" | "Log" | "Accounts" | "Saved"): Promise<void> {
