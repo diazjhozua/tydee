@@ -46,6 +46,7 @@ Run this phase first. It decides whether the work is isolated in a worktree.
 4. Before creating anything, check for an existing branch or worktree with that name (`git branch --list <branch>` and `git worktree list`). If one exists, ask whether to resume it or stop. Never create a second one for the same issue.
 5. Enter the worktree: `EnterWorktree` with `name` set to the branch name. Every later phase runs inside it. The worktree keeps this feature's changes separate from the main checkout while the work is in progress.
 6. In the worktree, install dependencies only if they are missing (`npm --prefix src/Web.Client install`, `dotnet restore tydee.slnx`).
+   Then link the gitignored local config (API settings and client `.env.local`) from the main checkout, so the API and client run in this worktree: `powershell -ExecutionPolicy Bypass -File scripts\link-worktree-env.ps1 -Worktree <worktree path>`. The script creates the main-checkout files on first run and never overwrites them. The API also reads shared user secrets, so no per-worktree setup is needed for those.
 7. If no issue is given, skip this phase: no worktree, no branch rule, no `Refs` line. Phase 8 still runs, but only when the user asks for a commit or pull request.
 
 ## Phase 1: Discovery
