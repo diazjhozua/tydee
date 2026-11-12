@@ -85,7 +85,7 @@ Errors: expected failures use `Result`/`Error`/`ErrorType` from `SharedKernel`, 
 - Auth uses a BFF: `app/api/auth/*` route handlers keep the refresh token in an httpOnly `refresh_token` cookie; the browser holds only the short-lived access token in `lib/stores/authStore.ts`. The axios interceptor in `lib/api/client.ts` refreshes on 401 through `/api/auth/refresh`.
 - Server data is fetched by `lib/api/<area>.ts` modules and wrapped in TanStack Query hooks under `lib/hooks/`. Zustand holds only local UI state: auth tokens, balance visibility, cookie consent.
 - TanStack Query persists paused mutations to localStorage and replays them when the browser comes back online. `providers/QueryProvider.tsx` registers the replayable mutation functions with `setMutationDefaults`; new offline-capable mutations must be added there.
-- The client is a PWA (`@serwist/next`) and is mobile-first: `AppShell` has a sticky header, bottom navigation, bottom-sheet entry forms, and a 375px-first layout.
+- The client is a PWA (`@serwist/next`) and is mobile-first: `AppShell` has a sticky header, bottom navigation, bottom-sheet entry forms, and a 375px-first layout. From `md` (768px) up, a left sidebar replaces the bottom navigation and the content widens to `max-w-5xl` at `lg`. Both navs render from `lib/navigation.ts`.
 - `NEXT_PUBLIC_API_URL` is used by browser calls; `API_URL` is used server-side by the auth route handlers. `NEXT_PUBLIC_APP_URL` sets metadata and the verification link base.
 
 ## Tests

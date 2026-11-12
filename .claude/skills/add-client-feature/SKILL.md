@@ -13,7 +13,7 @@ Match the accounts and home screens; read `src/Web.Client/CLAUDE.md` first.
 2. **API module** — add the call to `lib/api/<area>.ts`. Use `apiClient` for bearer-token calls; surface `ApiError.displayMessage` in the UI. Do not call `fetch` directly outside the auth BFF.
 3. **TanStack hook** — add queries and mutations in `lib/hooks/use<Area>.ts`. Use a stable `queryKey`; invalidate the related money keys (`accounts`, `dashboard`, `expenses`, `incomes`) after mutations that change balances.
 4. **UI** — build the screen under `app/(app)/<route>/page.tsx` and components under `components/<area>/`. Reuse `components/ui` and `AppShell`. Use `Sheet` for mobile entry forms and `Dialog` for confirmations. Reuse `components/expenses/ExpenseForm` rather than copying expense fields.
-5. **Route** — add the page and a nav entry in `components/layout/BottomNav.tsx` when it is a top-level destination.
+5. **Route** — add the page and a nav entry in `lib/navigation.ts` when it is a top-level destination. Both the phone bottom nav and the desktop sidebar read that list.
 6. **Styling** — oklch tokens from `app/globals.css` only. No hex colors, no arbitrary color values. Use `Money` for all amounts and `hero-gradient` only for the spend hero and primary add action.
 7. **Forms** — React Hook Form with the Zod resolver for auth and settings forms, matching `app/(auth)/login/page.tsx`. Entry sheets and the shared `ExpenseForm` use local state and chip controls; match the existing component instead of forcing RHF. Either way: explicit submit, inline errors, labels associated with inputs, focus ring preserved.
 8. **Base UI** — components take a `render` prop instead of `asChild`; pass `nativeButton={false}` when rendering a link through `Button`.
