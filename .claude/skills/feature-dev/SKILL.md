@@ -125,14 +125,16 @@ Shipping has three gates: 8a, 8b, and 8c. The user approves each one separately.
 2. Draft the pull request:
    - Title: conventional form, 70 characters or fewer. `lint-pr` checks it. It does not set the release version.
    - Body, in this order: `## Summary` (2-4 bullets), `## Verification` (each command run and its observed result), and `Refs #<number>` when an issue is in use. Use `Refs`, not `Closes`: the `close-released-issues` job reads this line to comment on and close the issue when the release ships (see After the pull request merges).
-   - Write the body to `.claude/cache/feature-dev-pr-body.md` (local only, gitignored, overwritten each run). No AI attribution.
+   - Choose the body file path once per run: `.claude/cache/feature-dev-pr-body-<YYYYMMDD-HHMMSS>-<4 random chars>.md` (local only, gitignored). Write the body there and use that exact path in the next step. A new run gets a new name, so concurrent runs cannot overwrite each other. No AI attribution.
 3. Show the title, body, and target (`main`). Wait for an explicit yes. The yes covers the push and the pull request.
 4. Push and open the pull request:
 
    ```bash
    git push -u origin <branch>
-   gh pr create --base main --head <branch> --title "<title>" --body-file .claude/cache/feature-dev-pr-body.md
+   gh pr create --base main --head <branch> --title "<title>" --body-file .claude/cache/feature-dev-pr-body-<YYYYMMDD-HHMMSS>-<4 random chars>.md
    ```
+
+   After `gh pr create` succeeds, delete that path. If it fails, keep the file; a retry of the same pull request reuses the kept path.
 
 5. Report the pull request URL. Leave the worktree in place (`ExitWorktree` with `action: "keep"`) so review fixes can go on the same branch.
 
@@ -148,11 +150,13 @@ Runs only when an issue is in use, right after the pull request opens.
    ```
 
 2. Show the comment and wait for an explicit yes.
-3. On yes, write the comment to `.claude/cache/feature-dev-issue-comment.md` (local only, gitignored, overwritten each run), then post it:
+3. On yes, choose the comment file path once: `.claude/cache/feature-dev-issue-comment-<YYYYMMDD-HHMMSS>-<4 random chars>.md` (local only, gitignored). Write the comment there, then post it with that exact path:
 
    ```bash
-   gh issue comment <number> --repo <owner/repo> --body-file .claude/cache/feature-dev-issue-comment.md
+   gh issue comment <number> --repo <owner/repo> --body-file .claude/cache/feature-dev-issue-comment-<YYYYMMDD-HHMMSS>-<4 random chars>.md
    ```
+
+   After `gh issue comment` succeeds, delete that path. If it fails, keep the file; a retry reuses the kept path.
 
 4. Do not close the issue here. It closes when the release ships (`close-released-issues` job) or through `/close-issue`.
 
