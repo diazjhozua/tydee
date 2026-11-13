@@ -140,7 +140,10 @@ function hasUnsafeCommandWord(command) {
       continue
     }
 
-    if (UNSAFE_COMMAND_CHAR.test(tokens[index])) {
+    // Backslashes are not checked here: printf escapes such as `\n` next to a
+    // redirect produce a "command word" that is only text. Escaped `rm` is still
+    // caught by the rm checks above and by the unescaped re-check in recursiveDeleteTargets.
+    if (/[$`*?[]/.test(tokens[index])) {
       return true
     }
   }
