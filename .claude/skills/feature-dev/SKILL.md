@@ -28,7 +28,7 @@ Initial request: $ARGUMENTS
 | Build | main thread with `add-api-endpoint` / `add-client-feature`; `feature-builder` for a large, approved, self-contained slice |
 | Review | `code-reviewer`, `architecture-reviewer` (backend touched), `ui-reviewer` (client touched) in parallel |
 | Verify | `verify` skill; `test-runner` on failures |
-| Ship | `/commit` (Phase 8a); `gh pr create` (Phase 8b); `gh issue comment` (Phase 8c); the `close-released-issues` job closes `Refs` issues at release; `/close-issue` for manual cases |
+| Ship | `/commit` (Phase 8a); `gh pr create` (Phase 8b); `gh issue comment` (Phase 8c); the `close-released-issues` job closes `Refs` issues when their pull request reaches `main`; `/close-issue` for manual cases |
 
 ## Phase 0: Intake
 
@@ -124,7 +124,7 @@ Shipping has three gates: 8a, 8b, and 8c. The user approves each one separately.
 1. Run `git fetch origin`, then `git log origin/main..HEAD --oneline`. This repo merges pull requests with a merge commit, so every commit on the branch lands on `main` exactly as written. Check each message against the Phase 8a format. If any is wrong, offer to reword it before pushing; do not push it as is.
 2. Draft the pull request:
    - Title: conventional form, 70 characters or fewer. `lint-pr` checks it. It does not set the release version.
-   - Body, in this order: `## Summary` (2-4 bullets), `## Verification` (each command run and its observed result), and `Refs #<number>` when an issue is in use. Use `Refs`, not `Closes`: the `close-released-issues` job reads this line to comment on and close the issue when the release ships (see After the pull request merges).
+   - Body, in this order: `## Summary` (2-4 bullets), `## Verification` (each command run and its observed result), and `Refs #<number>` when an issue is in use. Use `Refs`, not `Closes`: the `close-released-issues` job reads this line to comment on and close the issue once the pull request reaches `main` (see After the pull request merges).
    - Choose the body file path once per run: `.claude/cache/feature-dev-pr-body-<YYYYMMDD-HHMMSS>-<4 random chars>.md` (local only, gitignored). Write the body there and use that exact path in the next step. A new run gets a new name, so concurrent runs cannot overwrite each other. No AI attribution.
 3. Show the title, body, and target (`main`). Wait for an explicit yes. The yes covers the push and the pull request.
 4. Push and open the pull request:
@@ -158,7 +158,7 @@ Runs only when an issue is in use, right after the pull request opens.
 
    After `gh issue comment` succeeds, delete that path. If it fails, keep the file; a retry reuses the kept path.
 
-4. Do not close the issue here. It closes when the release ships (`close-released-issues` job) or through `/close-issue`.
+4. Do not close the issue here. It closes when the pull request merges (`close-released-issues` job) or through `/close-issue`.
 
 ### Release effect
 
@@ -175,9 +175,9 @@ Report the highest effect among the branch commits, for example "Release effect:
 
 ### After the pull request merges
 
-Merging is done by the user on GitHub. Issues stay open between the feature merge and the release.
+Merging is done by the user on GitHub. A `Refs #n` issue closes once its pull request reaches `main`.
 
-When the release PR is merged and the release is created, the `close-released-issues` job in `.github/workflows/release.yml` runs. For every PR in that release whose body has `Refs #n`, it comments on issue #n with the release version and link, then closes it if it is still open. Issues without `Refs` are untouched.
+Every push to `main` runs the `close-released-issues` job in `.github/workflows/release.yml`. It finds pull requests merged since the last release whose body has `Refs #n`. If that push cut a release, the comment links the release; otherwise it links the merge commit. An issue is closed only if still open and does not already carry that note, so re-runs and reopened issues are left alone. Issues without `Refs` are untouched.
 
 `/close-issue` is the manual path. Use it for an issue the job did not close, or when you want a written summary with verification before closing. This skill never closes issues itself.
 
