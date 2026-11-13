@@ -24,7 +24,7 @@ Close one GitHub issue only after its fix is merged and verified. Show the exact
 - Accept a number, URL, or title from the user.
 - If the message names no issue, use the issue discussed in this session. If that is ambiguous or missing, ask for the number and stop.
 - Run `gh issue view <number> --repo <owner/repo> --json number,title,state,stateReason,url,labels`.
-- If the issue is already closed, report its state and stop. Do not add a second closing comment. The `close-released-issues` job in `.github/workflows/release.yml` closes issues referenced with `Refs #n` when a release ships, so an issue may already be closed.
+- If the issue is already closed, report its state and stop. Do not add a second closing comment. The `close-released-issues` job in `.github/workflows/release.yml` closes issues referenced with `Refs #n` once their pull request reaches `main`, so an issue may already be closed.
 - If the issue is closed as not planned but the user wants it reopened, that is out of scope; say so.
 
 ## Step 3: Confirm the fix landed
