@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.29.0](https://github.com/diazjhozua/tydee/compare/v1.28.1...v1.29.0) (2026-11-13)
+
+
+### Features
+
+* **client:** explain header icons with tooltips ([5d7974a](https://github.com/diazjhozua/tydee/commit/5d7974a5448ba5816ec5926496f1934ed1d90fda))
+* **client:** explain header icons with tooltips ([98f817f](https://github.com/diazjhozua/tydee/commit/98f817f9857cd4c92719fdba027d9cb2465a7424))
+
+
+### Bug Fixes
+
+* **hooks:** merge main and stop commit guard reading past pipes ([41fba7a](https://github.com/diazjhozua/tydee/commit/41fba7adae5a72d4d273ed22500148909953f66d))
+
 ## [1.28.1](https://github.com/diazjhozua/tydee/compare/v1.28.0...v1.28.1) (2026-11-13)
 
 
