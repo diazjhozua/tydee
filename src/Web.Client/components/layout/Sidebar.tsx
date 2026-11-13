@@ -7,9 +7,9 @@ import { Logo } from "@/components/brand/Logo";
 import { NavItemLink } from "@/components/layout/NavItemLink";
 import { useLogout } from "@/lib/hooks/useAuth";
 import { useMe } from "@/lib/hooks/useMe";
-import { adminNav, isNavActive, primaryNav, settingsNav } from "@/lib/navigation";
+import { adminNav, isNavActive, type NavItem, primaryNav, settingsNav } from "@/lib/navigation";
 
-export function Sidebar() {
+export function Sidebar({ items = primaryNav }: { items?: NavItem[] }) {
   const pathname = usePathname();
   const { data: me } = useMe();
   const logout = useLogout();
@@ -23,7 +23,7 @@ export function Sidebar() {
       </div>
 
       <nav aria-label="Primary" className="flex flex-1 flex-col gap-1 px-3 py-2">
-        {primaryNav.map((item) => (
+        {items.map((item) => (
           <NavItemLink
             key={item.href}
             item={item}

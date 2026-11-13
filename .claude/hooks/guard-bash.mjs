@@ -101,7 +101,6 @@ const PREFIX_WRAPPERS = new Set([
 ])
 
 const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/
-const UNSAFE_COMMAND_CHAR = /[$`\\*?[]/
 // Arguments to shell/prefix wrappers: backslash is excluded so Windows paths such as
 // `powershell -File scripts\x.ps1` pass. Escaped rm is still caught by the unescaped re-check in recursiveDeleteTargets.
 const UNSAFE_WRAPPED_ARG = /[$`*?[]/
@@ -119,6 +118,11 @@ function splitCommandSegments(command) {
 const QUOTED_SEPARATOR = /[(){}|&;<>\n]/
 
 function maskQuotedSeparators(command) {
+  // ANSI-C quoting ($'...') honors backslash escapes inside single quotes, which this
+  // scanner does not model, so a masked separator could hide a real one. Fail closed.
+  if (command.includes("$'")) {
+    return command
+  }
   let out = ""
   let quote = null
   for (let i = 0; i < command.length; i++) {
@@ -395,7 +399,7 @@ if (
   gitClauses.some(
     (clause) =>
       GIT_DIFF.test(clause) &&
-      /(\s--outp[a-z-]*(=|\s|$)|\s--ext-diff\b|\s--extc[a-z]*\b|\s--exec\b|\s--textc[a-z]*\b|\s-c\S*|\s-x\s)/.test(clause),
+      /(\s--outp[a-z-]*(=|\s|$)|\s--ext-diff\b|\s--extc[a-z]*\b|\s--exec\b|\s--textc[a-z]*\b|\s-c\s+\S+=|\s-x\s)/.test(clause),
   )
 ) {
   block('git diff/log/difftool flags can write files or execute external programs.')

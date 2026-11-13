@@ -21,6 +21,7 @@ vi.mock("@/lib/hooks/useAuth", () => ({
 }));
 
 import { Sidebar } from "@/components/layout/Sidebar";
+import { primaryNavFor } from "@/lib/navigation";
 
 describe("Sidebar", () => {
   beforeEach(() => {
@@ -49,6 +50,15 @@ describe("Sidebar", () => {
     state.isAdmin = true;
     render(<Sidebar />);
     expect(screen.getByRole("link", { name: "Admin" })).toHaveAttribute("href", "/admin");
+  });
+
+  it("renders Log first when given the Log-first order", () => {
+    render(<Sidebar items={primaryNavFor("LogExpense")} />);
+
+    const nav = screen.getByRole("navigation", { name: "Primary" });
+    const links = nav.querySelectorAll("a");
+    expect(links[0]).toHaveAccessibleName("Log");
+    expect(links[1]).toHaveAccessibleName("Home");
   });
 
   it("marks the current route with aria-current", () => {

@@ -8,6 +8,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 import { BottomNav } from "@/components/layout/BottomNav";
+import { primaryNavFor } from "@/lib/navigation";
 
 describe("BottomNav", () => {
   it("shows four tabs and marks the log page active", () => {
@@ -20,5 +21,13 @@ describe("BottomNav", () => {
     expect(log).toHaveAttribute("href", "/log-expense");
     expect(log).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("renders Log first when given the Log-first order", () => {
+    render(<BottomNav items={primaryNavFor("LogExpense")} />);
+
+    const links = screen.getAllByRole("link");
+    expect(links[0]).toHaveAccessibleName("Log");
+    expect(links[1]).toHaveAccessibleName("Home");
   });
 });
