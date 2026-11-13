@@ -15,10 +15,14 @@ import { InstallBanner } from "@/components/shared/InstallBanner";
 import { OfflineBanner } from "@/components/shared/OfflineBanner";
 import { TransferSheet } from "@/components/transfers/TransferSheet";
 import { Button } from "@/components/ui/button";
+import { useMe } from "@/lib/hooks/useMe";
+import { primaryNavFor } from "@/lib/navigation";
 import { useBalanceVisibilityStore } from "@/lib/stores/balanceVisibilityStore";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { data: me } = useMe();
+  const navItems = primaryNavFor(me?.defaultPage);
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [incomeOpen, setIncomeOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
@@ -98,8 +102,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {showNav && <Sidebar />}
-      {showNav && <BottomNav />}
+      {showNav && <Sidebar items={navItems} />}
+      {showNav && <BottomNav items={navItems} />}
 
       <ExpenseDialog open={expenseOpen} onOpenChange={setExpenseOpen} />
       <IncomeDialog open={incomeOpen} onOpenChange={setIncomeOpen} />
