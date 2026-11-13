@@ -1,5 +1,10 @@
+import { createApi } from "../api";
 import { expect, test } from "../fixtures";
+import { createVerifiedUser, signInThroughBff } from "../fixtures/users";
+import { AppShellPage } from "../pages/app-shell.page";
 import { DashboardPage } from "../pages/dashboard.page";
+import { Seed } from "../seed/seed";
+import { API_URL } from "../support/env";
 
 // Runs in both projects. The chromium project is desktop width and the mobile
 // project is 375px. Each test branches on the project it runs in.
@@ -37,4 +42,16 @@ test("hides the activity grid toggle on phones", async ({ app, page }, testInfo)
 
   const dashboard = new DashboardPage(page);
   await expect(dashboard.viewButton("Recent", "grid")).toBeHidden();
+});
+
+test("lists Log expense first when it is the default page", async ({ page }) => {
+  // Set the preference before the first navigation so the persisted `me` query
+  // cannot hold the default Home order (see tests/e2e/CLAUDE.md).
+  const user = await createVerifiedUser(undefined, { defaultPage: "LogExpense" });
+  await new Seed(createApi(API_URL, user.accessToken)).withAccounts();
+  await signInThroughBff(page, user);
+
+  await page.goto("/app");
+
+  await new AppShellPage(page).expectPrimaryOrder(["Log", "Home", "Accounts", "Saved"]);
 });
