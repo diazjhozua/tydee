@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.28.0](https://github.com/diazjhozua/tydee/compare/v1.27.0...v1.28.0) (2026-11-13)
+
+
+### Features
+
+* **client:** add give feedback button to app header ([5075298](https://github.com/diazjhozua/tydee/commit/5075298928f0c403225dc7e91d91d24f99c880b5))
+* **client:** add give feedback button to app header ([73aef58](https://github.com/diazjhozua/tydee/commit/73aef588d02b4a885514c09812a082279740cf85))
+* **client:** queue feedback offline for replay ([c691646](https://github.com/diazjhozua/tydee/commit/c69164634172b7cbc555d5dec992c252976277ec))
+
 ## [1.27.0](https://github.com/diazjhozua/tydee/compare/v1.26.0...v1.27.0) (2026-11-13)
 
 
