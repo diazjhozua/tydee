@@ -16,6 +16,7 @@ import { OfflineBanner } from "@/components/shared/OfflineBanner";
 import { SuggestionSheet } from "@/components/suggestions/SuggestionSheet";
 import { TransferSheet } from "@/components/transfers/TransferSheet";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMe } from "@/lib/hooks/useMe";
 import { primaryNavFor } from "@/lib/navigation";
 import { useBalanceVisibilityStore } from "@/lib/stores/balanceVisibilityStore";
@@ -44,27 +45,40 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Logo />
           </Link>
           <div className="ml-auto flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              onClick={toggleBalances}
-              aria-label={hideBalances ? "Show balances" : "Hide balances"}
-              aria-pressed={hideBalances}
-            >
-              {hideBalances ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
-            </Button>
-            {showNav && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full"
-                aria-label="Give feedback"
-                aria-haspopup="dialog"
-                onClick={() => setFeedbackOpen(true)}
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full"
+                    onClick={toggleBalances}
+                    aria-label={hideBalances ? "Show balances" : "Hide balances"}
+                  />
+                }
               >
-                <MessageSquare className="size-5" />
-              </Button>
+                {hideBalances ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+              </TooltipTrigger>
+              <TooltipContent>Show or hide balances</TooltipContent>
+            </Tooltip>
+            {showNav && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-full"
+                      aria-label="Give feedback"
+                      aria-haspopup="dialog"
+                      onClick={() => setFeedbackOpen(true)}
+                    />
+                  }
+                >
+                  <MessageSquare className="size-5" />
+                </TooltipTrigger>
+                <TooltipContent>Send feedback</TooltipContent>
+              </Tooltip>
             )}
             <Button
               variant="ghost"

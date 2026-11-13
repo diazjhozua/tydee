@@ -103,7 +103,17 @@ const PREFIX_WRAPPERS = new Set([
 const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/
 // Arguments to shell/prefix wrappers: backslash is excluded so Windows paths such as
 // `powershell -File scripts\x.ps1` pass. Escaped rm is still caught by the unescaped re-check in recursiveDeleteTargets.
-const UNSAFE_WRAPPED_ARG = /[$`*?[]/
+// A word that is entirely one quoted string (e.g. `"[role]"` in a node -e snippet) is literal text,
+// so its glob characters are not live. Any other word, including a quoted span glued to more shell
+// text such as `"r[m]""`, keeps the full check. `$` and backticks always count: they expand inside
+// double quotes.
+function hasUnsafeWordChars(token) {
+  if (/[$`]/.test(token)) {
+    return true
+  }
+  const live = /^(?:"[^"]*"|'[^']*')$/.test(token) ? '' : token
+  return /[*?[]/.test(live)
+}
 const SEGMENT_SEPARATOR = /\s*(?:&&|\|\||;|\n|\||&|\(|\)|\{|\}|<|>|\$\(|`)\s*/
 
 function splitCommandSegments(command) {
@@ -179,14 +189,14 @@ function hasUnsafeCommandWord(command) {
     }
 
     if (SHELL_WRAPPERS.has(first)) {
-      if (tokens.slice(index + 1).some((token) => UNSAFE_WRAPPED_ARG.test(token))) {
+      if (tokens.slice(index + 1).some(hasUnsafeWordChars)) {
         return true
       }
       continue
     }
 
     if (PREFIX_WRAPPERS.has(first)) {
-      if (tokens.slice(index + 1).some((token) => UNSAFE_WRAPPED_ARG.test(token))) {
+      if (tokens.slice(index + 1).some(hasUnsafeWordChars)) {
         return true
       }
       continue
@@ -197,7 +207,7 @@ function hasUnsafeCommandWord(command) {
     // caught by the rm checks above and by the unescaped re-check in recursiveDeleteTargets.
     // `[` and `[[` are the test builtins, not globs, so `[ -f x ] && cat x` is not an unsafe command word.
     const isTestBuiltin = tokens[index] === '[' || tokens[index] === '[['
-    if (!isTestBuiltin && /[$`*?[]/.test(tokens[index])) {
+    if (!isTestBuiltin && hasUnsafeWordChars(tokens[index])) {
       return true
     }
   }

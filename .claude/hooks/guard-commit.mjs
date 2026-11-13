@@ -73,6 +73,41 @@ function tokenize(input) {
   return tokens
 }
 
+// Split a command on unquoted shell separators (&&, ||, ;, |, &, newline) into clauses.
+// Quotes and backslash escapes are kept as-is, so a separator inside a message stays in its clause.
+function splitClauses(command) {
+  const clauses = []
+  let current = ''
+  let quote = ''
+
+  for (let i = 0; i < command.length; i++) {
+    const char = command[i]
+
+    if (quote) {
+      if (char === quote) {
+        quote = ''
+      } else if (quote === '"' && char === '\\' && i + 1 < command.length) {
+        current += char + command[++i]
+        continue
+      }
+      current += char
+    } else if (char === '"' || char === "'") {
+      quote = char
+      current += char
+    } else if (char === '\\' && i + 1 < command.length) {
+      current += char + command[++i]
+    } else if (char === '&' || char === '|' || char === ';' || char === '\n') {
+      clauses.push(current)
+      current = ''
+    } else {
+      current += char
+    }
+  }
+
+  clauses.push(current)
+  return clauses
+}
+
 // Return the arguments of every `git commit` invocation, skipping git global options.
 function commitInvocations(tokens) {
   const invocations = []
@@ -214,10 +249,14 @@ if (!command) {
   process.exit(0)
 }
 
-for (const args of commitInvocations(tokenize(command))) {
-  const reason = validate(args)
-  if (reason) {
-    block(reason)
+// Each shell clause is checked on its own, so `git commit -m "..." && git push | tail -n 2` does not
+// read the flags of the later commands as commit flags.
+for (const clause of splitClauses(command)) {
+  for (const args of commitInvocations(tokenize(clause))) {
+    const reason = validate(args)
+    if (reason) {
+      block(reason)
+    }
   }
 }
 

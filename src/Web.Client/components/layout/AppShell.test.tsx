@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useBalanceVisibilityStore } from "@/lib/stores/balanceVisibilityStore";
 
@@ -126,5 +127,72 @@ describe("AppShell header feedback button", () => {
     render(<AppShell>content</AppShell>);
 
     expect(screen.queryByRole("button", { name: "Give feedback" })).not.toBeInTheDocument();
+  });
+});
+
+describe("AppShell header tooltips", () => {
+  beforeEach(() => {
+    state.pathname = "/app";
+    state.defaultPage = null;
+    state.meLoaded = true;
+    useBalanceVisibilityStore.setState({ hideBalances: false });
+  });
+
+  it("explains the balance toggle on hover", async () => {
+    render(<AppShell>content</AppShell>);
+
+    await userEvent.hover(screen.getByRole("button", { name: "Hide balances" }));
+
+    expect(await screen.findByText("Show or hide balances", {}, { timeout: 2000 })).toBeInTheDocument();
+  });
+
+  it("keeps the balance toggle's accessible name when a tooltip is open", async () => {
+    render(<AppShell>content</AppShell>);
+
+    await userEvent.hover(screen.getByRole("button", { name: "Hide balances" }));
+    await screen.findByText("Show or hide balances", {}, { timeout: 2000 });
+
+    expect(screen.getByRole("button", { name: "Hide balances" })).toBeInTheDocument();
+  });
+
+  it("explains the feedback button on hover", async () => {
+    render(<AppShell>content</AppShell>);
+
+    await userEvent.hover(screen.getByRole("button", { name: "Give feedback" }));
+
+    expect(await screen.findByText("Send feedback", {}, { timeout: 2000 })).toBeInTheDocument();
+  });
+
+  it("explains the balance toggle when it receives keyboard focus", async () => {
+    render(<AppShell>content</AppShell>);
+
+    const toggle = screen.getByRole("button", { name: "Hide balances" });
+    for (let i = 0; i < 50 && document.activeElement !== toggle; i++) {
+      await userEvent.tab();
+    }
+    expect(toggle).toHaveFocus();
+
+    expect(await screen.findByText("Show or hide balances", {}, { timeout: 2000 })).toBeInTheDocument();
+  });
+
+  it("does not open the balance tooltip on a touch tap", async () => {
+    render(<AppShell>content</AppShell>);
+
+    await userEvent.pointer({ keys: "[TouchA]", target: screen.getByRole("button", { name: "Hide balances" }) });
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    expect(screen.queryByText("Show or hide balances")).not.toBeInTheDocument();
+  });
+
+  it("does not announce a pressed state on the balance toggle", () => {
+    render(<AppShell>content</AppShell>);
+
+    expect(screen.getByRole("button", { name: "Hide balances" })).not.toHaveAttribute("aria-pressed");
+  });
+
+  it("keeps aria-haspopup on the feedback button", () => {
+    render(<AppShell>content</AppShell>);
+
+    expect(screen.getByRole("button", { name: "Give feedback" })).toHaveAttribute("aria-haspopup", "dialog");
   });
 });
