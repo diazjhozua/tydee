@@ -1,5 +1,6 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useBalanceVisibilityStore } from "@/lib/stores/balanceVisibilityStore";
 
 const state = vi.hoisted(() => ({
   pathname: "/app",
@@ -19,6 +20,10 @@ vi.mock("@/lib/hooks/useMe", () => ({
 
 vi.mock("@/lib/hooks/useAuth", () => ({
   useLogout: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
+vi.mock("@/lib/hooks/useSuggestions", () => ({
+  useCreateSuggestion: () => ({ mutate: vi.fn(), isPending: false, isPaused: false }),
 }));
 
 vi.mock("@/components/expenses/ExpenseDialog", () => ({ ExpenseDialog: () => null }));
@@ -79,5 +84,47 @@ describe("AppShell primary navigation order", () => {
     render(<AppShell>content</AppShell>);
 
     expect(navLabels(BOTTOM)[0]).toBe("Home");
+  });
+});
+
+describe("AppShell header feedback button", () => {
+  beforeEach(() => {
+    state.pathname = "/app";
+    state.defaultPage = null;
+    state.meLoaded = true;
+    useBalanceVisibilityStore.setState({ hideBalances: false });
+  });
+
+  it("shows a Give feedback button in the header", () => {
+    render(<AppShell>content</AppShell>);
+
+    expect(screen.getByRole("button", { name: "Give feedback" })).toBeInTheDocument();
+  });
+
+  it("opens the feedback sheet when the button is pressed", async () => {
+    render(<AppShell>content</AppShell>);
+
+    fireEvent.click(screen.getByRole("button", { name: "Give feedback" }));
+
+    expect(await screen.findByRole("dialog", { name: "Send feedback" })).toBeInTheDocument();
+  });
+
+  it("places the feedback button between the balance toggle and the Settings link", () => {
+    render(<AppShell>content</AppShell>);
+
+    const balances = screen.getByRole("button", { name: "Hide balances" });
+    const feedback = screen.getByRole("button", { name: "Give feedback" });
+    const settings = screen.getByLabelText("Settings");
+
+    expect(balances.compareDocumentPosition(feedback) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(feedback.compareDocumentPosition(settings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(settings).toHaveAttribute("href", "/settings");
+  });
+
+  it("is hidden on the onboarding route", () => {
+    state.pathname = "/setup";
+    render(<AppShell>content</AppShell>);
+
+    expect(screen.queryByRole("button", { name: "Give feedback" })).not.toBeInTheDocument();
   });
 });

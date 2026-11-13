@@ -7,6 +7,7 @@ import {
   listSuggestions,
   updateSuggestionStatus,
 } from "@/lib/api/suggestions";
+import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { SuggestionStatus } from "@/lib/types/suggestion";
 
@@ -22,9 +23,12 @@ export function useMySuggestions() {
 
 export function useCreateSuggestion() {
   const queryClient = useQueryClient();
+  const isOnline = useOnlineStatus();
 
   return useMutation({
+    mutationKey: ["suggestions", "create"],
     mutationFn: createSuggestion,
+    meta: { queuedOffline: !isOnline, syncedMessage: "Feedback sent" },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["suggestions"] });
     },
