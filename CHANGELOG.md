@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.27.0](https://github.com/diazjhozua/tydee/compare/v1.26.0...v1.27.0) (2026-11-13)
+
+
+### Features
+
+* **client:** show log expense first when it is the default page ([16a5ddc](https://github.com/diazjhozua/tydee/commit/16a5ddc6fa5215ac8dc586d75df6ec2f7f16e559))
+* **client:** show log expense first when it is the default page ([532b85e](https://github.com/diazjhozua/tydee/commit/532b85e2d5457ee25b06d05ffa6b7a0f6387a437))
+
 ## [1.26.0](https://github.com/diazjhozua/tydee/compare/v1.25.0...v1.26.0) (2026-11-12)
 
 
