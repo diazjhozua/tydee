@@ -15,6 +15,14 @@ export class AppShellPage extends BasePage {
       .click();
   }
 
+  async openFeedback(): Promise<void> {
+    await this.page.getByRole("button", { name: "Give feedback", exact: true }).click();
+  }
+
+  async expectFeedbackSheet(): Promise<void> {
+    await expect(this.page.getByRole("dialog", { name: "Send feedback" })).toBeVisible();
+  }
+
   async nav(label: "Home" | "Log" | "Accounts" | "Saved"): Promise<void> {
     await this.page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: label }).click();
   }

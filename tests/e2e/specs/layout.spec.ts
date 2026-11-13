@@ -9,6 +9,12 @@ import { API_URL } from "../support/env";
 // Runs in both projects. The chromium project is desktop width and the mobile
 // project is 375px. Each test branches on the project it runs in.
 
+test("opens the feedback sheet from the header on both layouts", async ({ app, page }) => {
+  const shell = new AppShellPage(page);
+  await shell.openFeedback();
+  await shell.expectFeedbackSheet();
+});
+
 test("shows the sidebar on desktop and the bottom navigation on phones", async ({
   app,
   page,
