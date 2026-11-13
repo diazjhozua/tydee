@@ -101,16 +101,54 @@ const PREFIX_WRAPPERS = new Set([
 ])
 
 const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/
-const UNSAFE_COMMAND_CHAR = /[$`\\*?[]/
+// Arguments to shell/prefix wrappers: backslash is excluded so Windows paths such as
+// `powershell -File scripts\x.ps1` pass. Escaped rm is still caught by the unescaped re-check in recursiveDeleteTargets.
+const UNSAFE_WRAPPED_ARG = /[$`*?[]/
 const SEGMENT_SEPARATOR = /\s*(?:&&|\|\||;|\n|\||&|\(|\)|\{|\}|<|>|\$\(|`)\s*/
 
 function splitCommandSegments(command) {
   return command.split(SEGMENT_SEPARATOR)
 }
 
+// Inside quotes, shell separators are literal text (e.g. the regex in grep -E "^(a|b)$").
+// Mask them before splitting so they do not create fragments that look like command words.
+// `$(` and backticks still expand inside double quotes, so they are left alone for the split.
+// Backslash escapes are kept as-is outside single quotes.
+const QUOTED_SEPARATOR = /[(){}|&;<>\n]/
+
+function maskQuotedSeparators(command) {
+  // ANSI-C quoting ($'...') honors backslash escapes inside single quotes, which this
+  // scanner does not model, so a masked separator could hide a real one. Fail closed.
+  if (command.includes("$'")) {
+    return command
+  }
+  let out = ""
+  let quote = null
+  for (let i = 0; i < command.length; i++) {
+    const ch = command[i]
+    if (quote !== "'" && ch === "\\" && i + 1 < command.length) {
+      out += ch + command[i + 1]
+      i++
+      continue
+    }
+    if (quote === null && (ch === "'" || ch === '"')) {
+      quote = ch
+      out += ch
+      continue
+    }
+    if (quote === ch) {
+      quote = null
+      out += ch
+      continue
+    }
+    out += quote !== null && QUOTED_SEPARATOR.test(ch) ? "_" : ch
+  }
+  return out
+}
+
 // A command word built from expansion, globbing, or escaping cannot be resolved statically.
 function hasUnsafeCommandWord(command) {
-  for (const segment of splitCommandSegments(command)) {
+  for (const segment of splitCommandSegments(maskQuotedSeparators(command))) {
     const tokens = segment.split(/\s+/).filter(Boolean)
     let index = 0
     while (index < tokens.length && ASSIGNMENT.test(tokens[index])) {
@@ -127,14 +165,14 @@ function hasUnsafeCommandWord(command) {
     }
 
     if (SHELL_WRAPPERS.has(first)) {
-      if (tokens.slice(index + 1).some((token) => UNSAFE_COMMAND_CHAR.test(token))) {
+      if (tokens.slice(index + 1).some((token) => UNSAFE_WRAPPED_ARG.test(token))) {
         return true
       }
       continue
     }
 
     if (PREFIX_WRAPPERS.has(first)) {
-      if (tokens.slice(index + 1).some((token) => UNSAFE_COMMAND_CHAR.test(token))) {
+      if (tokens.slice(index + 1).some((token) => UNSAFE_WRAPPED_ARG.test(token))) {
         return true
       }
       continue
@@ -341,7 +379,7 @@ if (GIT_RESET.test(git) && /\s--hard\b/.test(git)) {
 
 if (
   GIT_DIFF.test(git) &&
-  /(\s--outp[a-z-]*(=|\s|$)|\s--ext-diff\b|\s--extc[a-z]*\b|\s--exec\b|\s--textc[a-z]*\b|\s-c\S*|\s-x\s)/.test(git)
+  /(\s--outp[a-z-]*(=|\s|$)|\s--ext-diff\b|\s--extc[a-z]*\b|\s--exec\b|\s--textc[a-z]*\b|\s-c\s+\S+=|\s-x\s)/.test(git)
 ) {
   block('git diff/log/difftool flags can write files or execute external programs.')
 }
