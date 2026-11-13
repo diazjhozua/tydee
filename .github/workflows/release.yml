@@ -18,16 +18,23 @@ jobs:
       release-type: ""
 
   close-released-issues:
+    # Runs on every push to main, not only when a release is cut. A release push closes
+    # Refs issues with a release note; any other push closes them with a merge note.
     needs: release
-    if: needs.release.outputs.release_created == 'true'
+    if: ${{ !cancelled() && needs.release.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: read
       issues: write
+    concurrency:
+      group: close-released-issues
+      cancel-in-progress: false
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
+      SERVER_URL: ${{ github.server_url }}
+      RELEASE_CREATED: ${{ needs.release.outputs.release_created }}
       TAG_NAME: ${{ needs.release.outputs.tag_name }}
       RELEASE_URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ needs.release.outputs.tag_name }}
     steps:
@@ -36,27 +43,45 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Close issues referenced by pull requests in this release
+      - name: Close issues referenced by pull requests merged to main
         run: |
+          # Range starts at the previous release. A release push ends at the new tag;
+          # any other push ends at HEAD, so pull requests merged since the last release
+          # are closed on the first push that follows their merge.
           prev_tag=$(gh release list --repo "$REPO" --exclude-drafts --limit 5 --json tagName --jq '.[].tagName' | grep -vxF "$TAG_NAME" | head -n 1 || true)
           if [ -z "$prev_tag" ]; then
             echo "No previous release; nothing to close."
             exit 0
           fi
 
-          bodies=""
-          for sha in $(git log --first-parent --format=%H "$prev_tag..$TAG_NAME"); do
-            bodies+="$(gh api "repos/$REPO/commits/$sha/pulls" --jq '.[] | select(.merged_at != null) | .body // ""')"
-            bodies+=$'\n'
-          done
+          if [ "$RELEASE_CREATED" = "true" ]; then
+            end_ref="$TAG_NAME"
+          else
+            end_ref="HEAD"
+          fi
 
-          issues=$(grep -oE 'Refs #[0-9]+' <<< "$bodies" | grep -oE '[0-9]+' | sort -un || true)
-          for n in $issues; do
-            state=$(gh api "repos/$REPO/issues/$n" --jq 'select(.pull_request == null) | .state' 2>/dev/null || true)
-            if [ "$state" != "open" ]; then
-              echo "Skip #$n (state: ${state:-not an open issue})"
-              continue
-            fi
-            gh issue comment "$n" --repo "$REPO" --body "Released in $TAG_NAME: $RELEASE_URL"
-            gh issue close "$n" --repo "$REPO" --reason completed
+          for sha in $(git log --first-parent --format=%H "$prev_tag..$end_ref"); do
+            bodies=$(gh api "repos/$REPO/commits/$sha/pulls" --jq '.[] | select(.merged_at != null) | .body // ""')
+            issues=$(grep -oE 'Refs #[0-9]+' <<< "$bodies" | grep -oE '[0-9]+' | sort -un || true)
+            for n in $issues; do
+              state=$(gh api "repos/$REPO/issues/$n" --jq 'select(.pull_request == null) | .state' 2>/dev/null || true)
+              if [ "$state" != "open" ]; then
+                echo "Skip #$n (state: ${state:-not an open issue})"
+                continue
+              fi
+              if [ "$RELEASE_CREATED" = "true" ]; then
+                note="Released in $TAG_NAME: $RELEASE_URL"
+              else
+                note="Merged to main in $SERVER_URL/$REPO/commit/$sha"
+              fi
+              # Skip when this note is already on the issue. Otherwise a reopened issue would be
+              # closed again on every later push until the next release.
+              comments=$(gh api --paginate "repos/$REPO/issues/$n/comments" --jq '.[].body')
+              if grep -qF "$note" <<< "$comments"; then
+                echo "Skip #$n (already noted: $note)"
+                continue
+              fi
+              gh issue comment "$n" --repo "$REPO" --body "$note"
+              gh issue close "$n" --repo "$REPO" --reason completed
+            done
           done

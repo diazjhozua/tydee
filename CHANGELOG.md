@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.28.1](https://github.com/diazjhozua/tydee/compare/v1.28.0...v1.28.1) (2026-11-13)
+
+
+### Bug Fixes
+
+* **ci:** close referenced issues on every push to main ([a5076bb](https://github.com/diazjhozua/tydee/commit/a5076bb9f0fab55c7a8c51a0b8370000e6e0b375))
+* **ci:** close referenced issues on every push to main ([ef2b9ef](https://github.com/diazjhozua/tydee/commit/ef2b9efa090ab964a2bc2af3c6c37caabc26653f))
+
 ## [1.28.0](https://github.com/diazjhozua/tydee/compare/v1.27.0...v1.28.0) (2026-11-13)
 
 

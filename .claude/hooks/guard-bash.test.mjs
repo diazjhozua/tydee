@@ -35,3 +35,11 @@ test('blocks a glob hidden between paired quotes in a shell wrapper', () => {
 test('blocks a glob glued to other text in a shell wrapper argument', () => {
   assert.equal(exitCodeFor('sh -c "r[m] -rf x"'), 2)
 })
+
+test('allows the test builtin as a command word', () => {
+  assert.equal(exitCodeFor('[ -f x ] && cat x'), 0)
+})
+
+test('blocks a parameter expansion used as a command word', () => {
+  assert.equal(exitCodeFor('${CMD} -rf x'), 2)
+})
