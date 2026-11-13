@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight, Eye, EyeOff, Plus, Settings, TrendingUp } from "lucide-react";
+import { ArrowLeftRight, Eye, EyeOff, MessageSquare, Plus, Settings, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -13,6 +13,7 @@ import { DefaultPagePrompt } from "@/components/layout/DefaultPagePrompt";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { InstallBanner } from "@/components/shared/InstallBanner";
 import { OfflineBanner } from "@/components/shared/OfflineBanner";
+import { SuggestionSheet } from "@/components/suggestions/SuggestionSheet";
 import { TransferSheet } from "@/components/transfers/TransferSheet";
 import { Button } from "@/components/ui/button";
 import { useMe } from "@/lib/hooks/useMe";
@@ -26,6 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [incomeOpen, setIncomeOpen] = useState(false);
   const [transferOpen, setTransferOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const hideBalances = useBalanceVisibilityStore((state) => state.hideBalances);
   const toggleBalances = useBalanceVisibilityStore((state) => state.toggle);
 
@@ -41,7 +43,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/app" className="md:hidden">
             <Logo />
           </Link>
-          <div className="ml-auto flex items-center gap-1">
+          <div className="ml-auto flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
@@ -52,6 +54,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               {hideBalances ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
             </Button>
+            {showNav && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full"
+                aria-label="Give feedback"
+                aria-haspopup="dialog"
+                onClick={() => setFeedbackOpen(true)}
+              >
+                <MessageSquare className="size-5" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -108,6 +122,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <ExpenseDialog open={expenseOpen} onOpenChange={setExpenseOpen} />
       <IncomeDialog open={incomeOpen} onOpenChange={setIncomeOpen} />
       <TransferSheet open={transferOpen} onOpenChange={setTransferOpen} />
+      <SuggestionSheet open={feedbackOpen} onOpenChange={setFeedbackOpen} />
       <AppOpenRedirect />
       <DefaultPagePrompt />
     </div>
