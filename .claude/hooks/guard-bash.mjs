@@ -147,9 +147,22 @@ function maskQuotedSeparators(command) {
   return out
 }
 
+// Parameter expansions (`${p##*/}`) and `case` labels (`*)`, `repos/*/x)`) are not command words, but the
+// splitter would turn their pieces into fake ones. Mask them for the command-word scan only. The `$` is
+// kept, so `${CMD} -rf` still reads as an unsafe command word. The rm checks run on the raw command.
+const PARAM_EXPANSION = /\$\{[^{}]*\}/g
+// `$` and backtick are excluded so a line such as `$A$B)` still counts as a command word.
+const CASE_LABEL = /(^|\n)([ \t]*)[^\s()'"`;&|<>$]+\)(?=[ \t\n]|$)/g
+
+function maskNonCommandWords(command) {
+  return command
+    .replace(PARAM_EXPANSION, (match) => `$${'_'.repeat(match.length - 1)}`)
+    .replace(CASE_LABEL, '$1$2')
+}
+
 // A command word built from expansion, globbing, or escaping cannot be resolved statically.
 function hasUnsafeCommandWord(command) {
-  for (const segment of splitCommandSegments(maskQuotedSeparators(command))) {
+  for (const segment of splitCommandSegments(maskQuotedSeparators(maskNonCommandWords(command)))) {
     const tokens = segment.split(/\s+/).filter(Boolean)
     let index = 0
     while (index < tokens.length && ASSIGNMENT.test(tokens[index])) {
@@ -182,7 +195,9 @@ function hasUnsafeCommandWord(command) {
     // Backslashes are not checked here: printf escapes such as `\n` next to a
     // redirect produce a "command word" that is only text. Escaped `rm` is still
     // caught by the rm checks above and by the unescaped re-check in recursiveDeleteTargets.
-    if (/[$`*?[]/.test(tokens[index])) {
+    // `[` and `[[` are the test builtins, not globs, so `[ -f x ] && cat x` is not an unsafe command word.
+    const isTestBuiltin = tokens[index] === '[' || tokens[index] === '[['
+    if (!isTestBuiltin && /[$`*?[]/.test(tokens[index])) {
       return true
     }
   }
@@ -217,7 +232,7 @@ function recursiveFlag(token) {
 function hasRecursiveRm(command) {
   return splitSegments(command).some((segment) => {
     const tokens = segment.split(/\s+/).filter(Boolean)
-    const rmIndex = tokens.findIndex((token) => commandName(token).replace(/^[({$]+/, '') === 'rm')
+    const rmIndex = tokens.findIndex((token) => commandName(token).replace(/^[({$`]+/, '') === 'rm')
     if (rmIndex === -1) {
       return false
     }
@@ -256,7 +271,8 @@ function recursiveDeleteTargets(command, projectDir, home) {
   }
   // Any rm with an expansion ($ or backtick) fails closed. Backslash alone does not: a plain
   // `rm -f file` next to an unrelated grep pattern like `\|` must not block.
-  if (/\brm\b/i.test(command) && /[$`]/.test(command)) {
+  // `rm` (or `rm.exe`) as its own word. `-`, `.`, and word characters on either side mean a filename such as `block-rm-x.json`.
+  if (/(?<![\w.-])rm(?:\.exe)?(?![\w.-])/i.test(command) && /[$`]/.test(command)) {
     return [{ resolved: null, cwd: projectDir }]
   }
 
@@ -312,7 +328,7 @@ function recursiveDeleteTargets(command, projectDir, home) {
   const targets = []
   for (const segment of splitSegments(command)) {
     const segmentTokens = segment.split(/\s+/).filter(Boolean)
-    const rmIndex = segmentTokens.findIndex((token) => commandName(token).replace(/^[({$]+/, '') === 'rm')
+    const rmIndex = segmentTokens.findIndex((token) => commandName(token).replace(/^[({$`]+/, '') === 'rm')
     if (rmIndex === -1) {
       continue
     }
