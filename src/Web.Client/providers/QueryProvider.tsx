@@ -7,6 +7,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { createExpense, deleteExpense, updateExpense } from "@/lib/api/expenses";
 import { createIncome, deleteIncome, updateIncome } from "@/lib/api/incomes";
+import { createSuggestion } from "@/lib/api/suggestions";
 import { ApiError } from "@/lib/types/api";
 import { ExpenseRequest } from "@/lib/types/expense";
 import { IncomeRequest } from "@/lib/types/income";
@@ -97,6 +98,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
     client.setMutationDefaults(["incomes", "delete"], {
       mutationFn: (vars: { incomeId: string; date: string }) => deleteIncome(vars.incomeId),
     });
+    client.setMutationDefaults(["suggestions", "create"], { mutationFn: createSuggestion });
 
     return client;
   });

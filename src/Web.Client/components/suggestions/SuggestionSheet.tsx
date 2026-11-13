@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { useCreateSuggestion } from "@/lib/hooks/useSuggestions";
 import { ApiError } from "@/lib/types/api";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ type Props = {
 
 export function SuggestionSheet({ open, onOpenChange }: Props) {
   const createSuggestion = useCreateSuggestion();
+  const isOnline = useOnlineStatus();
 
   const [message, setMessage] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -42,18 +44,29 @@ export function SuggestionSheet({ open, onOpenChange }: Props) {
   }
 
   function save() {
-    createSuggestion.mutate(
-      { message: message.trim(), category, rating },
-      {
-        onSuccess: () => {
-          toast.success("Thanks! Your suggestion was sent.");
-          onOpenChange(false);
-        },
-        onError: (err) =>
-          toast.error(err instanceof ApiError ? err.displayMessage : "Something went wrong."),
+    const request = { message: message.trim(), category, rating };
+
+    if (!isOnline) {
+      // Queued by the offline replay: the success callback only runs after
+      // reconnect, so close now and let the replay toast confirm the send.
+      createSuggestion.mutate(request);
+      toast.success("Saved. It will send when you're back online.");
+      onOpenChange(false);
+      return;
+    }
+
+    createSuggestion.mutate(request, {
+      onSuccess: () => {
+        toast.success("Thanks! Your suggestion was sent.");
+        onOpenChange(false);
       },
-    );
+      onError: (err) =>
+        toast.error(err instanceof ApiError ? err.displayMessage : "Something went wrong."),
+    });
   }
+
+  // A mutation paused by the offline queue is not in flight; keep Send usable.
+  const sending = createSuggestion.isPending && !createSuggestion.isPaused;
 
   return (
     <EntrySheet open={open} onOpenChange={onOpenChange} title="Send feedback">
@@ -110,9 +123,9 @@ export function SuggestionSheet({ open, onOpenChange }: Props) {
         <Button
           className="h-12 w-full rounded-xl text-base font-semibold"
           onClick={save}
-          disabled={message.trim() === "" || createSuggestion.isPending}
+          disabled={message.trim() === "" || sending}
         >
-          {createSuggestion.isPending ? "Sending..." : "Send"}
+          {sending ? "Sending..." : "Send"}
         </Button>
       </div>
     </EntrySheet>
