@@ -96,17 +96,19 @@ Create nothing without a yes.
 
 ## Step 8: Create
 
-Write the body to `.claude/cache/create-issue-body.md` (local only, gitignored, overwritten each run), then:
+Choose the body file path once per run: `.claude/cache/create-issue-body-<YYYYMMDD-HHMMSS>-<4 random chars>.md`, for example `.claude/cache/create-issue-body-20261113-055510-a7f3.md`. Use that exact string for the write, the `gh issue create` call, and the delete. A new run gets a new name, so concurrent runs cannot overwrite each other's body. The folder is local only and gitignored. Write the body to that path, then:
 
 ```bash
 gh issue create --repo <owner/repo> \
   --title "<title>" \
-  --body-file .claude/cache/create-issue-body.md \
+  --body-file <the path chosen above> \
   --label <label> \
   --assignee "@me"
 ```
 
 Omit `--label` for tasks. Always assign the issue to the person who asked, through `--assignee "@me"`.
+
+After `gh issue create` succeeds, delete that path (only that file). If the create fails, keep the file. A retry of the same issue reuses the kept path; only a new run picks a new name.
 
 Then set the GitHub issue type. Labels do not populate this field; the repository defines `Task`, `Bug`, and `Feature` as issue types.
 

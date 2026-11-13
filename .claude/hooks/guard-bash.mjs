@@ -112,7 +112,8 @@ function splitCommandSegments(command) {
 
 // Inside quotes, shell separators are literal text (e.g. the regex in grep -E "^(a|b)$").
 // Mask them before splitting so they do not create fragments that look like command words.
-// `$(` and backticks still expand inside double quotes, so they are left alone for the split.
+// Masking is only for splitting. Expansions such as `$(rm ...)` inside double quotes are still
+// caught by the rm checks, which run on the raw command, not on the masked text.
 // Backslash escapes are kept as-is outside single quotes.
 const QUOTED_SEPARATOR = /[(){}|&;<>\n]/
 
@@ -253,7 +254,9 @@ function recursiveDeleteTargets(command, projectDir, home) {
   if (unescaped !== command && hasRecursiveRm(unescaped)) {
     return [{ resolved: null, cwd: projectDir }]
   }
-  if (/\brm\b/i.test(command) && /[$`\\]/.test(command)) {
+  // Any rm with an expansion ($ or backtick) fails closed. Backslash alone does not: a plain
+  // `rm -f file` next to an unrelated grep pattern like `\|` must not block.
+  if (/\brm\b/i.test(command) && /[$`]/.test(command)) {
     return [{ resolved: null, cwd: projectDir }]
   }
 
@@ -361,14 +364,29 @@ if (!command) {
 const normalized = command.replace(/["'\\]/g, '')
 const git = normalized
 
-if (GIT_COMMIT.test(git) && /(\s--no-verify\b|\s--no-v[a-z-]*\b|\s-[a-zA-Z]*n[a-zA-Z]*\b)/.test(git)) {
+// Git flags are matched per shell clause (split on separators), so a flag that belongs to another
+// tool in the same command is not read as a git flag. Example: `powershell -ExecutionPolicy ...`
+// contains "-n" and used to block any command that also mentioned "git commit".
+// Split the raw command with quoted separators masked first, so `git commit -m "R&D" --no-verify`
+// keeps one clause. Quotes and backslashes are stripped after masking, as in `git` above.
+const gitClauses = maskQuotedSeparators(command).replace(/["'\\]/g, '').split(/[\n;&|]+/)
+
+if (
+  gitClauses.some(
+    (clause) =>
+      GIT_COMMIT.test(clause) && /(\s--no-verify\b|\s--no-v[a-z-]*\b|\s-[a-zA-Z]*n[a-zA-Z]*\b)/.test(clause),
+  )
+) {
   block('skipping commit hooks is not allowed.')
 }
 
 if (
-  GIT_PUSH.test(git) &&
-  /(\s--force\b|\s--force-with-lease\b|\s--mirror\b|\s--delete\b|\s-f\b|\s\+\S+)/.test(git) &&
-  /\b(main|master)\b/.test(git)
+  gitClauses.some(
+    (clause) =>
+      GIT_PUSH.test(clause) &&
+      /(\s--force\b|\s--force-with-lease\b|\s--mirror\b|\s--delete\b|\s-f\b|\s\+\S+)/.test(clause) &&
+      /\b(main|master)\b/.test(clause),
+  )
 ) {
   block('force-pushing to main/master is destructive.')
 }
@@ -378,8 +396,11 @@ if (GIT_RESET.test(git) && /\s--hard\b/.test(git)) {
 }
 
 if (
-  GIT_DIFF.test(git) &&
-  /(\s--outp[a-z-]*(=|\s|$)|\s--ext-diff\b|\s--extc[a-z]*\b|\s--exec\b|\s--textc[a-z]*\b|\s-c\s+\S+=|\s-x\s)/.test(git)
+  gitClauses.some(
+    (clause) =>
+      GIT_DIFF.test(clause) &&
+      /(\s--outp[a-z-]*(=|\s|$)|\s--ext-diff\b|\s--extc[a-z]*\b|\s--exec\b|\s--textc[a-z]*\b|\s-c\s+\S+=|\s-x\s)/.test(clause),
+  )
 ) {
   block('git diff/log/difftool flags can write files or execute external programs.')
 }
