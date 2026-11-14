@@ -20,7 +20,8 @@
       "Bash(gh pr view:*)",
       "Bash(gh issue list:*)",
       "Bash(gh search issues:*)",
-      "Bash(gh auth status)"
+      "Bash(gh auth status)",
+      "Bash(powershell -ExecutionPolicy Bypass -File scripts\\link-worktree-env.ps1:*)"
     ],
     "deny": [
       "Read(./.env*)",
