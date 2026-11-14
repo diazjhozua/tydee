@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.30.0](https://github.com/diazjhozua/tydee/compare/v1.29.0...v1.30.0) (2026-11-14)
+
+
+### Features
+
+* **scripts:** share client node_modules across worktrees ([7f7008b](https://github.com/diazjhozua/tydee/commit/7f7008bee14409fc2d76ee1a140683655f38b969))
+* **scripts:** share client node_modules across worktrees ([47671a9](https://github.com/diazjhozua/tydee/commit/47671a99b5f8188f1c1cf3f6efeaff0f479f73f9))
+
 ## [1.29.0](https://github.com/diazjhozua/tydee/compare/v1.28.1...v1.29.0) (2026-11-13)
 
 
