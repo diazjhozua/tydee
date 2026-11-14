@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // PreToolUse guard for Bash commands. Exit 2 blocks the call and reports to Claude.
 
+import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -438,6 +439,71 @@ if (gitInvocations(command).some(({ subcommand, args }) => subcommand === 'add' 
 
 const projectDir = path.resolve(process.env.CLAUDE_PROJECT_DIR ?? process.cwd())
 const home = os.homedir()
+
+// A worktree whose client node_modules is a junction shares the main checkout's copy. A dependency
+// change there would rewrite packages for every session, so the worktree must drop the link and
+// install into its own folder first. Other npm commands (run, test, typecheck) are not affected.
+const NPM_DEPENDENCY_SUBCOMMANDS = new Set([
+  'install', 'i', 'add', 'update', 'up', 'uninstall', 'un', 'remove', 'rm', 'ci', 'dedupe', 'prune',
+])
+
+function isLink(target) {
+  try {
+    return fs.lstatSync(target).isSymbolicLink()
+  } catch {
+    return false
+  }
+}
+
+// Reads one shell clause that starts with npm: its subcommand (the first non-flag word) and any --prefix target.
+function npmClause(clause) {
+  const tokens = clause.trim().split(/\s+/).filter(Boolean)
+  let index = 0
+  while (index < tokens.length && ASSIGNMENT.test(tokens[index])) {
+    index++
+  }
+  if (index >= tokens.length || !/^npm(\.cmd)?$/i.test(path.basename(tokens[index]))) {
+    return null
+  }
+  let prefix = null
+  for (let j = index + 1; j < tokens.length; j++) {
+    const token = tokens[j]
+    if (token === '--prefix') {
+      prefix = tokens[j + 1] ?? ''
+      j++
+    } else if (token.startsWith('--prefix=')) {
+      prefix = token.slice('--prefix='.length)
+    } else if (!token.startsWith('-')) {
+      return { subcommand: token, prefix }
+    }
+  }
+  return { subcommand: null, prefix }
+}
+
+const npmClauses = maskQuotedSeparators(command).replace(/["'\\]/g, '').split(/[\n;&|()`]+/)
+const npmChanges = npmClauses
+  .map(npmClause)
+  .filter((invocation) => invocation && NPM_DEPENDENCY_SUBCOMMANDS.has(invocation.subcommand))
+const changesDirectory = npmClauses.some((clause) => ['cd', 'pushd'].includes(clause.trim().split(/\s+/)[0]))
+
+if (npmChanges.length > 0) {
+  if (isLink(path.join(projectDir, 'src', 'Web.Client', 'node_modules'))) {
+    block(
+      'node_modules is a junction into the main checkout; a dependency change would write to the shared copy. ' +
+        'Remove only the link with `cmd /c rmdir src\\Web.Client\\node_modules` (no /S), then install in this worktree.',
+    )
+  }
+  if (changesDirectory) {
+    block('a cd before a dependency change cannot be checked. Run npm with --prefix from the worktree root.')
+  }
+  const outsideOrLinked = npmChanges.some(({ prefix }) => {
+    const target = prefix ? path.resolve(projectDir, expandHome(prefix, home)) : projectDir
+    return !isSameOrAncestor(projectDir, target) || isLink(path.join(target, 'node_modules'))
+  })
+  if (outsideOrLinked) {
+    block('a dependency change must target this worktree, not another folder or a linked node_modules.')
+  }
+}
 
 if (runsFindDelete(command)) {
   block('find can delete files or execute commands.')

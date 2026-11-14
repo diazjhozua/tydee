@@ -1,18 +1,44 @@
 // Run with: node --test .claude/hooks/*.test.mjs
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
 
 const guard = path.join(path.dirname(fileURLToPath(import.meta.url)), 'guard-bash.mjs')
 
-function exitCodeFor(command) {
+function exitCodeFor(command, projectDir) {
   const result = spawnSync(process.execPath, [guard], {
     input: JSON.stringify({ tool_input: { command } }),
     encoding: 'utf8',
+    env: projectDir ? { ...process.env, CLAUDE_PROJECT_DIR: projectDir } : process.env,
   })
   return result.status
+}
+
+// Runs the guard against a temporary worktree. `linked` makes its src/Web.Client/node_modules a junction.
+function exitCodeInWorktree(command, linked) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'guard-worktree-'))
+  const client = path.join(root, 'src', 'Web.Client')
+  fs.mkdirSync(client, { recursive: true })
+  const modules = path.join(client, 'node_modules')
+  if (linked) {
+    const shared = path.join(root, 'shared-node_modules')
+    fs.mkdirSync(shared)
+    fs.symlinkSync(shared, modules, 'junction')
+  } else {
+    fs.mkdirSync(modules)
+  }
+  try {
+    return exitCodeFor(command, root)
+  } finally {
+    if (linked) {
+      fs.rmdirSync(modules)
+    }
+    fs.rmSync(root, { recursive: true, force: true })
+  }
 }
 
 test('allows a quoted glob-looking string that is a whole word', () => {
@@ -157,4 +183,34 @@ test('blocks an expansion used as a command word after a redirect', () => {
 
 test('blocks a recursive delete hidden in a command substitution after a redirect', () => {
   assert.equal(exitCodeFor('echo x > $(rm -rf ~)'), 2)
+})
+
+test('blocks a dependency change while node_modules is a junction', () => {
+  assert.equal(exitCodeInWorktree('npm --prefix src/Web.Client install lodash', true), 2)
+  assert.equal(exitCodeInWorktree('npm --prefix src/Web.Client install', true), 2)
+  assert.equal(exitCodeInWorktree('npm --prefix src/Web.Client uninstall lodash', true), 2)
+  assert.equal(exitCodeInWorktree('npm --prefix src/Web.Client ci', true), 2)
+})
+
+test('allows npm scripts while node_modules is a junction', () => {
+  assert.equal(exitCodeInWorktree('npm --prefix src/Web.Client run typecheck', true), 0)
+  assert.equal(exitCodeInWorktree('npm --prefix src/Web.Client test', true), 0)
+})
+
+test('allows a dependency change when node_modules is a real folder', () => {
+  assert.equal(exitCodeInWorktree('npm --prefix src/Web.Client install lodash', false), 0)
+})
+
+test('does not read a dependency change from a word inside a script name or argument', () => {
+  assert.equal(exitCodeInWorktree('npm run remove-unused', true), 0)
+  assert.equal(exitCodeInWorktree('npm run check -- update', true), 0)
+})
+
+test('blocks a dependency change that targets another folder', () => {
+  assert.equal(exitCodeInWorktree('npm --prefix ../other-worktree/src/Web.Client install lodash', false), 2)
+  assert.equal(exitCodeInWorktree('npm --prefix=/tmp/elsewhere install lodash', false), 2)
+})
+
+test('blocks a dependency change after a cd', () => {
+  assert.equal(exitCodeInWorktree('cd src/Web.Client && npm install lodash', false), 2)
 })
