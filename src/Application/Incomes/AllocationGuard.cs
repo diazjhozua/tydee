@@ -1,4 +1,5 @@
 using Application.Abstractions.Data;
+using Domain.Accounts;
 using Domain.Incomes;
 using Microsoft.EntityFrameworkCore;
 using SharedKernel;
@@ -22,7 +23,7 @@ internal static class AllocationGuard
         var accountIds = allocations.Select(a => a.AccountId).ToList();
 
         int validAccounts = await context.Accounts.CountAsync(
-            a => accountIds.Contains(a.Id) && a.UserId == userId && !a.IsArchived,
+            a => accountIds.Contains(a.Id) && a.UserId == userId && !a.IsArchived && a.Type != AccountType.CreditCard,
             cancellationToken);
 
         if (validAccounts != accountIds.Distinct().Count() || accountIds.Count != accountIds.Distinct().Count())

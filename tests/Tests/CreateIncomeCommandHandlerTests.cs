@@ -1,5 +1,6 @@
 using Application.Incomes;
 using Application.Incomes.Create;
+using Domain.Accounts;
 using Domain.Incomes;
 using Shouldly;
 using Tests.TestInfrastructure;
@@ -80,5 +81,21 @@ public class CreateIncomeCommandHandlerTests
         db.Incomes.Single().Amount.ShouldBe(1000m);
         db.IncomeAllocations.Count().ShouldBe(2);
         db.IncomeAllocations.Sum(a => a.Amount).ShouldBe(1000m);
+    }
+
+    [Fact]
+    public async Task Allocating_income_to_a_credit_card_fails()
+    {
+        using var db = TestDb.Create();
+        var user = Seed.User(db);
+        var card = Seed.Account(db, user.Id, "Visa", AccountType.CreditCard);
+
+        var result = await Handler(db).Handle(
+            new CreateIncomeCommand(user.Id, 1000, "Salary", Date,
+                [new IncomeAllocationItem(card.Id, 1000)]),
+            CancellationToken.None);
+
+        result.Error.ShouldBe(IncomeErrors.AllocationAccountInvalid);
+        db.Incomes.ShouldBeEmpty();
     }
 }

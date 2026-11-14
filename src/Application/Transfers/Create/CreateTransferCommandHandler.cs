@@ -34,6 +34,11 @@ internal sealed class CreateTransferCommandHandler(
             return Result.Failure<Guid>(AccountErrors.Archived);
         }
 
+        if (accounts.Any(a => a.Type == AccountType.CreditCard))
+        {
+            return Result.Failure<Guid>(TransferErrors.CreditCardNotAllowed);
+        }
+
         var transfer = new Transfer
         {
             Id = Guid.NewGuid(),

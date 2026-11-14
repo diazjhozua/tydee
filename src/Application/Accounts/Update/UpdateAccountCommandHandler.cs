@@ -32,6 +32,20 @@ internal sealed class UpdateAccountCommandHandler(IApplicationDbContext context)
             return Result.Failure(AccountErrors.Archived);
         }
 
+        // Covers both a switch to CreditCard and an existing card whose stored percent is nonzero.
+        if (type.Value == AccountType.CreditCard && account.AllocationPercent != 0m)
+        {
+            return Result.Failure(AllocationErrors.CreditCardNotAllocatable);
+        }
+
+        // Only a switch to CreditCard is blocked; an existing card can still be renamed.
+        if (type.Value == AccountType.CreditCard &&
+            account.Type != AccountType.CreditCard &&
+            await context.IncomeAllocations.AnyAsync(a => a.AccountId == command.AccountId, cancellationToken))
+        {
+            return Result.Failure(AllocationErrors.CreditCardHasAllocations);
+        }
+
         bool nameTaken = await context.Accounts.AnyAsync(
             a => a.UserId == command.UserId &&
                  a.Name == command.Name &&
