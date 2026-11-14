@@ -36,6 +36,95 @@ describe("activityAmount", () => {
     expect(activityAmount(transfer, "PHP").text.startsWith("+")).toBe(false);
     expect(activityAmount(transfer, "PHP").text.startsWith("−")).toBe(false);
   });
+
+  it("shows no sign for card payments", () => {
+    const cardPayment: ActivityItem = {
+      ...income,
+      id: "p1",
+      kind: "cardPayment",
+      amount: 250,
+      description: "Budget → Visa",
+    };
+    const text = activityAmount(cardPayment, "PHP").text;
+    expect(text.startsWith("+")).toBe(false);
+    expect(text.startsWith("−")).toBe(false);
+  });
+});
+
+const cardPayment: ActivityItem = {
+  id: "p1",
+  kind: "cardPayment",
+  amount: 250,
+  description: "Budget → Visa",
+  category: null,
+  date: "2026-11-10",
+  allocations: [],
+};
+
+describe("RecentActivityList card payments", () => {
+  it("renders a card payment row without a sign", () => {
+    const { container } = render(
+      <RecentActivityList
+        items={[cardPayment]}
+        currency="PHP"
+        view="list"
+        onItemClick={() => {}}
+      />,
+    );
+
+    expect(screen.getByText("Budget → Visa")).toBeInTheDocument();
+    expect(container.querySelector(".money")?.textContent).toBe("₱250.00");
+    expect(container.textContent).not.toMatch(/[+−]/);
+  });
+
+  it("renders a card payment as display-only in list view", () => {
+    const onItemClick = vi.fn();
+    render(
+      <RecentActivityList
+        items={[cardPayment]}
+        currency="PHP"
+        view="list"
+        onItemClick={onItemClick}
+      />,
+    );
+
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Budget → Visa"));
+    expect(onItemClick).not.toHaveBeenCalled();
+  });
+
+  it("renders a card payment as display-only in grid view", () => {
+    const onItemClick = vi.fn();
+    const { container } = render(
+      <RecentActivityList
+        items={[cardPayment]}
+        currency="PHP"
+        view="grid"
+        onItemClick={onItemClick}
+      />,
+    );
+
+    expect(container.querySelectorAll("li")).toHaveLength(1);
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Budget → Visa"));
+    expect(onItemClick).not.toHaveBeenCalled();
+  });
+
+  it("keeps other activity rows tappable beside a card payment", () => {
+    const onItemClick = vi.fn();
+    render(
+      <RecentActivityList
+        items={[cardPayment, expense]}
+        currency="PHP"
+        view="list"
+        onItemClick={onItemClick}
+      />,
+    );
+
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: /Groceries/ }));
+    expect(onItemClick).toHaveBeenCalledWith(expense);
+  });
 });
 
 describe("RecentActivityList", () => {

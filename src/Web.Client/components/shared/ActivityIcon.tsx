@@ -1,8 +1,8 @@
-import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, Scale } from "lucide-react";
+import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, CreditCard, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  kind: "income" | "expense" | "adjustment" | "transfer";
+  kind: "income" | "expense" | "adjustment" | "transfer" | "cardPayment";
   className?: string;
 };
 
@@ -15,6 +15,7 @@ export function ActivityIcon({ kind, className }: Props) {
         kind === "expense" && "bg-red-500/12 text-red-500 dark:text-red-400",
         kind === "adjustment" && "bg-sky-500/15 text-sky-600 dark:text-sky-400",
         kind === "transfer" && "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+        kind === "cardPayment" && "bg-muted text-muted-foreground",
         className,
       )}
     >
@@ -22,6 +23,7 @@ export function ActivityIcon({ kind, className }: Props) {
       {kind === "expense" && <ArrowDownRight className="size-4.5" />}
       {kind === "adjustment" && <Scale className="size-4.5" />}
       {kind === "transfer" && <ArrowLeftRight className="size-4.5" />}
+      {kind === "cardPayment" && <CreditCard className="size-4.5" />}
     </span>
   );
 }
