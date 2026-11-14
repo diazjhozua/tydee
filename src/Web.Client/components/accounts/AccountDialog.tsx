@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ACCOUNT_COLOR_OPTIONS, ACCOUNT_ICON_OPTIONS } from "@/components/shared/AccountIcon";
 import { EntrySheet } from "@/components/shared/EntrySheet";
+import { ACCOUNT_TYPE_BEHAVIOR, ACCOUNT_TYPES } from "@/lib/accounts/accountTypeBehavior";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +37,9 @@ export function AccountDialog({ open, onOpenChange, account }: Props) {
   const [prevOpen, setPrevOpen] = useState(false);
 
   const isEdit = account !== undefined;
+  // A credit card gets no allocation, so an envelope that still receives one
+  // cannot switch to it without silently dropping that allocation.
+  const creditCardLocked = account !== undefined && account.allocationPercent > 0;
 
   if (open !== prevOpen) {
     setPrevOpen(open);
@@ -98,16 +102,32 @@ export function AccountDialog({ open, onOpenChange, account }: Props) {
         </div>
 
         <div className="space-y-2">
-          <Label>Type</Label>
+          <Label htmlFor="account-type">Type</Label>
           <Select value={type} onValueChange={(v) => v && setType(v as AccountType)}>
-            <SelectTrigger className="h-11 w-full rounded-xl">
+            <SelectTrigger
+              id="account-type"
+              className="h-11 w-full rounded-xl"
+              aria-describedby={creditCardLocked ? "account-type-hint" : undefined}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Spending">Spending (day-to-day budget)</SelectItem>
-              <SelectItem value="Saving">Saving (money you keep)</SelectItem>
+              {ACCOUNT_TYPES.map((option) => {
+                const locked = creditCardLocked && ACCOUNT_TYPE_BEHAVIOR[option].isCard;
+                return (
+                  <SelectItem key={option} value={option} disabled={locked}>
+                    {ACCOUNT_TYPE_BEHAVIOR[option].optionLabel}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
+          {creditCardLocked && (
+            <p id="account-type-hint" className="text-xs text-muted-foreground">
+              To make this a credit card, set its allocation to 0% in the allocation template
+              first.
+            </p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -120,6 +140,8 @@ export function AccountDialog({ open, onOpenChange, account }: Props) {
                 <button
                   key={option.key}
                   type="button"
+                  aria-label={option.key}
+                  aria-pressed={selected}
                   onClick={() => setIcon(selected ? null : option.key)}
                   className={cn(
                     "flex size-9 items-center justify-center rounded-full transition-colors",
@@ -151,6 +173,7 @@ export function AccountDialog({ open, onOpenChange, account }: Props) {
                     selected && "ring-2 ring-primary ring-offset-2 ring-offset-background",
                   )}
                   aria-label={option.key}
+                  aria-pressed={selected}
                 />
               );
             })}

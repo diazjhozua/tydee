@@ -21,6 +21,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ACCOUNT_TYPE_BEHAVIOR, envelopeTotal } from "@/lib/accounts/accountTypeBehavior";
 import {
   useAccounts,
   useArchiveAccount,
@@ -50,8 +51,12 @@ export default function AccountsPage() {
 
   const activeAccounts = accounts ?? [];
   const currency = me?.currency ?? "PHP";
-  const total = activeAccounts.reduce((sum, a) => sum + a.balance, 0);
-  const percentTotal = activeAccounts.reduce((sum, a) => sum + (Number(percents[a.id]) || 0), 0);
+  const total = envelopeTotal(activeAccounts);
+  // Cards never receive an allocation, so their percent is locked at 0.
+  const allocatable = activeAccounts.filter(
+    (a) => ACCOUNT_TYPE_BEHAVIOR[a.type].canReceiveAllocation,
+  );
+  const percentTotal = allocatable.reduce((sum, a) => sum + (Number(percents[a.id]) || 0), 0);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   // Desktop shows account tiles in a grid; phones keep the vertical list.
   // Only one of the two is rendered, so they never share a sortable context.
@@ -70,7 +75,12 @@ export default function AccountsPage() {
 
   function saveTemplate() {
     updateTemplate.mutate(
-      activeAccounts.map((a) => ({ accountId: a.id, percent: Number(percents[a.id]) || 0 })),
+      activeAccounts.map((a) => ({
+        accountId: a.id,
+        percent: ACCOUNT_TYPE_BEHAVIOR[a.type].canReceiveAllocation
+          ? Number(percents[a.id]) || 0
+          : 0,
+      })),
       {
         onSuccess: () => toast.success("Template saved"),
         onError: handleError,
@@ -196,31 +206,36 @@ export default function AccountsPage() {
           )}
 
           {!isPending &&
-            activeAccounts.map((account) => (
-              <div key={account.id} className="flex items-center gap-3">
-                <AccountIcon
-                  type={account.type}
-                  icon={account.icon}
-                  color={account.color}
-                  className="size-9 rounded-lg"
-                />
-                <span className="flex-1 truncate text-sm font-medium">{account.name}</span>
-                <div className="flex items-center gap-1">
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    min="0"
-                    max="100"
-                    className="money h-10 w-20 rounded-xl text-right"
-                    value={percents[account.id] ?? ""}
-                    onChange={(e) =>
-                      setPercents((prev) => ({ ...prev, [account.id]: e.target.value }))
-                    }
+            activeAccounts.map((account) => {
+              const locked = !ACCOUNT_TYPE_BEHAVIOR[account.type].canReceiveAllocation;
+              return (
+                <div key={account.id} className="flex items-center gap-3">
+                  <AccountIcon
+                    type={account.type}
+                    icon={account.icon}
+                    color={account.color}
+                    className="size-9 rounded-lg"
                   />
-                  <span className="text-sm text-muted-foreground">%</span>
+                  <span className="flex-1 truncate text-sm font-medium">{account.name}</span>
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      max="100"
+                      aria-label={`${account.name} allocation percent`}
+                      disabled={locked}
+                      className="money h-10 w-20 rounded-xl text-right"
+                      value={locked ? "0" : (percents[account.id] ?? "")}
+                      onChange={(e) =>
+                        setPercents((prev) => ({ ...prev, [account.id]: e.target.value }))
+                      }
+                    />
+                    <span className="text-sm text-muted-foreground">%</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
           {!isPending && activeAccounts.length === 0 && (
             <p className="py-4 text-center text-sm text-muted-foreground">
