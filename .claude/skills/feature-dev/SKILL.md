@@ -28,7 +28,7 @@ Initial request: $ARGUMENTS
 | Build | main thread with `add-api-endpoint` / `add-client-feature`; `feature-builder` for a large, approved, self-contained slice |
 | Review | `code-reviewer`, `architecture-reviewer` (backend touched), `ui-reviewer` (client touched) in parallel |
 | Verify | `verify` skill; `test-runner` on failures |
-| Ship | `/commit` (Phase 8a); `gh pr create` (Phase 8b); `gh issue comment` (Phase 8c); the `close-released-issues` job closes `Refs` issues when their pull request reaches `main`; `/close-issue` for manual cases |
+| Ship | `/commit` (Phase 8a); `gh pr create` (Phase 8b); `gh issue comment` (Phase 8c); the `close-released-issues` job closes `Refs` issues when their pull request reaches `main`; `/close-issue` for manual cases; `/cleanup-worktree` after the merge |
 
 ## Phase 0: Intake
 
@@ -180,6 +180,8 @@ Merging is done by the user on GitHub. A `Refs #n` issue closes once its pull re
 Every push to `main` runs the `close-released-issues` job in `.github/workflows/release.yml`. It finds pull requests merged since the last release whose body has `Refs #n`. If that push cut a release, the comment links the release; otherwise it links the merge commit. An issue is closed only if still open and does not already carry that note, so re-runs and reopened issues are left alone. Issues without `Refs` are untouched.
 
 `/close-issue` is the manual path. Use it for an issue the job did not close, or when you want a written summary with verification before closing. This skill never closes issues itself.
+
+Once the pull request has merged, `/cleanup-worktree` removes the feature's worktree and local branch. It checks that the pull request is `MERGED`, refuses locked or dirty worktrees, and deletes the branch with `git branch -d` only. Run it from the main checkout after the merge. Leaving the worktree in place until then is what lets review fixes go on the same branch.
 
 ## Hard rules
 
