@@ -4,21 +4,27 @@
 import os from 'node:os'
 import path from 'node:path'
 
+import {
+  addsSecretPath,
+  commitOptions,
+  gitInvocations,
+  pushesProtectedBranch,
+  wrapsGitCommit,
+  writesProtectedConfig,
+} from './lib/git.mjs'
+import { commandName, findCommands, INTERPRETERS, OVERFLOW, usesInterpreter } from './lib/shell.mjs'
+
 const BLOCK_MESSAGE = (reason) =>
   `Blocked by .claude/hooks/guard-bash.mjs: ${reason}\n` +
   'Ask the user before retrying; do not work around this guard.'
 
-const SECRET_PATH =
-  /(^|[\s'"])(\.env(?!\.(example|template|sample))|appsettings\.Development\.json|.*\.(pfx|pem|key)\b|appsettings\.[\w.-]*\.local\.json)/i
-
 // Match a git subcommand after any global options, e.g. `git --no-pager commit`.
 const gitRuns = (names) => new RegExp(`\\bgit\\b[^\\n;&|]*\\b(?:${names})\\b`)
 
-const GIT_COMMIT = gitRuns('commit')
-const GIT_PUSH = gitRuns('push')
 const GIT_RESET = gitRuns('reset')
 const GIT_DIFF = gitRuns('diff|log|difftool')
-const GIT_ADD = gitRuns('add')
+
+const isNoVerifyFlag = (flag) => flag === '--no-verify' || /^--no-v[a-z-]*$/.test(flag) || /^-[a-zA-Z]*n[a-zA-Z]*$/.test(flag)
 
 function readInput() {
   return new Promise((resolve) => {
@@ -53,10 +59,6 @@ function isSameOrAncestor(candidate, target) {
 
 function expandHome(target, home) {
   return target === '~' || target.startsWith('~/') ? path.join(home, target.slice(1)) : target
-}
-
-function commandName(token) {
-  return path.basename(token.replace(/\\/g, '/')).replace(/\.exe$/i, '').toLowerCase()
 }
 
 function splitSegments(command) {
@@ -239,7 +241,8 @@ function recursiveFlag(token) {
   return token.startsWith('--') && !RM_SAFE_LONG.has(token)
 }
 
-function hasRecursiveRm(command) {
+// Text-level recursive rm check, used only as a fallback next to an interpreter or wrapper.
+function textRecursiveRm(command) {
   return splitSegments(command).some((segment) => {
     const tokens = segment.split(/\s+/).filter(Boolean)
     const rmIndex = tokens.findIndex((token) => commandName(token).replace(/^[({$`]+/, '') === 'rm')
@@ -251,21 +254,31 @@ function hasRecursiveRm(command) {
   })
 }
 
-// find -delete and find -exec can remove files or run arbitrary commands.
+// rm invocations found by the shell reader, including ones run by wrappers, eval, and substitutions.
+// Text such as a grep pattern that contains "rm -rf" is not an invocation.
+function rmInvocations(command) {
+  return findCommands(command).filter((c) => c.name === 'rm')
+}
+
+// Argument values of each recursive rm invocation.
+function recursiveRmArgs(command) {
+  return rmInvocations(command)
+    .map((c) => c.words.slice(1).map((w) => w.value))
+    .filter((args) => args.some(recursiveFlag))
+}
+
+// find -delete and find -exec can remove files or run arbitrary commands. A find whose own arguments
+// are expanded by the shell also fails closed.
 function runsFindDelete(command) {
-  const normalized = command.replace(/["'\\]/g, '')
-  const tokens = splitCommandSegments(normalized).flatMap((segment) => segment.split(/\s+/).filter(Boolean))
-  const hasFind = tokens.some((token) => commandName(token).replace(/^[({$`]+/, '') === 'find')
-
-  if (!hasFind) {
-    return false
-  }
-
-  if (/[$`]/.test(normalized)) {
-    return true
-  }
-
-  return tokens.some((token) => /^-(delete|exec|execdir|ok|okdir|fprint|fprint0|fprintf|fls)$/.test(token))
+  return findCommands(command)
+    .filter((c) => c.name === 'find')
+    .some((c) => {
+      const args = c.words.slice(1)
+      return (
+        args.some((w) => w.expandable) ||
+        args.some((w) => /^-(delete|exec|execdir|ok|okdir|fprint|fprint0|fprintf|fls)$/.test(w.value))
+      )
+    })
 }
 
 // Resolve every recursive-delete target. Any directory change or shell wrapper fails closed.
@@ -275,48 +288,23 @@ function recursiveDeleteTargets(command, projectDir, home) {
     return [{ resolved: null, cwd: projectDir }]
   }
 
-  const unescaped = command.replace(/\\/g, '')
-  if (unescaped !== command && hasRecursiveRm(unescaped)) {
-    return [{ resolved: null, cwd: projectDir }]
-  }
-  // Any rm with an expansion ($ or backtick) fails closed. Backslash alone does not: a plain
-  // `rm -f file` next to an unrelated grep pattern like `\|` must not block.
-  // `rm` (or `rm.exe`) as its own word. `-`, `.`, and word characters on either side mean a filename such as `block-rm-x.json`.
-  if (/(?<![\w.-])rm(?:\.exe)?(?![\w.-])/i.test(command) && /[$`]/.test(command)) {
+  // Any rm invocation with an expansion ($ or backtick) fails closed. Text that only mentions rm
+  // (a grep pattern, an echo) is not an invocation and does not.
+  if (rmInvocations(command).length > 0 && /[$`]/.test(command)) {
     return [{ resolved: null, cwd: projectDir }]
   }
 
-  if (!hasRecursiveRm(command)) {
-    return []
+  const recursiveRms = recursiveRmArgs(command)
+  if (recursiveRms.length === 0) {
+    // The reader cannot follow every payload (powershell -Command, cmd /c, here-strings, pipes into
+    // sh). When an interpreter or wrapper is present and the text names a recursive rm, fail closed.
+    return usesInterpreter(command) && textRecursiveRm(command) ? [{ resolved: null, cwd: projectDir }] : []
   }
 
   const tokens = splitSegments(command).flatMap((segment) => segment.split(/\s+/).filter(Boolean))
   const directoryChange = tokens.some((token) => ['cd', 'pushd', 'popd'].includes(commandName(token)))
   const envChdir = tokens.some((token) => token === '-C' || token === '--chdir' || token.startsWith('--chdir='))
-  const shellWrapper = tokens.some((token) =>
-    [
-      '.',
-      'ash',
-      'bash',
-      'busybox',
-      'cmd',
-      'csh',
-      'dash',
-      'eval',
-      'find',
-      'fish',
-      'ksh',
-      'mksh',
-      'parallel',
-      'powershell',
-      'pwsh',
-      'sh',
-      'source',
-      'tcsh',
-      'xargs',
-      'zsh',
-    ].includes(commandName(token)),
-  )
+  const shellWrapper = tokens.some((token) => INTERPRETERS.has(commandName(token)))
   const grouped = /[(){}]/.test(command.replace(/["']/g, '')) || /\$\(/.test(command)
   const quotedSpace = /["'][^"']*\s[^"']*["']/.test(command)
   const escapedSpace = /\\\s/.test(command)
@@ -336,20 +324,9 @@ function recursiveDeleteTargets(command, projectDir, home) {
   }
 
   const targets = []
-  for (const segment of splitSegments(command)) {
-    const segmentTokens = segment.split(/\s+/).filter(Boolean)
-    const rmIndex = segmentTokens.findIndex((token) => commandName(token).replace(/^[({$`]+/, '') === 'rm')
-    if (rmIndex === -1) {
-      continue
-    }
-
-    const flags = segmentTokens.slice(rmIndex + 1).filter((token) => token.startsWith('-'))
-    if (!flags.some(recursiveFlag)) {
-      continue
-    }
-
+  for (const args of recursiveRms) {
     let positional = 0
-    for (const token of segmentTokens.slice(rmIndex + 1)) {
+    for (const token of args) {
       if (token.startsWith('-')) {
         continue
       }
@@ -387,6 +364,10 @@ if (!command) {
 }
 
 // Strip quotes and backslashes so `"--out"put` cannot hide a flag from the checks below.
+if (findCommands(command).some((c) => c.name === OVERFLOW)) {
+  block('command nesting is too deep to check.')
+}
+
 const normalized = command.replace(/["'\\]/g, '')
 const git = normalized
 
@@ -398,22 +379,14 @@ const git = normalized
 const gitClauses = maskQuotedSeparators(command).replace(/["'\\]/g, '').split(/[\n;&|]+/)
 
 if (
-  gitClauses.some(
-    (clause) =>
-      GIT_COMMIT.test(clause) && /(\s--no-verify\b|\s--no-v[a-z-]*\b|\s-[a-zA-Z]*n[a-zA-Z]*\b)/.test(clause),
+  gitInvocations(command).some(
+    ({ subcommand, args }) => subcommand === 'commit' && commitOptions(args).flags.some(isNoVerifyFlag),
   )
 ) {
   block('skipping commit hooks is not allowed.')
 }
 
-if (
-  gitClauses.some(
-    (clause) =>
-      GIT_PUSH.test(clause) &&
-      /(\s--force\b|\s--force-with-lease\b|\s--mirror\b|\s--delete\b|\s-f\b|\s\+\S+)/.test(clause) &&
-      /\b(main|master)\b/.test(clause),
-  )
-) {
+if (gitInvocations(command).some(({ subcommand, args }) => subcommand === 'push' && pushesProtectedBranch(args))) {
   block('force-pushing to main/master is destructive.')
 }
 
@@ -434,13 +407,13 @@ if (
 if (
   /\bgit\b[^\n;&|]*\s-c\s*\S*(?:alias\.|core\.hookspath)/i.test(git) ||
   /\bgit\b[^\n;&|]*--config-env(?:=|\s)/i.test(git) ||
-  /\bgit\b[^\n;&|]*\bconfig\b[^\n;&|]*\b(?:alias\.|core\.hookspath)\b/i.test(git) ||
-  /\bGIT_CONFIG_(?:COUNT|PARAMETERS|GLOBAL|SYSTEM|KEY_\d+|VALUE_\d+)\b/i.test(normalized)
+  /\bGIT_CONFIG_(?:COUNT|PARAMETERS|GLOBAL|SYSTEM|KEY_\d+|VALUE_\d+)\b/i.test(normalized) ||
+  gitInvocations(command).some(({ subcommand, args }) => subcommand === 'config' && writesProtectedConfig(args))
 ) {
   block('git config overrides can hide commits or skip hooks.')
 }
 
-if (/(\b(bash|sh|zsh|dash)\b[^\n]*\s-c\s|\beval\b|\bxargs\b)[^\n]*\bgit\b[^\n]*\bcommit\b/.test(normalized)) {
+if (wrapsGitCommit(command)) {
   block('wrapped commit commands bypass message validation.')
 }
 
@@ -448,7 +421,7 @@ if (/\bnpm\b[^\n]*\s--(script-shell|node-options|userconfig|globalconfig)\b/.tes
   block('npm config flags can execute arbitrary code.')
 }
 
-if (GIT_ADD.test(git) && SECRET_PATH.test(normalized)) {
+if (gitInvocations(command).some(({ subcommand, args }) => subcommand === 'add' && addsSecretPath(args))) {
   block('staging secrets or local resume data.')
 }
 

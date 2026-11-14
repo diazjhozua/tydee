@@ -4,26 +4,24 @@
 import os from 'node:os'
 import path from 'node:path'
 
+import { isSecretBasename } from './lib/secrets.mjs'
+
 const PROJECT_DIR = path.resolve(process.env.CLAUDE_PROJECT_DIR ?? process.cwd())
 const CLAUDE_HOME = path.resolve(os.homedir(), '.claude')
 const PLANS_DIR = path.resolve(CLAUDE_HOME, 'plans')
-const MEMORY_DIR = path.resolve(CLAUDE_HOME, 'projects', PROJECT_DIR.replace(/[^a-zA-Z0-9]/g, '-'), 'memory')
+// A worktree session (.claude/worktrees/<name>) shares the main checkout's memory directory.
+const MAIN_PROJECT_DIR = PROJECT_DIR.replace(/[\\/]\.claude[\\/]worktrees[\\/][^\\/]+$/, '')
+const memoryDirFor = (dir) => path.resolve(CLAUDE_HOME, 'projects', dir.replace(/[^a-zA-Z0-9]/g, '-'), 'memory')
+const MEMORY_DIRS = [memoryDirFor(PROJECT_DIR), memoryDirFor(MAIN_PROJECT_DIR)]
 
 function isInside(base, target) {
   const relative = path.relative(base, target)
   return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
 }
 
-const BLOCKED_SEGMENTS = [
-  '/bin/',
-  '/obj/',
-  '/node_modules/',
-  '/.next/',
-  '/out/',
-  '/test-results/',
-  '/playwright-report/',
-]
-const BLOCKED_BASENAME = /^(\.env(?!\.(example|template|sample))|appsettings\.Development\.json)$/i
+// Generated output and dependencies. Checked against directory names inside the project only,
+// so a project that happens to live under a folder named bin still works.
+const BLOCKED_DIRS = new Set(['bin', 'obj', 'node_modules', '.next', 'out', 'test-results', 'playwright-report'])
 
 function readInput() {
   return new Promise((resolve) => {
@@ -57,12 +55,14 @@ const inPlans =
   !path.isAbsolute(plansRelative) &&
   !plansRelative.includes(path.sep) &&
   path.extname(plansRelative) === '.md'
-const harnessPath = inPlans || isInside(MEMORY_DIR, absolute)
+const harnessPath = inPlans || MEMORY_DIRS.some((dir) => isInside(dir, absolute))
+
+const directories = relative.split('/').slice(0, -1)
 
 const blocked =
-  BLOCKED_BASENAME.test(path.basename(absolute)) ||
-  BLOCKED_SEGMENTS.some((segment) => `/${absolute.replace(/\\/g, '/')}`.includes(segment)) ||
-  (!harnessPath && relative.startsWith('../'))
+  isSecretBasename(path.basename(absolute)) ||
+  directories.some((dir) => BLOCKED_DIRS.has(dir)) ||
+  (!harnessPath && !isInside(PROJECT_DIR, absolute))
 
 if (blocked) {
   process.stderr.write(
