@@ -120,6 +120,52 @@ namespace Infrastructure.Database.Migrations
                     b.ToTable("adjustments", "public");
                 });
 
+            modelBuilder.Entity("Domain.CardPayments.CardPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid>("CardAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("card_account_id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<Guid>("FromAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("from_account_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_card_payments");
+
+                    b.HasIndex("CardAccountId")
+                        .HasDatabaseName("ix_card_payments_card_account_id");
+
+                    b.HasIndex("FromAccountId")
+                        .HasDatabaseName("ix_card_payments_from_account_id");
+
+                    b.HasIndex("UserId", "Date")
+                        .HasDatabaseName("ix_card_payments_user_id_date");
+
+                    b.ToTable("card_payments", "public");
+                });
+
             modelBuilder.Entity("Domain.Expenses.Expense", b =>
                 {
                     b.Property<Guid>("Id")
@@ -554,6 +600,30 @@ namespace Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_adjustments_users_user_id");
+                });
+
+            modelBuilder.Entity("Domain.CardPayments.CardPayment", b =>
+                {
+                    b.HasOne("Domain.Accounts.Account", null)
+                        .WithMany()
+                        .HasForeignKey("CardAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_card_payments_accounts_card_account_id");
+
+                    b.HasOne("Domain.Accounts.Account", null)
+                        .WithMany()
+                        .HasForeignKey("FromAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_card_payments_accounts_from_account_id");
+
+                    b.HasOne("Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_card_payments_users_user_id");
                 });
 
             modelBuilder.Entity("Domain.Expenses.Expense", b =>

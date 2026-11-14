@@ -1,6 +1,7 @@
 using Application.Abstractions.Data;
 using Domain.Accounts;
 using Domain.Adjustments;
+using Domain.CardPayments;
 using Domain.Transfers;
 using Domain.Expenses;
 using Domain.Incomes;
@@ -35,6 +36,8 @@ public sealed class ApplicationDbContext(
     public DbSet<Adjustment> Adjustments { get; set; }
 
     public DbSet<Transfer> Transfers { get; set; }
+
+    public DbSet<CardPayment> CardPayments { get; set; }
 
     public DbSet<Suggestion> Suggestions { get; set; }
 
