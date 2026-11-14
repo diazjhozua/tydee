@@ -12,7 +12,7 @@ import {
   wrapsGitCommit,
   writesProtectedConfig,
 } from './lib/git.mjs'
-import { commandName, findCommands, OVERFLOW } from './lib/shell.mjs'
+import { commandName, findCommands, INTERPRETERS, OVERFLOW, usesInterpreter } from './lib/shell.mjs'
 
 const BLOCK_MESSAGE = (reason) =>
   `Blocked by .claude/hooks/guard-bash.mjs: ${reason}\n` +
@@ -241,7 +241,8 @@ function recursiveFlag(token) {
   return token.startsWith('--') && !RM_SAFE_LONG.has(token)
 }
 
-function hasRecursiveRm(command) {
+// Text-level recursive rm check, used only as a fallback next to an interpreter or wrapper.
+function textRecursiveRm(command) {
   return splitSegments(command).some((segment) => {
     const tokens = segment.split(/\s+/).filter(Boolean)
     const rmIndex = tokens.findIndex((token) => commandName(token).replace(/^[({$`]+/, '') === 'rm')
@@ -253,21 +254,31 @@ function hasRecursiveRm(command) {
   })
 }
 
-// find -delete and find -exec can remove files or run arbitrary commands.
+// rm invocations found by the shell reader, including ones run by wrappers, eval, and substitutions.
+// Text such as a grep pattern that contains "rm -rf" is not an invocation.
+function rmInvocations(command) {
+  return findCommands(command).filter((c) => c.name === 'rm')
+}
+
+// Argument values of each recursive rm invocation.
+function recursiveRmArgs(command) {
+  return rmInvocations(command)
+    .map((c) => c.words.slice(1).map((w) => w.value))
+    .filter((args) => args.some(recursiveFlag))
+}
+
+// find -delete and find -exec can remove files or run arbitrary commands. A find whose own arguments
+// are expanded by the shell also fails closed.
 function runsFindDelete(command) {
-  const normalized = command.replace(/["'\\]/g, '')
-  const tokens = splitCommandSegments(normalized).flatMap((segment) => segment.split(/\s+/).filter(Boolean))
-  const hasFind = tokens.some((token) => commandName(token).replace(/^[({$`]+/, '') === 'find')
-
-  if (!hasFind) {
-    return false
-  }
-
-  if (/[$`]/.test(normalized)) {
-    return true
-  }
-
-  return tokens.some((token) => /^-(delete|exec|execdir|ok|okdir|fprint|fprint0|fprintf|fls)$/.test(token))
+  return findCommands(command)
+    .filter((c) => c.name === 'find')
+    .some((c) => {
+      const args = c.words.slice(1)
+      return (
+        args.some((w) => w.expandable) ||
+        args.some((w) => /^-(delete|exec|execdir|ok|okdir|fprint|fprint0|fprintf|fls)$/.test(w.value))
+      )
+    })
 }
 
 // Resolve every recursive-delete target. Any directory change or shell wrapper fails closed.
@@ -277,48 +288,23 @@ function recursiveDeleteTargets(command, projectDir, home) {
     return [{ resolved: null, cwd: projectDir }]
   }
 
-  const unescaped = command.replace(/\\/g, '')
-  if (unescaped !== command && hasRecursiveRm(unescaped)) {
-    return [{ resolved: null, cwd: projectDir }]
-  }
-  // Any rm with an expansion ($ or backtick) fails closed. Backslash alone does not: a plain
-  // `rm -f file` next to an unrelated grep pattern like `\|` must not block.
-  // `rm` (or `rm.exe`) as its own word. `-`, `.`, and word characters on either side mean a filename such as `block-rm-x.json`.
-  if (/(?<![\w.-])rm(?:\.exe)?(?![\w.-])/i.test(command) && /[$`]/.test(command)) {
+  // Any rm invocation with an expansion ($ or backtick) fails closed. Text that only mentions rm
+  // (a grep pattern, an echo) is not an invocation and does not.
+  if (rmInvocations(command).length > 0 && /[$`]/.test(command)) {
     return [{ resolved: null, cwd: projectDir }]
   }
 
-  if (!hasRecursiveRm(command)) {
-    return []
+  const recursiveRms = recursiveRmArgs(command)
+  if (recursiveRms.length === 0) {
+    // The reader cannot follow every payload (powershell -Command, cmd /c, here-strings, pipes into
+    // sh). When an interpreter or wrapper is present and the text names a recursive rm, fail closed.
+    return usesInterpreter(command) && textRecursiveRm(command) ? [{ resolved: null, cwd: projectDir }] : []
   }
 
   const tokens = splitSegments(command).flatMap((segment) => segment.split(/\s+/).filter(Boolean))
   const directoryChange = tokens.some((token) => ['cd', 'pushd', 'popd'].includes(commandName(token)))
   const envChdir = tokens.some((token) => token === '-C' || token === '--chdir' || token.startsWith('--chdir='))
-  const shellWrapper = tokens.some((token) =>
-    [
-      '.',
-      'ash',
-      'bash',
-      'busybox',
-      'cmd',
-      'csh',
-      'dash',
-      'eval',
-      'find',
-      'fish',
-      'ksh',
-      'mksh',
-      'parallel',
-      'powershell',
-      'pwsh',
-      'sh',
-      'source',
-      'tcsh',
-      'xargs',
-      'zsh',
-    ].includes(commandName(token)),
-  )
+  const shellWrapper = tokens.some((token) => INTERPRETERS.has(commandName(token)))
   const grouped = /[(){}]/.test(command.replace(/["']/g, '')) || /\$\(/.test(command)
   const quotedSpace = /["'][^"']*\s[^"']*["']/.test(command)
   const escapedSpace = /\\\s/.test(command)
@@ -338,20 +324,9 @@ function recursiveDeleteTargets(command, projectDir, home) {
   }
 
   const targets = []
-  for (const segment of splitSegments(command)) {
-    const segmentTokens = segment.split(/\s+/).filter(Boolean)
-    const rmIndex = segmentTokens.findIndex((token) => commandName(token).replace(/^[({$`]+/, '') === 'rm')
-    if (rmIndex === -1) {
-      continue
-    }
-
-    const flags = segmentTokens.slice(rmIndex + 1).filter((token) => token.startsWith('-'))
-    if (!flags.some(recursiveFlag)) {
-      continue
-    }
-
+  for (const args of recursiveRms) {
     let positional = 0
-    for (const token of segmentTokens.slice(rmIndex + 1)) {
+    for (const token of args) {
       if (token.startsWith('-')) {
         continue
       }
