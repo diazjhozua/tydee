@@ -214,3 +214,11 @@ test('blocks a dependency change that targets another folder', () => {
 test('blocks a dependency change after a cd', () => {
   assert.equal(exitCodeInWorktree('cd src/Web.Client && npm install lodash', false), 2)
 })
+
+test('allows a backtick inside single quotes next to an rm', () => {
+  assert.equal(exitCodeFor("rm -f build.log && echo '`date`'"), 0)
+})
+
+test('blocks an expansion inside an rm argument', () => {
+  assert.equal(exitCodeFor('rm -f "$TARGET"'), 2)
+})

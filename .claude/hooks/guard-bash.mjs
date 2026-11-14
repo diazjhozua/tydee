@@ -300,9 +300,9 @@ function recursiveDeleteTargets(command, projectDir, home) {
     return [{ resolved: null, cwd: projectDir }]
   }
 
-  // Any rm invocation with an expansion ($ or backtick) fails closed. Text that only mentions rm
-  // (a grep pattern, an echo) is not an invocation and does not.
-  if (rmInvocations(command).length > 0 && /[$`]/.test(command)) {
+  // Any rm invocation whose own words expand ($ or backtick) fails closed. Text that only mentions rm
+  // (a grep pattern, an echo) is not an invocation, and a backtick in single quotes is literal text.
+  if (rmInvocations(command).some((c) => c.words.slice(1).some((w) => w.expandable))) {
     return [{ resolved: null, cwd: projectDir }]
   }
 
