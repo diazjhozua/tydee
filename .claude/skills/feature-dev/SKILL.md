@@ -45,8 +45,12 @@ Run this phase first. It decides whether the work is isolated in a worktree.
    - Example: issue #12 "Dashboard grid view resets after reload" → `fix/12-dashboard-grid-view-resets-after-reload`
 4. Before creating anything, check for an existing branch or worktree with that name (`git branch --list <branch>` and `git worktree list`). If one exists, ask whether to resume it or stop. Never create a second one for the same issue.
 5. Enter the worktree: `EnterWorktree` with `name` set to the branch name. Every later phase runs inside it. The worktree keeps this feature's changes separate from the main checkout while the work is in progress.
-6. In the worktree, install dependencies only if they are missing (`npm --prefix src/Web.Client install`, `dotnet restore tydee.slnx`).
-   Then link the gitignored local config (API settings and client `.env.local`) from the main checkout, so the API and client run in this worktree: `powershell -ExecutionPolicy Bypass -File scripts\link-worktree-env.ps1 -Worktree <worktree path>`. The script creates the main-checkout files on first run and never overwrites them. The API also reads shared user secrets, so no per-worktree setup is needed for those.
+6. In the worktree, set up dependencies and local config:
+   - Run `powershell -ExecutionPolicy Bypass -File scripts\link-worktree-env.ps1 -Worktree <worktree path>`. It links the gitignored local config (API settings and client `.env.local`) from the main checkout, which it creates on first run and never overwrites. The API also reads shared user secrets, so no per-worktree setup is needed for those.
+   - The same script shares node_modules when it can. If the worktree's `src/Web.Client/package.json` and `package-lock.json` match main's, ignoring the version fields, `src/Web.Client/node_modules` becomes a junction to main's copy. Otherwise it leaves the worktree alone.
+   - If `src/Web.Client/node_modules` is still missing after that, run `npm --prefix src/Web.Client install` in the worktree. This is the case for a branch that adds or changes packages, or when main has no `node_modules` yet.
+   - Run `dotnet restore tydee.slnx` in the worktree every time.
+   - Never run `npm install`, `npm add`, `npm update`, `npm uninstall`, or `npm ci` while `src/Web.Client/node_modules` is a junction. The guard blocks these commands, and it would change packages for every session that shares main's copy. To add or change a package: remove only the link with `cmd /c rmdir src\Web.Client\node_modules` (no `/S`: it removes the link and refuses a non-empty folder), install in the worktree, then make the change. Never add `/S` or use recursive delete on the link.
 7. If no issue is given, skip this phase: no worktree, no branch rule, no `Refs` line. Phase 8 still runs, but only when the user asks for a commit or pull request.
 
 ## Phase 1: Discovery
@@ -102,6 +106,8 @@ Do not start without explicit approval.
 3. Present findings and ask: fix now, fix later, or proceed. Apply what the user chooses.
 
 ## Phase 7: Verify
+
+Before verifying, check that the worktree's client dependencies still match main's. Compare `src/Web.Client/package.json` and `package-lock.json`. If `src/Web.Client/node_modules` is a junction and they now differ, remove only the link with `cmd /c rmdir src\Web.Client\node_modules` (no `/S`) and run `npm --prefix src/Web.Client install` in the worktree first.
 
 Run the `verify` skill: standard tier for code changes, full tier when auth, routing, onboarding, or Playwright is touched. On failure, use `test-runner`. Report exact results; never claim green without running the commands. Phase 8 starts only after verification passes or the user accepts the remaining risk.
 
