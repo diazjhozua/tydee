@@ -172,9 +172,20 @@ function maskNonCommandWords(command) {
     .replace(CASE_LABEL, '$1$2')
 }
 
+// A redirect target (`< "$f"`, `> "$LOG"`, `2>&1`) is a file name, never a command word. Strip it
+// before the command-word scan so the target is not read as the start of a segment. The target is
+// a whole word (quoted spans included), so a command word after it (`> "$LOG" $CMD`) is still scanned.
+// `(` is not part of a target, so a process or command substitution after a redirect is still split and scanned.
+const REDIRECT_TARGET = /\d*[<>]{1,2}&?\s*(?=[^\s(])(?:"[^"\n]*"|'[^'\n]*'|[^\s"'`;&|()<>{}\n])+/g
+
+function stripRedirectTargets(command) {
+  return command.replace(REDIRECT_TARGET, ' ')
+}
+
 // A command word built from expansion, globbing, or escaping cannot be resolved statically.
 function hasUnsafeCommandWord(command) {
-  for (const segment of splitCommandSegments(maskQuotedSeparators(maskNonCommandWords(command)))) {
+  const masked = stripRedirectTargets(maskQuotedSeparators(maskNonCommandWords(command)))
+  for (const segment of splitCommandSegments(masked)) {
     const tokens = segment.split(/\s+/).filter(Boolean)
     let index = 0
     while (index < tokens.length && ASSIGNMENT.test(tokens[index])) {

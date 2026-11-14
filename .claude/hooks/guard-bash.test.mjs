@@ -140,3 +140,21 @@ test('blocks a command nested too deeply to check', () => {
 test('blocks a commit hidden behind a reserved word', () => {
   assert.equal(exitCodeFor('if true; then git commit --no-verify -m "feat: x"; fi'), 2)
 })
+
+test('allows an expansion used as a redirect target', () => {
+  assert.equal(exitCodeFor('node run.mjs < "$f"'), 0)
+  assert.equal(exitCodeFor('echo ok > "$LOG_FILE"'), 0)
+  assert.equal(exitCodeFor('for f in a b; do node x.mjs < "$f"; done'), 0)
+})
+
+test('allows a file descriptor redirect before a pipe', () => {
+  assert.equal(exitCodeFor('ls -la "$DIR" 2>&1 | grep -i x'), 0)
+})
+
+test('blocks an expansion used as a command word after a redirect', () => {
+  assert.equal(exitCodeFor('> "$LOG_FILE" $CMD'), 2)
+})
+
+test('blocks a recursive delete hidden in a command substitution after a redirect', () => {
+  assert.equal(exitCodeFor('echo x > $(rm -rf ~)'), 2)
+})
