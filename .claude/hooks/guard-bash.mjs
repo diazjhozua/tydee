@@ -4,21 +4,27 @@
 import os from 'node:os'
 import path from 'node:path'
 
+import {
+  addsSecretPath,
+  commitOptions,
+  gitInvocations,
+  pushesProtectedBranch,
+  wrapsGitCommit,
+  writesProtectedConfig,
+} from './lib/git.mjs'
+import { commandName, findCommands, OVERFLOW } from './lib/shell.mjs'
+
 const BLOCK_MESSAGE = (reason) =>
   `Blocked by .claude/hooks/guard-bash.mjs: ${reason}\n` +
   'Ask the user before retrying; do not work around this guard.'
 
-const SECRET_PATH =
-  /(^|[\s'"])(\.env(?!\.(example|template|sample))|appsettings\.Development\.json|.*\.(pfx|pem|key)\b|appsettings\.[\w.-]*\.local\.json)/i
-
 // Match a git subcommand after any global options, e.g. `git --no-pager commit`.
 const gitRuns = (names) => new RegExp(`\\bgit\\b[^\\n;&|]*\\b(?:${names})\\b`)
 
-const GIT_COMMIT = gitRuns('commit')
-const GIT_PUSH = gitRuns('push')
 const GIT_RESET = gitRuns('reset')
 const GIT_DIFF = gitRuns('diff|log|difftool')
-const GIT_ADD = gitRuns('add')
+
+const isNoVerifyFlag = (flag) => flag === '--no-verify' || /^--no-v[a-z-]*$/.test(flag) || /^-[a-zA-Z]*n[a-zA-Z]*$/.test(flag)
 
 function readInput() {
   return new Promise((resolve) => {
@@ -53,10 +59,6 @@ function isSameOrAncestor(candidate, target) {
 
 function expandHome(target, home) {
   return target === '~' || target.startsWith('~/') ? path.join(home, target.slice(1)) : target
-}
-
-function commandName(token) {
-  return path.basename(token.replace(/\\/g, '/')).replace(/\.exe$/i, '').toLowerCase()
 }
 
 function splitSegments(command) {
@@ -387,6 +389,10 @@ if (!command) {
 }
 
 // Strip quotes and backslashes so `"--out"put` cannot hide a flag from the checks below.
+if (findCommands(command).some((c) => c.name === OVERFLOW)) {
+  block('command nesting is too deep to check.')
+}
+
 const normalized = command.replace(/["'\\]/g, '')
 const git = normalized
 
@@ -398,22 +404,14 @@ const git = normalized
 const gitClauses = maskQuotedSeparators(command).replace(/["'\\]/g, '').split(/[\n;&|]+/)
 
 if (
-  gitClauses.some(
-    (clause) =>
-      GIT_COMMIT.test(clause) && /(\s--no-verify\b|\s--no-v[a-z-]*\b|\s-[a-zA-Z]*n[a-zA-Z]*\b)/.test(clause),
+  gitInvocations(command).some(
+    ({ subcommand, args }) => subcommand === 'commit' && commitOptions(args).flags.some(isNoVerifyFlag),
   )
 ) {
   block('skipping commit hooks is not allowed.')
 }
 
-if (
-  gitClauses.some(
-    (clause) =>
-      GIT_PUSH.test(clause) &&
-      /(\s--force\b|\s--force-with-lease\b|\s--mirror\b|\s--delete\b|\s-f\b|\s\+\S+)/.test(clause) &&
-      /\b(main|master)\b/.test(clause),
-  )
-) {
+if (gitInvocations(command).some(({ subcommand, args }) => subcommand === 'push' && pushesProtectedBranch(args))) {
   block('force-pushing to main/master is destructive.')
 }
 
@@ -434,13 +432,13 @@ if (
 if (
   /\bgit\b[^\n;&|]*\s-c\s*\S*(?:alias\.|core\.hookspath)/i.test(git) ||
   /\bgit\b[^\n;&|]*--config-env(?:=|\s)/i.test(git) ||
-  /\bgit\b[^\n;&|]*\bconfig\b[^\n;&|]*\b(?:alias\.|core\.hookspath)\b/i.test(git) ||
-  /\bGIT_CONFIG_(?:COUNT|PARAMETERS|GLOBAL|SYSTEM|KEY_\d+|VALUE_\d+)\b/i.test(normalized)
+  /\bGIT_CONFIG_(?:COUNT|PARAMETERS|GLOBAL|SYSTEM|KEY_\d+|VALUE_\d+)\b/i.test(normalized) ||
+  gitInvocations(command).some(({ subcommand, args }) => subcommand === 'config' && writesProtectedConfig(args))
 ) {
   block('git config overrides can hide commits or skip hooks.')
 }
 
-if (/(\b(bash|sh|zsh|dash)\b[^\n]*\s-c\s|\beval\b|\bxargs\b)[^\n]*\bgit\b[^\n]*\bcommit\b/.test(normalized)) {
+if (wrapsGitCommit(command)) {
   block('wrapped commit commands bypass message validation.')
 }
 
@@ -448,7 +446,7 @@ if (/\bnpm\b[^\n]*\s--(script-shell|node-options|userconfig|globalconfig)\b/.tes
   block('npm config flags can execute arbitrary code.')
 }
 
-if (GIT_ADD.test(git) && SECRET_PATH.test(normalized)) {
+if (gitInvocations(command).some(({ subcommand, args }) => subcommand === 'add' && addsSecretPath(args))) {
   block('staging secrets or local resume data.')
 }
 
