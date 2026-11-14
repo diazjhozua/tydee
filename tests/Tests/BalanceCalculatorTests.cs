@@ -1,4 +1,5 @@
 using Application.Accounts;
+using Domain.Accounts;
 using Domain.Adjustments;
 using Domain.Expenses;
 using Domain.Incomes;
@@ -92,5 +93,60 @@ public class BalanceCalculatorTests
             await BalanceCalculator.ForUserAsync(db, other.Id, CancellationToken.None);
 
         balances.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Card_expense_makes_the_card_balance_negative()
+    {
+        using var db = TestDb.Create();
+        var user = Seed.User(db);
+        var card = Seed.Account(db, user.Id, "Visa", AccountType.CreditCard);
+        db.Expenses.Add(new Expense
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            AccountId = card.Id,
+            Amount = 100,
+            Date = new DateOnly(2026, 8, 2),
+        });
+        db.SaveChanges();
+
+        Dictionary<Guid, decimal> balances =
+            await BalanceCalculator.ForUserAsync(db, user.Id, CancellationToken.None);
+
+        balances[card.Id].ShouldBe(-100m);
+    }
+
+    [Fact]
+    public async Task Card_payment_raises_the_card_and_lowers_the_source_by_the_same_amount()
+    {
+        using var db = TestDb.Create();
+        var user = Seed.User(db);
+        var budget = Seed.Account(db, user.Id, "Budget");
+        var card = Seed.Account(db, user.Id, "Visa", AccountType.CreditCard);
+        db.Adjustments.Add(new Adjustment
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            AccountId = budget.Id,
+            Amount = 500,
+            Date = new DateOnly(2026, 8, 1),
+        });
+        db.CardPayments.Add(new Domain.CardPayments.CardPayment
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            FromAccountId = budget.Id,
+            CardAccountId = card.Id,
+            Amount = 200,
+            Date = new DateOnly(2026, 8, 3),
+        });
+        db.SaveChanges();
+
+        Dictionary<Guid, decimal> balances =
+            await BalanceCalculator.ForUserAsync(db, user.Id, CancellationToken.None);
+
+        balances[budget.Id].ShouldBe(300m);
+        balances[card.Id].ShouldBe(200m);
     }
 }
