@@ -18,10 +18,10 @@ Steps:
 The API also reads user secrets, which every worktree shares because
 src/Web.Api/Web.Api.csproj sets one UserSecretsId.
 
-node_modules: a worktree whose src/Web.Client/package.json and package-lock.json match
-the main checkout's (ignoring the version fields) gets a directory junction to the main checkout's src/Web.Client/node_modules.
-Any other worktree is left alone and installs its own copy. A junction needs no admin rights.
-The main checkout's node_modules is never written to by this script.
+node_modules is never shared or linked. Each worktree installs its own copy with
+`npm --prefix src/Web.Client install`. A junction into the main checkout's node_modules broke
+`next dev` (Turbopack panics: "Symlink ... points out of the filesystem root"), and an install
+in one session would rewrite packages for every other session sharing it.
 
 .PARAMETER Worktree
 Path to one worktree. Omit it to link every worktree in `git worktree list`.
@@ -105,47 +105,4 @@ foreach ($file in $localFiles) {
     }
 }
 
-# node_modules: share main's copy only while the worktree's client dependencies are unchanged.
-$clientDir = "src\Web.Client"
-$mainModules = Join-Path $main "$clientDir\node_modules"
-
-# The version fields are blanked before comparing: release-please bumps package.json, and npm install
-# rewrites the lockfile's root version to match. Neither changes the dependency tree. Text replacement
-# keeps this within PowerShell's constrained language mode, which blocks .NET method calls.
-function Get-DependencyFingerprint([string]$root) {
-    $manifest = (Get-Content -Raw -Path (Join-Path $root "$clientDir\package.json")) -replace '"version": "[^"]*"', '"version": ""'
-
-    $lock = Get-Content -Raw -Path (Join-Path $root "$clientDir\package-lock.json")
-    $lock = $lock -replace '(?s)^(\{.*?)"version": "[^"]*"', '$1"version": ""'
-    $lock = $lock -replace '("packages": \{\s*"": \{[^}]*?)"version": "[^"]*"', '$1"version": ""'
-
-    $manifest + "`n" + $lock
-}
-
-$mainFingerprint = Get-DependencyFingerprint $main
-
-foreach ($target in $targets) {
-    if ($target -eq $main) {
-        continue
-    }
-
-    $dest = Join-Path $target "$clientDir\node_modules"
-
-    if (Test-Path $dest) {
-        Write-Host "node_modules already present, skipped: $dest"
-        continue
-    }
-
-    if (-not (Test-Path $mainModules)) {
-        Write-Host "main has no node_modules, worktree installs its own: $target"
-        continue
-    }
-
-    if ((Get-DependencyFingerprint $target) -cne $mainFingerprint) {
-        Write-Host "dependencies differ from main, worktree installs its own: $target"
-        continue
-    }
-
-    New-Item -ItemType Junction -Path $dest -Target $mainModules | Out-Null
-    Write-Host "junctioned: $dest -> $mainModules"
-}
+Write-Host "node_modules: not linked. Run npm --prefix src/Web.Client install in each worktree."
