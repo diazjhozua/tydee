@@ -30,6 +30,11 @@ internal sealed class UpdateAllocationTemplateCommandHandler(IApplicationDbConte
 
         var percentByAccount = command.Items.ToDictionary(i => i.AccountId, i => i.Percent);
 
+        if (accounts.Any(a => a.Type == AccountType.CreditCard && percentByAccount[a.Id] != 0m))
+        {
+            return Result.Failure(AllocationErrors.CreditCardNotAllocatable);
+        }
+
         foreach (Account account in accounts)
         {
             account.AllocationPercent = percentByAccount[account.Id];

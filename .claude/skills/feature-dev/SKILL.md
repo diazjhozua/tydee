@@ -47,10 +47,9 @@ Run this phase first. It decides whether the work is isolated in a worktree.
 5. Enter the worktree: `EnterWorktree` with `name` set to the branch name. Every later phase runs inside it. The worktree keeps this feature's changes separate from the main checkout while the work is in progress.
 6. In the worktree, set up dependencies and local config:
    - Run `powershell -ExecutionPolicy Bypass -File scripts\link-worktree-env.ps1 -Worktree <worktree path>`. It links the gitignored local config (API settings and client `.env.local`) from the main checkout, which it creates on first run and never overwrites. The API also reads shared user secrets, so no per-worktree setup is needed for those.
-   - The same script shares node_modules when it can. If the worktree's `src/Web.Client/package.json` and `package-lock.json` match main's, ignoring the version fields, `src/Web.Client/node_modules` becomes a junction to main's copy. Otherwise it leaves the worktree alone.
-   - If `src/Web.Client/node_modules` is still missing after that, run `npm --prefix src/Web.Client install` in the worktree. This is the case for a branch that adds or changes packages, or when main has no `node_modules` yet.
+   - The script never shares node_modules. Run `npm --prefix src/Web.Client install` in the worktree every time. A junction into main's copy breaks `next dev` (Turbopack refuses links that point outside the project), and it means one session's install rewrites packages for every session that shares it.
    - Run `dotnet restore tydee.slnx` in the worktree every time.
-   - Never run `npm install`, `npm add`, `npm update`, `npm uninstall`, or `npm ci` while `src/Web.Client/node_modules` is a junction. The guard blocks these commands, and it would change packages for every session that shares main's copy. To add or change a package: remove only the link with `cmd /c rmdir src\Web.Client\node_modules` (no `/S`: it removes the link and refuses a non-empty folder), install in the worktree, then make the change. Never add `/S` or use recursive delete on the link.
+   - If a worktree from before this change still has `src/Web.Client/node_modules` as a junction, the guard blocks `npm install`, `npm add`, `npm update`, `npm uninstall`, and `npm ci` there. Remove only the link with `cmd /c rmdir src\Web.Client\node_modules` (no `/S`: it removes the link and refuses a non-empty folder), then run `npm --prefix src/Web.Client install`. Never add `/S` or use recursive delete on the link.
 7. If no issue is given, skip this phase: no worktree, no branch rule, no `Refs` line. Phase 8 still runs, but only when the user asks for a commit or pull request.
 
 ## Phase 1: Discovery
@@ -107,7 +106,7 @@ Do not start without explicit approval.
 
 ## Phase 7: Verify
 
-Before verifying, check that the worktree's client dependencies still match main's. Compare `src/Web.Client/package.json` and `package-lock.json`. If `src/Web.Client/node_modules` is a junction and they now differ, remove only the link with `cmd /c rmdir src\Web.Client\node_modules` (no `/S`) and run `npm --prefix src/Web.Client install` in the worktree first.
+Before verifying, make sure `src/Web.Client/node_modules` is a real folder, not a junction. If it is a junction left from an older worktree, remove only the link with `cmd /c rmdir src\Web.Client\node_modules` (no `/S`), then run `npm --prefix src/Web.Client install` in the worktree first.
 
 Run the `verify` skill: standard tier for code changes, full tier when auth, routing, onboarding, or Playwright is touched. On failure, use `test-runner`. Report exact results; never claim green without running the commands. Phase 8 starts only after verification passes or the user accepts the remaining risk.
 

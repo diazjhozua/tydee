@@ -13,6 +13,7 @@ import {
   Utensils,
   Wallet,
 } from "lucide-react";
+import { ACCOUNT_TYPE_BEHAVIOR } from "@/lib/accounts/accountTypeBehavior";
 import { AccountType } from "@/lib/types/account";
 import { cn } from "@/lib/utils";
 
@@ -66,12 +67,6 @@ export const ACCOUNT_COLOR_OPTIONS: { key: string; badgeClass: string; swatchCla
   },
 ];
 
-function defaultBadgeClass(type: AccountType): string {
-  return type === "Spending"
-    ? "bg-sky-500/15 text-sky-600 dark:text-sky-400"
-    : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400";
-}
-
 type Props = {
   type: AccountType;
   icon?: string | null;
@@ -80,11 +75,13 @@ type Props = {
 };
 
 export function AccountIcon({ type, icon, color, className }: Props) {
-  const Icon =
-    ACCOUNT_ICON_OPTIONS.find((o) => o.key === icon)?.icon ??
-    (type === "Spending" ? Wallet : PiggyBank);
-  const colorClass =
-    ACCOUNT_COLOR_OPTIONS.find((o) => o.key === color)?.badgeClass ?? defaultBadgeClass(type);
+  const behavior = ACCOUNT_TYPE_BEHAVIOR[type];
+  const iconKey = ACCOUNT_ICON_OPTIONS.some((o) => o.key === icon) ? icon : behavior.defaultIcon;
+  const Icon = ACCOUNT_ICON_OPTIONS.find((o) => o.key === iconKey)?.icon ?? Wallet;
+  const colorOption =
+    ACCOUNT_COLOR_OPTIONS.find((o) => o.key === color) ??
+    ACCOUNT_COLOR_OPTIONS.find((o) => o.key === behavior.defaultColor);
+  const colorClass = colorOption?.badgeClass ?? "";
 
   return (
     <span

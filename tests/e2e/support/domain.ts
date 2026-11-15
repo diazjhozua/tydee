@@ -1,1 +1,1 @@
-export type AccountType = "Spending" | "Saving";
+export type AccountType = "Spending" | "Saving" | "CreditCard";

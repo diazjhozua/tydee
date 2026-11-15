@@ -5,6 +5,7 @@ import { MutationCache, QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createCardPayment } from "@/lib/api/cardPayments";
 import { createExpense, deleteExpense, updateExpense } from "@/lib/api/expenses";
 import { createIncome, deleteIncome, updateIncome } from "@/lib/api/incomes";
 import { createSuggestion } from "@/lib/api/suggestions";
@@ -99,6 +100,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       mutationFn: (vars: { incomeId: string; date: string }) => deleteIncome(vars.incomeId),
     });
     client.setMutationDefaults(["suggestions", "create"], { mutationFn: createSuggestion });
+    client.setMutationDefaults(["card-payments", "create"], { mutationFn: createCardPayment });
 
     return client;
   });

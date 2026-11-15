@@ -1,5 +1,6 @@
 using Domain.Accounts;
 using Domain.Adjustments;
+using Domain.CardPayments;
 using Domain.Transfers;
 using Domain.Expenses;
 using Domain.Incomes;
@@ -21,6 +22,7 @@ public interface IApplicationDbContext
     DbSet<RecurringExpense> RecurringExpenses { get; }
     DbSet<Adjustment> Adjustments { get; }
     DbSet<Transfer> Transfers { get; }
+    DbSet<CardPayment> CardPayments { get; }
     DbSet<Suggestion> Suggestions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

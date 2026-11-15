@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { ACCOUNT_TYPE_BEHAVIOR } from "@/lib/accounts/accountTypeBehavior";
 import { useAccounts } from "@/lib/hooks/useAccounts";
 import {
   useCreateIncome,
@@ -48,7 +49,10 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
   const [prevOpen, setPrevOpen] = useState(false);
 
   const isEdit = incomeId !== undefined;
-  const activeAccounts = accounts ?? [];
+  // Cards never take an income allocation; only envelopes that can receive one.
+  const activeAccounts = (accounts ?? []).filter(
+    (a) => ACCOUNT_TYPE_BEHAVIOR[a.type].canReceiveAllocation,
+  );
   const { data: pastSources } = useIncomeSources(open && !isEdit);
   const { data: lastIncome } = useLatestIncome(open && !isEdit);
   const parsedAmount = Number(amount);
@@ -312,6 +316,7 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
                 inputMode="decimal"
                 min="0"
                 step="0.01"
+                aria-label={`${account.name} allocation`}
                 className="money h-10 w-32 rounded-xl text-right"
                 value={shownAllocations[account.id] ?? ""}
                 onChange={(e) => setAllocation(account.id, e.target.value)}

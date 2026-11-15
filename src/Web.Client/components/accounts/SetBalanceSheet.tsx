@@ -7,6 +7,7 @@ import { EntrySheet } from "@/components/shared/EntrySheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ACCOUNT_TYPE_BEHAVIOR } from "@/lib/accounts/accountTypeBehavior";
 import { useSetAccountBalance } from "@/lib/hooks/useAccounts";
 import { useMe } from "@/lib/hooks/useMe";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
@@ -41,6 +42,8 @@ export function SetBalanceSheet({ open, onOpenChange, account }: Props) {
   const parsedAmount = Number(amount);
   const unchanged = account !== undefined && parsedAmount === account.balance;
   const canSave = account !== undefined && amount !== "" && parsedAmount >= 0 && !unchanged;
+  // A card's balance is set by card payments, never directly.
+  const isCard = account !== undefined && ACCOUNT_TYPE_BEHAVIOR[account.type].isCard;
 
   function save() {
     if (!account) {
@@ -57,6 +60,10 @@ export function SetBalanceSheet({ open, onOpenChange, account }: Props) {
           toast.error(err instanceof ApiError ? err.displayMessage : "Something went wrong."),
       },
     );
+  }
+
+  if (isCard) {
+    return null;
   }
 
   return (

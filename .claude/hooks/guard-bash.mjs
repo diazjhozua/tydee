@@ -141,7 +141,9 @@ function maskQuotedSeparators(command) {
   for (let i = 0; i < command.length; i++) {
     const ch = command[i]
     if (quote !== "'" && ch === "\\" && i + 1 < command.length) {
-      out += ch + command[i + 1]
+      // An escaped separator (`\|` in grep "a\|b") is literal text, not a separator. Mask it like a quoted one.
+      const next = command[i + 1]
+      out += ch + (QUOTED_SEPARATOR.test(next) ? "_" : next)
       i++
       continue
     }
@@ -183,6 +185,31 @@ function stripRedirectTargets(command) {
   return command.replace(REDIRECT_TARGET, ' ')
 }
 
+// Recursive-delete switches: a short cluster of up to four letters containing r or R (`-rf`, `-rfiv`),
+// a long `--r...` option (`--recursive`), PowerShell `-Recurse`, or cmd `/s`. Longer words such as
+// PowerShell `-Worktree` or `-Force` are not short clusters, so they do not match.
+const RECURSIVE_SHORT_CLUSTER = /^-[a-zA-Z]{1,4}$/
+const RECURSIVE_NAMED_SWITCH = /^(-recurse|\/s)$/i
+// Commands that delete: rm, PowerShell Remove-Item and its aliases, cmd rd/rmdir/del/erase.
+const DELETE_COMMAND = /\b(rm|ri|rd|rmdir|del|erase|unlink|shred|remove-item)\b/i
+
+// An unresolved wrapper argument only matters when the command could delete recursively: it names a delete
+// command or carries a recursive switch. Without either, `powershell -File x.ps1 -Worktree "$(pwd)"` is not a delete.
+function mayDeleteRecursively(command) {
+  const text = command.replace(/["'\\]/g, '')
+  return (
+    DELETE_COMMAND.test(text) ||
+    text
+      .split(/\s+/)
+      .some(
+        (token) =>
+          (RECURSIVE_SHORT_CLUSTER.test(token) && /r/i.test(token)) ||
+          RECURSIVE_NAMED_SWITCH.test(token) ||
+          RM_RECURSIVE_LONG.test(token),
+      )
+  )
+}
+
 // A command word built from expansion, globbing, or escaping cannot be resolved statically.
 function hasUnsafeCommandWord(command) {
   const masked = stripRedirectTargets(maskQuotedSeparators(maskNonCommandWords(command)))
@@ -203,14 +230,14 @@ function hasUnsafeCommandWord(command) {
     }
 
     if (SHELL_WRAPPERS.has(first)) {
-      if (tokens.slice(index + 1).some(hasUnsafeWordChars)) {
+      if (tokens.slice(index + 1).some(hasUnsafeWordChars) && mayDeleteRecursively(command)) {
         return true
       }
       continue
     }
 
     if (PREFIX_WRAPPERS.has(first)) {
-      if (tokens.slice(index + 1).some(hasUnsafeWordChars)) {
+      if (tokens.slice(index + 1).some(hasUnsafeWordChars) && mayDeleteRecursively(command)) {
         return true
       }
       continue

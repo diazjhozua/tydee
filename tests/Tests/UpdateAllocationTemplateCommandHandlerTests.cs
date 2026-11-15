@@ -69,4 +69,47 @@ public class UpdateAllocationTemplateCommandHandlerTests
         db.Accounts.Single(a => a.Id == budget.Id).AllocationPercent.ShouldBe(70m);
         db.Accounts.Single(a => a.Id == savings.Id).AllocationPercent.ShouldBe(30m);
     }
+
+    [Fact]
+    public async Task Credit_card_with_a_nonzero_percent_is_rejected()
+    {
+        using var db = TestDb.Create();
+        var user = Seed.User(db);
+        var budget = Seed.Account(db, user.Id, "Budget");
+        var card = Seed.Account(db, user.Id, "Visa", AccountType.CreditCard);
+
+        var handler = new UpdateAllocationTemplateCommandHandler(db);
+
+        var result = await handler.Handle(
+            new UpdateAllocationTemplateCommand(user.Id,
+            [
+                new AllocationTemplateItem(budget.Id, 50),
+                new AllocationTemplateItem(card.Id, 50),
+            ]),
+            CancellationToken.None);
+
+        result.Error.ShouldBe(AllocationErrors.CreditCardNotAllocatable);
+        db.Accounts.Single(a => a.Id == card.Id).AllocationPercent.ShouldBe(0m);
+    }
+
+    [Fact]
+    public async Task Credit_card_at_zero_percent_is_accepted()
+    {
+        using var db = TestDb.Create();
+        var user = Seed.User(db);
+        var budget = Seed.Account(db, user.Id, "Budget");
+        var card = Seed.Account(db, user.Id, "Visa", AccountType.CreditCard);
+
+        var handler = new UpdateAllocationTemplateCommandHandler(db);
+
+        var result = await handler.Handle(
+            new UpdateAllocationTemplateCommand(user.Id,
+            [
+                new AllocationTemplateItem(budget.Id, 100),
+                new AllocationTemplateItem(card.Id, 0),
+            ]),
+            CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
+    }
 }

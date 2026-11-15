@@ -1,4 +1,4 @@
-export type AccountType = "Spending" | "Saving";
+export type AccountType = "Spending" | "Saving" | "CreditCard";
 
 export type Account = {
   id: string;

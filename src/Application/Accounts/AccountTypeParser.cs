@@ -10,5 +10,5 @@ public static class AccountTypeParser
             ? parsed
             : Result.Failure<AccountType>(Error.Problem(
                 "Accounts.InvalidType",
-                "Account type must be either 'Spending' or 'Saving'."));
+                "Account type must be 'Spending', 'Saving', or 'CreditCard'."));
 }

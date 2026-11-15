@@ -5,6 +5,7 @@ import {
   CreateAccountRequest,
   UpdateAccountRequest,
 } from "@/lib/types/account";
+import { CardStatement } from "@/lib/types/cardPayment";
 
 export async function listAccounts(includeArchived = false): Promise<Account[]> {
   const res = await apiClient.get<Account[]>("/api/v1/accounts", {
@@ -31,6 +32,17 @@ export async function setAccountBalance(
   request: { newBalance: number; date: string },
 ): Promise<void> {
   await apiClient.put(`/api/v1/accounts/${accountId}/balance`, request);
+}
+
+export async function getCardStatement(
+  accountId: string,
+  year: number,
+  month: number,
+): Promise<CardStatement> {
+  const res = await apiClient.get<CardStatement>(`/api/v1/accounts/${accountId}/card-statement`, {
+    params: { year, month },
+  });
+  return res.data;
 }
 
 export async function updateAllocationTemplate(items: AllocationTemplateItem[]): Promise<void> {

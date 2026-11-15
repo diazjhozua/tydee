@@ -5,7 +5,9 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
 import { AccountActionsMenu } from "@/components/accounts/AccountActionsMenu";
 import { AccountIcon } from "@/components/shared/AccountIcon";
+import { CardOwed } from "@/components/shared/CardOwed";
 import { Money } from "@/components/shared/Money";
+import { ACCOUNT_TYPE_BEHAVIOR } from "@/lib/accounts/accountTypeBehavior";
 import { Account } from "@/lib/types/account";
 import { cn } from "@/lib/utils";
 
@@ -45,16 +47,25 @@ export function SortableAccountRow({
     </button>
   );
 
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  const behavior = ACCOUNT_TYPE_BEHAVIOR[account.type];
+  const shownBalance = behavior.displayAmount(account.balance);
+
+  // A card's balance moves only through card payments, so it has no Set balance action.
   const menu = (
     <AccountActionsMenu
       onEdit={onEdit}
-      onSetBalance={onSetBalance}
+      onSetBalance={behavior.isCard ? undefined : onSetBalance}
       onArchive={onArchive}
       archiveDisabled={archiveDisabled}
     />
   );
 
-  const style = { transform: CSS.Transform.toString(transform), transition };
+  const balance = behavior.isCard ? (
+    <CardOwed owed={shownBalance} currency={currency} size="sm" />
+  ) : (
+    <Money value={shownBalance} currency={currency} size="sm" hideable />
+  );
 
   if (variant === "card") {
     return (
@@ -80,9 +91,9 @@ export function SortableAccountRow({
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{account.name}</p>
-          <p className="text-xs text-muted-foreground">{account.type}</p>
+          <p className="text-xs text-muted-foreground">{behavior.label}</p>
         </div>
-        <Money value={account.balance} currency={currency} size="sm" hideable />
+        {balance}
       </div>
     );
   }
@@ -102,9 +113,9 @@ export function SortableAccountRow({
       />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{account.name}</p>
-        <p className="text-xs text-muted-foreground">{account.type}</p>
+        <p className="text-xs text-muted-foreground">{behavior.label}</p>
       </div>
-      <Money value={account.balance} currency={currency} size="sm" hideable />
+      {balance}
       {menu}
     </div>
   );

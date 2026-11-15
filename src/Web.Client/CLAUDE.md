@@ -32,7 +32,7 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
 ## Offline behavior
 
 - TanStack Query persists only paused mutations (`shouldDehydrateMutation: state.isPaused`) to localStorage and resumes them on reconnect.
-- Every replayable mutation must be registered with `setMutationDefaults` in `providers/QueryProvider.tsx`. Currently: expense create/update/delete and income create/update/delete.
+- Every replayable mutation must be registered with `setMutationDefaults` in `providers/QueryProvider.tsx`. Currently: expense create/update/delete, income create/update/delete, and card payment create.
 - `components/shared/OfflineBanner.tsx` shows connectivity; `useOnlineStatus` is the shared hook. Offline-queued items are marked `pendingSync` in the dashboard activity and must not be edited or deleted while pending.
 
 ## Styling

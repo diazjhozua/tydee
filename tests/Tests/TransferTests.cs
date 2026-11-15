@@ -87,4 +87,35 @@ public class TransferTests
 
         result.Error.ShouldBe(AccountErrors.NotFound);
     }
+
+    [Fact]
+    public async Task Cannot_transfer_into_a_credit_card()
+    {
+        using var db = TestDb.Create();
+        var user = Seed.User(db);
+        var budget = Seed.Account(db, user.Id, "Budget");
+        var card = Seed.Account(db, user.Id, "Visa", AccountType.CreditCard);
+
+        var result = await Handler(db).Handle(
+            new CreateTransferCommand(user.Id, budget.Id, card.Id, 100, Date),
+            CancellationToken.None);
+
+        result.Error.ShouldBe(TransferErrors.CreditCardNotAllowed);
+        db.Transfers.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Cannot_transfer_out_of_a_credit_card()
+    {
+        using var db = TestDb.Create();
+        var user = Seed.User(db);
+        var budget = Seed.Account(db, user.Id, "Budget");
+        var card = Seed.Account(db, user.Id, "Visa", AccountType.CreditCard);
+
+        var result = await Handler(db).Handle(
+            new CreateTransferCommand(user.Id, card.Id, budget.Id, 100, Date),
+            CancellationToken.None);
+
+        result.Error.ShouldBe(TransferErrors.CreditCardNotAllowed);
+    }
 }

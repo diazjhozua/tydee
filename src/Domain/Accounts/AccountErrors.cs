@@ -19,4 +19,12 @@ public static class AccountErrors
     public static readonly Error AllAccountsRequired = Error.Problem(
         "Accounts.AllAccountsRequired",
         "Reordering must include every active account exactly once.");
+
+    public static readonly Error HasOwedBalance = Error.Problem(
+        "Accounts.HasOwedBalance",
+        "Pay off this card before archiving it.");
+
+    public static readonly Error CardHasCredit = Error.Problem(
+        "Accounts.CardHasCredit",
+        "This card is in credit. Bring its balance to zero before archiving it.");
 }

@@ -70,6 +70,34 @@ test('blocks a parameter expansion used as a command word', () => {
   assert.equal(exitCodeFor('${CMD} -rf x'), 2)
 })
 
+// False positives: an unresolved expansion in a wrapper argument is only a risk with a recursive delete.
+test('allows an expansion in a wrapper argument when nothing can delete recursively', () => {
+  assert.equal(exitCodeFor('powershell -ExecutionPolicy Bypass -File scripts\\link.ps1 -Worktree "$(pwd)"'), 0)
+  assert.equal(exitCodeFor('timeout 60 npm --prefix "$(pwd)" run lint'), 0)
+})
+
+test('still blocks an expansion in a wrapper argument next to a recursive rm switch', () => {
+  assert.equal(exitCodeFor('powershell -Command "$CMD -rf ~"'), 2)
+  assert.equal(exitCodeFor('timeout 5 "$CMD" --recursive ~'), 2)
+})
+
+test('allows an escaped pipe inside a double-quoted grep pattern', () => {
+  assert.equal(exitCodeFor('grep -n "a\\|\\$" guard-bash.test.mjs'), 0)
+})
+
+test('allows a wrapper expansion when the wrapped command only reads', () => {
+  assert.equal(exitCodeFor('powershell -Command "Get-ChildItem $dir"'), 0)
+})
+
+test('blocks a wrapper expansion with a clustered recursive switch', () => {
+  assert.equal(exitCodeFor('timeout 5 "$CMD" -rfiv ~'), 2)
+})
+
+test('blocks a wrapper expansion that runs PowerShell Remove-Item or cmd rd', () => {
+  assert.equal(exitCodeFor('powershell -Command "Remove-Item -Recurse -Force $dir"'), 2)
+  assert.equal(exitCodeFor('cmd /c "rd /s /q $dir"'), 2)
+})
+
 // Commit hooks: flags are read from decoded words, so message text is never a flag.
 test('allows -n and --no-verify inside a commit message', () => {
   assert.equal(exitCodeFor('git commit -m "fix: drop -n alias"'), 0)

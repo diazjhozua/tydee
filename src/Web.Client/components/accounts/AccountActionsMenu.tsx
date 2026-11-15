@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+// Omit onSetBalance for accounts whose balance cannot be set (credit cards).
 export function AccountActionsMenu({
   onEdit,
   onSetBalance,
@@ -16,7 +17,7 @@ export function AccountActionsMenu({
   archiveDisabled = false,
 }: {
   onEdit: () => void;
-  onSetBalance: () => void;
+  onSetBalance?: () => void;
   onArchive: () => void;
   archiveDisabled?: boolean;
 }) {
@@ -38,9 +39,11 @@ export function AccountActionsMenu({
         <DropdownMenuItem onClick={onEdit}>
           <Pencil className="size-4" /> Edit
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={onSetBalance}>
-          <Scale className="size-4" /> Set balance
-        </DropdownMenuItem>
+        {onSetBalance && (
+          <DropdownMenuItem onClick={onSetBalance}>
+            <Scale className="size-4" /> Set balance
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem variant="destructive" disabled={archiveDisabled} onClick={onArchive}>
           <Archive className="size-4" /> Archive
         </DropdownMenuItem>

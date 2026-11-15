@@ -25,6 +25,25 @@ internal sealed class ArchiveAccountCommandHandler(IApplicationDbContext context
             return Result.Failure(AccountErrors.Archived);
         }
 
+        if (account.Type == AccountType.CreditCard)
+        {
+            Dictionary<Guid, decimal> balances = await BalanceCalculator.ForUserAsync(
+                context, command.UserId, cancellationToken);
+
+            decimal balance = balances.GetValueOrDefault(account.Id);
+
+            // A negative balance on a card is money still owed on it; a positive one is credit.
+            if (balance < 0m)
+            {
+                return Result.Failure(AccountErrors.HasOwedBalance);
+            }
+
+            if (balance > 0m)
+            {
+                return Result.Failure(AccountErrors.CardHasCredit);
+            }
+        }
+
         account.IsArchived = true;
 
         // Freed percent goes back to the user to redistribute via the template.

@@ -47,7 +47,7 @@ export type CategorySpendItem = {
 
 export type ActivityItem = {
   id: string;
-  kind: "expense" | "income" | "adjustment" | "transfer";
+  kind: "expense" | "income" | "adjustment" | "transfer" | "cardPayment";
   amount: number;
   description: string;
   category: string | null;

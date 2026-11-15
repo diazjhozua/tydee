@@ -3,6 +3,8 @@
 import { Inbox, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { CardPaymentSheet, type PaymentCard } from "@/components/accounts/CardPaymentSheet";
+import { CardStatementSheet } from "@/components/accounts/CardStatementSheet";
 import { AccountsSection } from "@/components/dashboard/AccountsSection";
 import { CategoryBreakdown } from "@/components/dashboard/CategoryBreakdown";
 import { RecentActivityList } from "@/components/dashboard/RecentActivityList";
@@ -35,6 +37,7 @@ import { useMe } from "@/lib/hooks/useMe";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { useDashboardViewStore } from "@/lib/stores/dashboardViewStore";
 import { toast } from "sonner";
+import { ACCOUNT_TYPE_BEHAVIOR } from "@/lib/accounts/accountTypeBehavior";
 import { ActivityItem } from "@/lib/types/dashboard";
 import { Expense } from "@/lib/types/expense";
 import { formatMoney } from "@/lib/utils/currency";
@@ -57,6 +60,12 @@ export default function HomePage() {
   const [editingIncomeId, setEditingIncomeId] = useState<string | undefined>();
   const [deletingAdjustment, setDeletingAdjustment] = useState<ActivityItem | undefined>();
   const [deletingTransfer, setDeletingTransfer] = useState<ActivityItem | undefined>();
+  // The card is kept after a sheet closes so its title does not flip during the
+  // close animation; only the next open replaces it.
+  const [payingCard, setPayingCard] = useState<PaymentCard | undefined>();
+  const [payingOpen, setPayingOpen] = useState(false);
+  const [statementCard, setStatementCard] = useState<{ id: string; name: string } | undefined>();
+  const [statementOpen, setStatementOpen] = useState(false);
   const deleteAdjustment = useDeleteAdjustment();
   const deleteTransfer = useDeleteTransfer();
 
@@ -114,6 +123,10 @@ export default function HomePage() {
 
   function onActivityClick(item: ActivityItem) {
     if (item.pendingSync) {
+      return;
+    }
+    // Card payments are edited and removed from the card's statement, not here.
+    if (item.kind === "cardPayment") {
       return;
     }
     if (item.kind === "expense") {
@@ -218,6 +231,18 @@ export default function HomePage() {
         currency={currency}
         view={resolvedAccountsView}
         onViewChange={setAccountsView}
+        onLogPayment={(account) => {
+          setPayingCard({
+            id: account.accountId,
+            name: account.name,
+            owed: ACCOUNT_TYPE_BEHAVIOR.CreditCard.displayAmount(account.balance),
+          });
+          setPayingOpen(true);
+        }}
+        onOpenStatement={(account) => {
+          setStatementCard({ id: account.accountId, name: account.name });
+          setStatementOpen(true);
+        }}
       />
 
       <section className="space-y-3">
@@ -281,6 +306,14 @@ export default function HomePage() {
         open={editingIncomeId !== undefined}
         onOpenChange={(open) => !open && setEditingIncomeId(undefined)}
         incomeId={editingIncomeId}
+      />
+
+      <CardPaymentSheet open={payingOpen} onOpenChange={setPayingOpen} card={payingCard} />
+
+      <CardStatementSheet
+        open={statementOpen}
+        onOpenChange={setStatementOpen}
+        card={statementCard}
       />
 
       <Dialog

@@ -6,6 +6,8 @@ namespace Application.Accounts;
 internal static class BalanceCalculator
 {
     // Balance = income allocated to the account minus expenses taken from it.
+    // A card payment raises the card's balance and lowers the paying account's,
+    // so a negative credit card balance is money owed on the card.
     public static async Task<Dictionary<Guid, decimal>> ForUserAsync(
         IApplicationDbContext context,
         Guid userId,
@@ -36,6 +38,18 @@ internal static class BalanceCalculator
             .Select(g => new { AccountId = g.Key, Total = g.Sum(t => t.Amount) })
             .ToListAsync(cancellationToken);
 
+        var cardPaid = await context.CardPayments
+            .Where(p => p.UserId == userId)
+            .GroupBy(p => p.CardAccountId)
+            .Select(g => new { AccountId = g.Key, Total = g.Sum(p => p.Amount) })
+            .ToListAsync(cancellationToken);
+
+        var cardPaidFrom = await context.CardPayments
+            .Where(p => p.UserId == userId)
+            .GroupBy(p => p.FromAccountId)
+            .Select(g => new { AccountId = g.Key, Total = g.Sum(p => p.Amount) })
+            .ToListAsync(cancellationToken);
+
         var spent = await context.Expenses
             .Where(e => e.UserId == userId)
             .GroupBy(e => e.AccountId)
@@ -60,6 +74,18 @@ internal static class BalanceCalculator
         {
             balances[outgoing.AccountId] =
                 balances.GetValueOrDefault(outgoing.AccountId) - outgoing.Total;
+        }
+
+        foreach (var payment in cardPaid)
+        {
+            balances[payment.AccountId] =
+                balances.GetValueOrDefault(payment.AccountId) + payment.Total;
+        }
+
+        foreach (var payment in cardPaidFrom)
+        {
+            balances[payment.AccountId] =
+                balances.GetValueOrDefault(payment.AccountId) - payment.Total;
         }
 
         foreach (var expense in spent)

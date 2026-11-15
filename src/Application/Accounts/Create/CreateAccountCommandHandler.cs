@@ -20,6 +20,11 @@ internal sealed class CreateAccountCommandHandler(
             return Result.Failure<Guid>(type.Error);
         }
 
+        if (type.Value == AccountType.CreditCard && command.AllocationPercent != 0m)
+        {
+            return Result.Failure<Guid>(AllocationErrors.CreditCardNotAllocatable);
+        }
+
         bool nameTaken = await context.Accounts.AnyAsync(
             a => a.UserId == command.UserId && a.Name == command.Name && !a.IsArchived,
             cancellationToken);

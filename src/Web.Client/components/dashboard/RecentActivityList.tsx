@@ -14,11 +14,11 @@ type Props = {
   onItemClick: (item: ActivityItem) => void;
 };
 
-// Sign and colour for an activity amount. Transfers carry no sign; expenses
-// and negative entries show a minus; everything else shows a plus.
+// Sign and colour for an activity amount. Transfers and card payments carry no
+// sign; expenses and negative entries show a minus; everything else shows a plus.
 export function activityAmount(item: ActivityItem, currency: string) {
-  const sign =
-    item.kind === "transfer" ? "" : item.kind === "expense" || item.amount < 0 ? "−" : "+";
+  const unsigned = item.kind === "transfer" || item.kind === "cardPayment";
+  const sign = unsigned ? "" : item.kind === "expense" || item.amount < 0 ? "−" : "+";
 
   const tone =
     item.kind === "income"
@@ -35,34 +35,52 @@ export function activityAmount(item: ActivityItem, currency: string) {
   };
 }
 
+// Card payments are edited and removed from the card's statement, so their rows
+// are display-only here: no button role and no click handler.
+function isTappable(item: ActivityItem) {
+  return item.kind !== "cardPayment";
+}
+
 export function RecentActivityList({ items, currency, view, onItemClick }: Props) {
   if (view === "grid") {
     return (
       <ul data-view="grid" className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => {
           const amount = activityAmount(item, currency);
+          const body = (
+            <>
+              <ActivityIcon kind={item.kind} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{item.description}</p>
+                <p className="text-xs text-muted-foreground">{formatDate(item.date)}</p>
+                {item.category && (
+                  <p className="truncate text-xs text-muted-foreground">{item.category}</p>
+                )}
+              </div>
+              {item.pendingSync ? (
+                <span className="text-xs font-medium text-muted-foreground">Syncing…</span>
+              ) : (
+                <span className={amount.className}>{amount.text}</span>
+              )}
+            </>
+          );
+
           return (
             <li key={`${item.kind}-${item.id}`}>
-              <button
-                type="button"
-                onClick={() => onItemClick(item)}
-                disabled={item.pendingSync}
-                className="flex h-full w-full items-start gap-3 rounded-2xl border border-border/60 bg-card p-4 text-left shadow-sm transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 active:scale-[0.99]"
-              >
-                <ActivityIcon kind={item.kind} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{item.description}</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(item.date)}</p>
-                  {item.category && (
-                    <p className="truncate text-xs text-muted-foreground">{item.category}</p>
-                  )}
+              {isTappable(item) ? (
+                <button
+                  type="button"
+                  onClick={() => onItemClick(item)}
+                  disabled={item.pendingSync}
+                  className="flex h-full w-full items-start gap-3 rounded-2xl border border-border/60 bg-card p-4 text-left shadow-sm transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60 active:scale-[0.99]"
+                >
+                  {body}
+                </button>
+              ) : (
+                <div className="flex h-full w-full items-start gap-3 rounded-2xl border border-border/60 bg-card p-4 text-left shadow-sm">
+                  {body}
                 </div>
-                {item.pendingSync ? (
-                  <span className="text-xs font-medium text-muted-foreground">Syncing…</span>
-                ) : (
-                  <span className={amount.className}>{amount.text}</span>
-                )}
-              </button>
+              )}
             </li>
           );
         })}
@@ -74,18 +92,8 @@ export function RecentActivityList({ items, currency, view, onItemClick }: Props
     <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
       {items.map((item, index) => {
         const amount = activityAmount(item, currency);
-        return (
-          <button
-            key={`${item.kind}-${item.id}`}
-            type="button"
-            onClick={() => onItemClick(item)}
-            disabled={item.pendingSync}
-            className={cn(
-              "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/50 active:scale-[0.99]",
-              index > 0 && "border-t border-border/50",
-              item.pendingSync && "opacity-60",
-            )}
-          >
+        const body = (
+          <>
             <ActivityIcon kind={item.kind} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{item.description}</p>
@@ -109,6 +117,35 @@ export function RecentActivityList({ items, currency, view, onItemClick }: Props
             ) : (
               <span className={amount.className}>{amount.text}</span>
             )}
+          </>
+        );
+
+        const rowClass = cn(
+          "flex w-full items-center gap-3 px-4 py-3 text-left",
+          index > 0 && "border-t border-border/50",
+          item.pendingSync && "opacity-60",
+        );
+
+        if (!isTappable(item)) {
+          return (
+            <div key={`${item.kind}-${item.id}`} className={rowClass}>
+              {body}
+            </div>
+          );
+        }
+
+        return (
+          <button
+            key={`${item.kind}-${item.id}`}
+            type="button"
+            onClick={() => onItemClick(item)}
+            disabled={item.pendingSync}
+            className={cn(
+              rowClass,
+              "transition-colors hover:bg-accent/50 active:scale-[0.99]",
+            )}
+          >
+            {body}
           </button>
         );
       })}

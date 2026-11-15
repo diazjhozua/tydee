@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
 import { AmountInput } from "@/components/shared/AmountInput";
 import { EntrySheet } from "@/components/shared/EntrySheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ACCOUNT_TYPE_BEHAVIOR } from "@/lib/accounts/accountTypeBehavior";
 import { useAccounts } from "@/lib/hooks/useAccounts";
 import { useMe } from "@/lib/hooks/useMe";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
@@ -32,8 +33,12 @@ export function TransferSheet({ open, onOpenChange }: Props) {
   const [toId, setToId] = useState("");
   const [date, setDate] = useState(today());
   const [prevOpen, setPrevOpen] = useState(false);
+  const fromLabelId = useId();
+  const toLabelId = useId();
 
-  const activeAccounts = accounts ?? [];
+  // Card balances move only through card payments, so cards are neither a
+  // source nor a destination here.
+  const activeAccounts = (accounts ?? []).filter((a) => !ACCOUNT_TYPE_BEHAVIOR[a.type].isCard);
   const currency = me?.currency ?? "PHP";
   const parsedAmount = Number(amount);
   const canSave = parsedAmount > 0 && fromId !== "" && toId !== "" && fromId !== toId;
@@ -56,6 +61,7 @@ export function TransferSheet({ open, onOpenChange }: Props) {
             key={account.id}
             type="button"
             disabled={account.id === disabledId}
+            aria-pressed={account.id === selected}
             onClick={() => onSelect(account.id)}
             className={cn(
               "rounded-full px-4 py-2 text-sm font-medium transition-colors",
@@ -103,13 +109,13 @@ export function TransferSheet({ open, onOpenChange }: Props) {
           autoFocus
         />
 
-        <div className="space-y-2">
-          <Label>From</Label>
+        <div className="space-y-2" role="group" aria-labelledby={fromLabelId}>
+          <Label id={fromLabelId}>From</Label>
           {chipRow(fromId, setFromId, toId)}
         </div>
 
-        <div className="space-y-2">
-          <Label>To</Label>
+        <div className="space-y-2" role="group" aria-labelledby={toLabelId}>
+          <Label id={toLabelId}>To</Label>
           {chipRow(toId, setToId, fromId)}
         </div>
 
