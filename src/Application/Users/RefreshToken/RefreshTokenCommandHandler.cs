@@ -39,10 +39,7 @@ internal sealed class RefreshTokenCommandHandler(
         // rotation, so kill every active session for this user.
         if (existingToken.RevokedAt is not null)
         {
-            foreach (Domain.Users.RefreshToken token in user.RefreshTokens.Where(t => t.IsActive(dateTimeProvider.UtcNow)))
-            {
-                token.RevokedAt = dateTimeProvider.UtcNow;
-            }
+            user.RevokeActiveSessions(dateTimeProvider.UtcNow);
 
             await context.SaveChangesAsync(cancellationToken);
 
