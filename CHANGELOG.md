@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.31.0](https://github.com/diazjhozua/tydee/compare/v1.30.0...v1.31.0) (2026-11-15)
+
+
+### Features
+
+* add credit card account type and card payments ([30321fb](https://github.com/diazjhozua/tydee/commit/30321fb5e6115569147235155614fa0f3f4549d5))
+* **api:** add card payment create and delete ([9e5f6a4](https://github.com/diazjhozua/tydee/commit/9e5f6a41728311ed564a0689c19796d3e1f69ae9))
+* **api:** add card statement and card payment activity ([465acd7](https://github.com/diazjhozua/tydee/commit/465acd7ca6fbf0c30e662915852008f9de7d8021))
+* **api:** block archiving a credit card that has a balance ([3cf5e2a](https://github.com/diazjhozua/tydee/commit/3cf5e2a27d03e5a7c233d3e3a96a08ade4f490e5))
+* **api:** enforce credit card allocation and transfer rules ([cbede99](https://github.com/diazjhozua/tydee/commit/cbede997e6842ccdf33f7e4a39cdf206f01e89bf))
+* **client:** add card payment sheet ([82edda8](https://github.com/diazjhozua/tydee/commit/82edda81710941bc6d1857ca7f31bc7526c12f77))
+* **client:** add card statement summary and sheet ([da70fbf](https://github.com/diazjhozua/tydee/commit/da70fbf8bc917d4a549d3282cac3622927da47b4))
+* **client:** add credit card types, API, and card payment hooks ([a4fb4f1](https://github.com/diazjhozua/tydee/commit/a4fb4f1ba44c81372f120a3f3afd48a5f9ff8800))
+* **client:** keep credit cards out of income and transfer pickers ([d08211d](https://github.com/diazjhozua/tydee/commit/d08211d22b6b003738f35d59c59da491376eb6c9))
+* **client:** manage credit cards on the accounts page ([87a465b](https://github.com/diazjhozua/tydee/commit/87a465b51b9a85169c2e51ef4173fc2f97dfc0a9))
+* **client:** show credit card rows on the dashboard ([e5cf80b](https://github.com/diazjhozua/tydee/commit/e5cf80b7958004d186365418dfb8b0be7cab7ad7))
+* **db:** add card_payments table ([8684af2](https://github.com/diazjhozua/tydee/commit/8684af274f2dc9bdc1576e254b9b1506c7da4b0c))
+* **domain:** add credit card account type and card payment entity ([6495614](https://github.com/diazjhozua/tydee/commit/64956141e346b3e1b1a68f0624d3f8f65c2804bd))
+
+
+### Bug Fixes
+
+* **client:** keep income allocation labels off the amount field ([1a86411](https://github.com/diazjhozua/tydee/commit/1a864118369e8ac961c2b2f8be1e8154f1492d53))
+* **scripts:** stop linking node_modules into worktrees ([8c0d572](https://github.com/diazjhozua/tydee/commit/8c0d5729f04c1fbb81d4733b40cc2df863fa0284))
+
 ## [1.30.0](https://github.com/diazjhozua/tydee/compare/v1.29.0...v1.30.0) (2026-11-14)
 
 
