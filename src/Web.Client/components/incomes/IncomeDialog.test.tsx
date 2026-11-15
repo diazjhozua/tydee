@@ -48,22 +48,25 @@ vi.mock("@/lib/hooks/useIncomes", () => ({
 }));
 
 describe("IncomeDialog allocation inputs", () => {
-  it("names each allocation amount after its account", () => {
+  it("names each allocation input after its account", () => {
     render(<IncomeDialog open onOpenChange={vi.fn()} />);
 
-    expect(
-      screen.getByRole("spinbutton", { name: "Budget allocation amount" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("spinbutton", { name: "Savings allocation amount" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("spinbutton", { name: "Budget allocation" })).toBeInTheDocument();
+    expect(screen.getByRole("spinbutton", { name: "Savings allocation" })).toBeInTheDocument();
+  });
+
+  it("keeps the Amount label unique so the amount field is found by name", () => {
+    render(<IncomeDialog open onOpenChange={vi.fn()} />);
+
+    // Playwright's getByLabel("Amount") is a substring match; allocation labels must not contain "amount".
+    expect(screen.getAllByLabelText(/amount/i)).toHaveLength(1);
   });
 
   it("does not offer an input for a credit card", () => {
     render(<IncomeDialog open onOpenChange={vi.fn()} />);
 
     expect(
-      screen.queryByRole("spinbutton", { name: "Visa allocation amount" }),
+      screen.queryByRole("spinbutton", { name: "Visa allocation" }),
     ).not.toBeInTheDocument();
   });
 });

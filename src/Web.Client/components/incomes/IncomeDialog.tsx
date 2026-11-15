@@ -316,7 +316,7 @@ export function IncomeDialog({ open, onOpenChange, incomeId }: Props) {
                 inputMode="decimal"
                 min="0"
                 step="0.01"
-                aria-label={`${account.name} allocation amount`}
+                aria-label={`${account.name} allocation`}
                 className="money h-10 w-32 rounded-xl text-right"
                 value={shownAllocations[account.id] ?? ""}
                 onChange={(e) => setAllocation(account.id, e.target.value)}
