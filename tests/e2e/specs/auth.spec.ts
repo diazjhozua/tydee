@@ -61,6 +61,19 @@ test("a wrong-password flood blocks the owner only until the window clears", asy
     .toBe(200);
 });
 
+test("logout ends every session, including a refresh token that was already rotated", async ({
+  verifiedUser,
+}) => {
+  const anonymous = createApi();
+  const rotated = await anonymous.auth.refresh(verifiedUser.refreshToken);
+
+  // Log out with the original token, which the refresh has already rotated away.
+  // The newer session must still end.
+  await anonymous.auth.logout(verifiedUser.refreshToken);
+
+  await expect(anonymous.auth.refresh(rotated.refreshToken)).rejects.toMatchObject({ status: 401 });
+});
+
 test("tells a rate-limited owner to wait rather than showing a generic error", async ({
   page,
   verifiedUser,
