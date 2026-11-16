@@ -61,6 +61,24 @@ test("a wrong-password flood blocks the owner only until the window clears", asy
     .toBe(200);
 });
 
+test("tells a rate-limited owner to wait rather than showing a generic error", async ({
+  page,
+  verifiedUser,
+}) => {
+  const anonymous = createApi();
+  await Promise.all(
+    Array.from({ length: 11 }, () => loginStatus(anonymous, verifiedUser.email, "WrongPassword123!")),
+  );
+
+  const login = new LoginPage(page);
+
+  await login.open();
+  await login.fill(verifiedUser.email, verifiedUser.password);
+  await login.submit();
+
+  await login.expectError("Too many login attempts. Wait a minute, then try again.");
+});
+
 test("reveals the password without losing the typed value", async ({ page }) => {
   const login = new LoginPage(page);
 
