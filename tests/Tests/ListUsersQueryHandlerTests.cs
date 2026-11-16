@@ -23,19 +23,6 @@ public class ListUsersQueryHandlerTests
     }
 
     [Fact]
-    public async Task Failed_login_lockout_is_not_reported_as_locked()
-    {
-        using var db = TestDb.Create();
-        var user = Seed.User(db, "failed@example.com");
-        user.LockoutEndUtc = DateTime.UtcNow.AddMinutes(10);
-        db.SaveChanges();
-
-        var result = await Handler(db).Handle(new ListUsersQuery(1, 50), CancellationToken.None);
-
-        result.Value.Single().IsLocked.ShouldBeFalse();
-    }
-
-    [Fact]
     public async Task Empty_database_returns_no_users()
     {
         using var db = TestDb.Create();

@@ -49,7 +49,11 @@ function LoginForm() {
   }
 
   const errorMessage =
-    login.error instanceof ApiError && !notVerified ? login.error.displayMessage : null;
+    login.error instanceof ApiError && !notVerified
+      ? login.error.status === 429
+        ? "Too many login attempts. Wait a minute, then try again."
+        : login.error.displayMessage
+      : null;
 
   return (
     <Card>

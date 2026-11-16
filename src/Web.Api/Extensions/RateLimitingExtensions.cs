@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.RateLimiting;
+using Web.Api.Infrastructure;
 
 namespace Web.Api.Extensions;
 
@@ -26,11 +26,7 @@ public static class RateLimitingExtensions
 
             options.OnRejected = (context, _) =>
             {
-                if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan retryAfter))
-                {
-                    context.HttpContext.Response.Headers.RetryAfter =
-                        ((int)retryAfter.TotalSeconds).ToString(CultureInfo.InvariantCulture);
-                }
+                SetRetryAfter(context.HttpContext.Response, context.Lease);
 
                 return ValueTask.CompletedTask;
             };
@@ -63,7 +59,17 @@ public static class RateLimitingExtensions
                     }));
         });
 
+        services.AddSingleton<LoginAttemptLimiter>();
+
         return services;
+    }
+
+    public static void SetRetryAfter(HttpResponse response, RateLimitLease lease)
+    {
+        if (lease.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan retryAfter))
+        {
+            response.Headers.RetryAfter = ((int)retryAfter.TotalSeconds).ToString(CultureInfo.InvariantCulture);
+        }
     }
 
     // Requires forwarded headers to be honored behind a proxy (App Service),

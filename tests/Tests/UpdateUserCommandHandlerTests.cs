@@ -45,7 +45,6 @@ public class UpdateUserCommandHandlerTests
         result.IsSuccess.ShouldBeTrue();
         User saved = db.Users.Single(u => u.Id == member.Id);
         saved.IsLocked.ShouldBeTrue();
-        saved.LockoutEndUtc.ShouldBeNull();
         db.RefreshTokens
             .Where(t => t.UserId == member.Id)
             .AsEnumerable()
@@ -69,25 +68,20 @@ public class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task Unlocking_clears_the_lock_and_failed_login_state()
+    public async Task Unlocking_clears_the_admin_lock()
     {
         using var db = TestDb.Create();
         var clock = new FixedDateTimeProvider();
         var admin = Seed.User(db, "admin@example.com");
         var member = Seed.User(db, "member@example.com");
         member.IsLocked = true;
-        member.LockoutEndUtc = clock.UtcNow.AddMinutes(10);
-        member.FailedLoginAttempts = 3;
         db.SaveChanges();
 
         var result = await Handler(db, clock).Handle(
             new UpdateUserCommand(member.Id, null, false, admin.Id), CancellationToken.None);
 
         result.IsSuccess.ShouldBeTrue();
-        User saved = db.Users.Single(u => u.Id == member.Id);
-        saved.IsLocked.ShouldBeFalse();
-        saved.LockoutEndUtc.ShouldBeNull();
-        saved.FailedLoginAttempts.ShouldBe(0);
+        db.Users.Single(u => u.Id == member.Id).IsLocked.ShouldBeFalse();
     }
 
     [Fact]

@@ -43,15 +43,13 @@ public class ResetPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task Successful_reset_clears_lockout_and_revokes_sessions()
+    public async Task Successful_reset_revokes_sessions()
     {
         using var db = TestDb.Create();
         var clock = new FixedDateTimeProvider();
         var user = Seed.User(db);
         user.PasswordResetTokenHash = "h:reset-raw";
         user.PasswordResetTokenExpiresAt = clock.UtcNow.AddMinutes(30);
-        user.FailedLoginAttempts = 4;
-        user.LockoutEndUtc = clock.UtcNow.AddMinutes(10);
         db.RefreshTokens.Add(new RefreshToken
         {
             Id = Guid.NewGuid(),
@@ -68,8 +66,6 @@ public class ResetPasswordCommandHandlerTests
         User saved = db.Users.Single();
         saved.PasswordHash.ShouldBe("#NewPassword1");
         saved.PasswordResetTokenHash.ShouldBeNull();
-        saved.FailedLoginAttempts.ShouldBe(0);
-        saved.LockoutEndUtc.ShouldBeNull();
         db.RefreshTokens.Single().RevokedAt.ShouldNotBeNull();
     }
 

@@ -43,10 +43,6 @@ internal sealed class ResetPasswordCommandHandler(
         user.PasswordHash = passwordHasher.Hash(command.NewPassword);
         user.PasswordResetTokenHash = null;
         user.PasswordResetTokenExpiresAt = null;
-        user.FailedLoginAttempts = 0;
-        // Clears only the failed-login lockout. An admin lock (IsLocked) is never
-        // cleared by a password reset.
-        user.LockoutEndUtc = null;
 
         // Whoever reset the password should be the only one left logged in,
         // so every existing session gets revoked.

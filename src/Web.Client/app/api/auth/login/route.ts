@@ -22,7 +22,14 @@ export async function POST(request: NextRequest) {
   const data = await res.json().catch(() => null);
 
   if (!res.ok) {
-    return NextResponse.json(data ?? {}, { status: res.status });
+    const failure = NextResponse.json(data ?? {}, { status: res.status });
+    const retryAfter = res.headers.get("Retry-After");
+
+    if (retryAfter) {
+      failure.headers.set("Retry-After", retryAfter);
+    }
+
+    return failure;
   }
 
   const { accessToken, refreshToken, accessTokenExpiresAt } = data;

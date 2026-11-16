@@ -1,5 +1,7 @@
+using Application.Abstractions.Data;
 using Application.Users.Login;
 using Domain.Users;
+using NSubstitute;
 using Shouldly;
 using Tests.TestInfrastructure;
 using Xunit;
@@ -37,34 +39,32 @@ public class LoginCommandHandlerTests
     }
 
     [Fact]
-    public async Task Five_failures_lock_the_account_for_fifteen_minutes()
+    public async Task Repeated_wrong_passwords_never_lock_the_account()
     {
         using var db = TestDb.Create();
         var user = Seed.User(db);
-        var clock = new FixedDateTimeProvider();
-        var handler = Handler(db, clock);
+        var handler = Handler(db);
 
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 10; i++)
         {
-            await handler.Handle(new LoginCommand(user.Email, "WrongPassword"), CancellationToken.None);
+            var wrong = await handler.Handle(new LoginCommand(user.Email, "WrongPassword"), CancellationToken.None);
+            wrong.Error.ShouldBe(UserErrors.InvalidCredentials);
         }
 
-        db.Users.Single().LockoutEndUtc.ShouldBe(clock.UtcNow.AddMinutes(15));
+        var result = await handler.Handle(new LoginCommand(user.Email, "Password123!"), CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
     }
 
     [Fact]
-    public async Task Correct_password_during_lockout_still_answers_invalid_credentials()
+    public async Task Wrong_password_issues_no_refresh_token()
     {
         using var db = TestDb.Create();
         var user = Seed.User(db);
-        var clock = new FixedDateTimeProvider();
-        user.LockoutEndUtc = clock.UtcNow.AddMinutes(10);
-        db.SaveChanges();
 
-        var result = await Handler(db, clock).Handle(
-            new LoginCommand(user.Email, "Password123!"), CancellationToken.None);
+        await Handler(db).Handle(new LoginCommand(user.Email, "WrongPassword"), CancellationToken.None);
 
-        result.Error.ShouldBe(UserErrors.InvalidCredentials);
+        db.RefreshTokens.ShouldBeEmpty();
     }
 
     [Fact]
@@ -80,21 +80,6 @@ public class LoginCommandHandlerTests
 
         result.Error.ShouldBe(UserErrors.InvalidCredentials);
         db.RefreshTokens.ShouldBeEmpty();
-    }
-
-    [Fact]
-    public async Task Successful_login_resets_the_failure_counter()
-    {
-        using var db = TestDb.Create();
-        var user = Seed.User(db);
-        user.FailedLoginAttempts = 3;
-        db.SaveChanges();
-
-        var result = await Handler(db).Handle(
-            new LoginCommand(user.Email, "Password123!"), CancellationToken.None);
-
-        result.IsSuccess.ShouldBeTrue();
-        db.Users.Single().FailedLoginAttempts.ShouldBe(0);
     }
 
     [Fact]
@@ -120,6 +105,45 @@ public class LoginCommandHandlerTests
 
         result.IsSuccess.ShouldBeTrue();
         db.RefreshTokens.Single().Token.ShouldBe($"h:{result.Value.RefreshToken}");
+    }
+
+    [Fact]
+    public async Task Login_takes_the_row_lock_before_it_reads_the_user()
+    {
+        // The in-memory provider has no transactions, so the lock order is checked with a
+        // substitute context that records when the lock and the user read happen.
+        using var db = TestDb.Create();
+        var user = Seed.User(db);
+        var events = new List<string>();
+
+        IApplicationDbContext context = Substitute.For<IApplicationDbContext>();
+        context.Users.Returns(_ =>
+        {
+            events.Add("read");
+            return db.Users;
+        });
+        context.RefreshTokens.Returns(db.RefreshTokens);
+        context.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns(call => db.SaveChangesAsync(call.Arg<CancellationToken>()));
+        context.LockUserByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                events.Add("lock");
+                return Substitute.For<IUserLock>();
+            });
+
+        var handler = new LoginCommandHandler(
+            context,
+            new FakePasswordHasher(),
+            new FakeTokenProvider(),
+            new FakeAdminProvider(),
+            new FixedDateTimeProvider());
+
+        var result = await handler.Handle(
+            new LoginCommand(user.Email, "Password123!"), CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
+        events.ShouldBe(["lock", "read"]);
     }
 
     [Fact]
