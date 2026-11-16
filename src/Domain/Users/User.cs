@@ -11,6 +11,7 @@ public sealed class User : Entity
     public string PasswordHash { get; set; } = string.Empty;
     public bool IsEmailVerified { get; set; }
     public bool IsAdmin { get; set; }
+    public bool IsLocked { get; set; }
     public string Currency { get; set; } = "PHP";
     public string? DefaultPage { get; set; }
     public string? EmailVerificationToken { get; set; }

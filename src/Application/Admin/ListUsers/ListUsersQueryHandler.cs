@@ -5,9 +5,7 @@ using SharedKernel;
 
 namespace Application.Admin.ListUsers;
 
-internal sealed class ListUsersQueryHandler(
-    IApplicationDbContext context,
-    IDateTimeProvider dateTimeProvider)
+internal sealed class ListUsersQueryHandler(IApplicationDbContext context)
     : IQueryHandler<ListUsersQuery, List<AdminUserItem>>
 {
     public async Task<Result<List<AdminUserItem>>> Handle(
@@ -16,7 +14,6 @@ internal sealed class ListUsersQueryHandler(
     {
         int page = Math.Max(query.Page, 1);
         int pageSize = Math.Clamp(query.PageSize, 1, 100);
-        DateTime now = dateTimeProvider.UtcNow;
 
         return await context.Users
             .OrderByDescending(u => u.Email)
@@ -29,7 +26,7 @@ internal sealed class ListUsersQueryHandler(
                 u.LastName,
                 u.IsEmailVerified,
                 u.IsAdmin,
-                u.LockoutEndUtc != null && u.LockoutEndUtc > now))
+                u.IsLocked))
             .ToListAsync(cancellationToken);
     }
 }

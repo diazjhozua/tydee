@@ -90,4 +90,22 @@ public class ResetPasswordCommandHandlerTests
 
         replay.Error.ShouldBe(UserErrors.InvalidResetToken);
     }
+
+    [Fact]
+    public async Task Reset_keeps_an_admin_lock()
+    {
+        using var db = TestDb.Create();
+        var clock = new FixedDateTimeProvider();
+        var user = Seed.User(db);
+        user.IsLocked = true;
+        user.PasswordResetTokenHash = "h:reset-raw";
+        user.PasswordResetTokenExpiresAt = clock.UtcNow.AddMinutes(30);
+        db.SaveChanges();
+
+        var result = await Handler(db, clock).Handle(
+            new ResetPasswordCommand("reset-raw", "NewPassword1", "NewPassword1"), CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
+        db.Users.Single().IsLocked.ShouldBeTrue();
+    }
 }
