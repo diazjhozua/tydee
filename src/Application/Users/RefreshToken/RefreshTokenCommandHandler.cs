@@ -21,11 +21,22 @@ internal sealed class RefreshTokenCommandHandler(
     {
         string hashedToken = tokenProvider.HashRefreshToken(command.RefreshToken);
 
+        // Find the owner first, so the row lock is taken before the user is read.
+        Guid? ownerId = await context.RefreshTokens
+            .Where(t => t.Token == hashedToken)
+            .Select(t => (Guid?)t.UserId)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (ownerId is null)
+        {
+            return Result.Failure<AuthTokensResponse>(UserErrors.InvalidRefreshToken);
+        }
+
+        await using IUserLock userLock = await context.LockUserByIdAsync(ownerId.Value, cancellationToken);
+
         User? user = await context.Users
             .Include(u => u.RefreshTokens)
-            .SingleOrDefaultAsync(
-                u => u.RefreshTokens.Any(t => t.Token == hashedToken),
-                cancellationToken);
+            .SingleOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == hashedToken), cancellationToken);
 
         Domain.Users.RefreshToken? existingToken = user?.RefreshTokens
             .SingleOrDefault(t => t.Token == hashedToken);
@@ -42,6 +53,7 @@ internal sealed class RefreshTokenCommandHandler(
             user.RevokeActiveSessions(dateTimeProvider.UtcNow);
 
             await context.SaveChangesAsync(cancellationToken);
+            await userLock.CommitAsync(cancellationToken);
 
             return Result.Failure<AuthTokensResponse>(UserErrors.TokenReuseDetected);
         }
@@ -74,6 +86,7 @@ internal sealed class RefreshTokenCommandHandler(
         });
 
         await context.SaveChangesAsync(cancellationToken);
+        await userLock.CommitAsync(cancellationToken);
 
         string accessToken = tokenProvider.CreateAccessToken(user);
 

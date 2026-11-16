@@ -18,6 +18,10 @@ internal sealed class UpdateUserCommandHandler(
             return Result.Failure(UserErrors.CannotLockSelf);
         }
 
+        // Taken before the user is read. A login or refresh that holds the row
+        // finishes first, so its new token is already visible when sessions are revoked.
+        await using IUserLock userLock = await context.LockUserByIdAsync(command.UserId, cancellationToken);
+
         User? user = await context.Users
             .Include(u => u.RefreshTokens)
             .SingleOrDefaultAsync(u => u.Id == command.UserId, cancellationToken);
@@ -58,6 +62,7 @@ internal sealed class UpdateUserCommandHandler(
         }
 
         await context.SaveChangesAsync(cancellationToken);
+        await userLock.CommitAsync(cancellationToken);
 
         return Result.Success();
     }

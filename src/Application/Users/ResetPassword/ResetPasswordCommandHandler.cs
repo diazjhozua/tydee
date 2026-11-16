@@ -18,6 +18,19 @@ internal sealed class ResetPasswordCommandHandler(
     {
         string tokenHash = tokenProvider.HashRefreshToken(command.Token);
 
+        // Find the owner first, so the row lock is taken before the user is read.
+        Guid? ownerId = await context.Users
+            .Where(u => u.PasswordResetTokenHash == tokenHash)
+            .Select(u => (Guid?)u.Id)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (ownerId is null)
+        {
+            return Result.Failure(UserErrors.InvalidResetToken);
+        }
+
+        await using IUserLock userLock = await context.LockUserByIdAsync(ownerId.Value, cancellationToken);
+
         User? user = await context.Users
             .Include(u => u.RefreshTokens)
             .SingleOrDefaultAsync(u => u.PasswordResetTokenHash == tokenHash, cancellationToken);
@@ -31,6 +44,8 @@ internal sealed class ResetPasswordCommandHandler(
         user.PasswordResetTokenHash = null;
         user.PasswordResetTokenExpiresAt = null;
         user.FailedLoginAttempts = 0;
+        // Clears only the failed-login lockout. An admin lock (IsLocked) is never
+        // cleared by a password reset.
         user.LockoutEndUtc = null;
 
         // Whoever reset the password should be the only one left logged in,
@@ -38,6 +53,7 @@ internal sealed class ResetPasswordCommandHandler(
         user.RevokeActiveSessions(dateTimeProvider.UtcNow);
 
         await context.SaveChangesAsync(cancellationToken);
+        await userLock.CommitAsync(cancellationToken);
 
         return Result.Success();
     }
