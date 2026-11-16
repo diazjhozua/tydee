@@ -14,6 +14,7 @@ export async function POST(request: NextRequest) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
+      signal: AbortSignal.timeout(15_000),
     });
   } catch {
     return NextResponse.json({}, { status: 503 });
