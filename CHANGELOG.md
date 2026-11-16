@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.32.0](https://github.com/diazjhozua/tydee/compare/v1.31.0...v1.32.0) (2026-11-16)
+
+
+### Features
+
+* **admin:** confirm before locking and show load errors ([6dde199](https://github.com/diazjhozua/tydee/commit/6dde199f2f37f6958c2055b2ae02a2398b090249))
+
+
+### Bug Fixes
+
+* **auth:** add persisted admin lock flag ([8205b4a](https://github.com/diazjhozua/tydee/commit/8205b4a4e1e92c42202b0258291f8607247f38b8))
+* **auth:** end existing sessions when an admin locks a user ([a7e2d06](https://github.com/diazjhozua/tydee/commit/a7e2d06865937f25a9b8fe42fb4dc9a63010c489))
+* **auth:** end sessions on admin lock and block self-lock ([2a73e9b](https://github.com/diazjhozua/tydee/commit/2a73e9b7b9591ec6b992011d22bd5b741f04ed28))
+* **auth:** lock the user row in login, refresh, reset, and admin lock ([06e80ca](https://github.com/diazjhozua/tydee/commit/06e80cad43fdbe12e94423e9d3f8e69d1b9a9109))
+* **auth:** reject locked users at login and refresh ([f5aab82](https://github.com/diazjhozua/tydee/commit/f5aab8296c9894e108a0d621620614d1e25496f4))
+* **auth:** reject locked users on every request ([c00e412](https://github.com/diazjhozua/tydee/commit/c00e4125d6beecc91707112ad03c6cb8f375f040))
+
 ## [1.31.0](https://github.com/diazjhozua/tydee/compare/v1.30.0...v1.31.0) (2026-11-15)
 
 
