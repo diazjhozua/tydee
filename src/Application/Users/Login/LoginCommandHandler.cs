@@ -33,9 +33,10 @@ internal sealed class LoginCommandHandler(
             return Result.Failure<AuthTokensResponse>(UserErrors.InvalidCredentials);
         }
 
-        // Locked accounts answer exactly like a wrong password so the lockout
-        // can't be used to probe accounts or confirm a guessed password.
-        if (user.LockoutEndUtc > dateTimeProvider.UtcNow)
+        // Locked accounts (admin lock or failed-login lockout) answer exactly like a
+        // wrong password so the lock can't be used to probe accounts or confirm a
+        // guessed password.
+        if (user.IsLocked || user.LockoutEndUtc > dateTimeProvider.UtcNow)
         {
             return Result.Failure<AuthTokensResponse>(UserErrors.InvalidCredentials);
         }

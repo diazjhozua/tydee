@@ -68,6 +68,21 @@ public class LoginCommandHandlerTests
     }
 
     [Fact]
+    public async Task Admin_locked_user_is_rejected_even_with_the_correct_password()
+    {
+        using var db = TestDb.Create();
+        var user = Seed.User(db);
+        user.IsLocked = true;
+        db.SaveChanges();
+
+        var result = await Handler(db).Handle(
+            new LoginCommand(user.Email, "Password123!"), CancellationToken.None);
+
+        result.Error.ShouldBe(UserErrors.InvalidCredentials);
+        db.RefreshTokens.ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task Successful_login_resets_the_failure_counter()
     {
         using var db = TestDb.Create();

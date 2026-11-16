@@ -51,6 +51,14 @@ internal sealed class RefreshTokenCommandHandler(
             return Result.Failure<AuthTokensResponse>(UserErrors.InvalidRefreshToken);
         }
 
+        // Locked accounts had their tokens revoked when the lock was applied, so
+        // unlocking does not bring the session back. Unverified accounts keep their
+        // token, so verifying the account again resumes the session.
+        if (user.IsLocked || !user.IsEmailVerified)
+        {
+            return Result.Failure<AuthTokensResponse>(UserErrors.InvalidRefreshToken);
+        }
+
         existingToken.RevokedAt = dateTimeProvider.UtcNow;
 
         user.RefreshTokens.RemoveAll(t => t.IsExpired(dateTimeProvider.UtcNow));
