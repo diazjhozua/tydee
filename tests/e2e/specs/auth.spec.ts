@@ -1,3 +1,5 @@
+import { createApi, type TydeeApi } from "../api";
+import type { HttpError } from "../api/http";
 import { userSpec } from "../builders/user.builder";
 import { expect, test } from "../fixtures";
 import { ForgotPasswordPage } from "../pages/auth/forgot-password.page";
@@ -25,6 +27,38 @@ test("rejects a wrong password", async ({ page, verifiedUser }) => {
 
   await login.expectError("Invalid email or password.");
   await expect(page).toHaveURL(/\/login/);
+});
+
+/** Resolves to the HTTP status of one login attempt: 200 on success, the error status otherwise. */
+async function loginStatus(api: TydeeApi, email: string, password: string): Promise<number> {
+  return api.auth.login(email, password).then(
+    () => 200,
+    (error: HttpError) => error.status,
+  );
+}
+
+test("a wrong-password flood blocks the owner only until the window clears", async ({ verifiedUser }) => {
+  const anonymous = createApi();
+
+  const flood = await Promise.all(
+    Array.from({ length: 11 }, () => loginStatus(anonymous, verifiedUser.email, "WrongPassword123!")),
+  );
+
+  // Wrong passwords are refused as wrong passwords, never as success. The per-account
+  // budget refuses the excess with 429. The fixture's own login may already use one permit.
+  expect(flood.every((status) => status === 401 || status === 429)).toBe(true);
+  expect(flood).toContain(429);
+
+  // While the window is open, the owner's correct password is refused too: the budget counts every attempt.
+  expect(await loginStatus(anonymous, verifiedUser.email, verifiedUser.password)).toBe(429);
+
+  // Once the window passes, the owner logs in again. Nothing stays locked.
+  await expect
+    .poll(() => loginStatus(anonymous, verifiedUser.email, verifiedUser.password), {
+      timeout: 20_000,
+      intervals: [500],
+    })
+    .toBe(200);
 });
 
 test("reveals the password without losing the typed value", async ({ page }) => {

@@ -160,6 +160,9 @@ api = spawn(
       RateLimiting__Global__PermitLimit: "100000",
       RateLimiting__Auth__PermitLimit: "100000",
       RateLimiting__Suggestion__PermitLimit: "100000",
+      // The per-account login budget keeps its production count so the flood spec can
+      // exceed it. The window is shortened so the recovery check finishes in seconds.
+      RateLimiting__User__WindowInSeconds: "10",
     },
   },
 );

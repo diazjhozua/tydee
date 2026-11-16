@@ -10,7 +10,7 @@ Repository-wide guidance lives in the root `CLAUDE.md`.
 - Docker must be running, and Chromium must be installed once with `npx playwright install chromium`.
 - Do not reuse the developer database from `docker compose`; the suite must stay isolated from local data.
 - `workers: 1` serializes the suite. Admin statistics are global, and every test shares one API process.
-- The e2e API gets rate-limit overrides (`RateLimiting__*__PermitLimit`) in `start-server.mjs`. They apply to the disposable server only; never copy them into `appsettings.json`.
+- The e2e API gets rate-limit overrides (`RateLimiting__*__PermitLimit`, and `RateLimiting__User__WindowInSeconds` for the per-account login window) in `start-server.mjs`. They apply to the disposable server only; never copy them into `appsettings.json`.
 
 ## Structure
 
