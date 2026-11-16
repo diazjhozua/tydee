@@ -1,5 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
-import { refreshAccessToken } from "@/lib/api/auth";
+import { isLoggingOut, refreshAccessToken } from "@/lib/api/auth";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { ApiError, ProblemDetails } from "@/lib/types/api";
 
@@ -8,6 +8,22 @@ function toApiError(error: AxiosError): ApiError {
   const data = error.response?.data;
   const problem = (typeof data === "object" && data !== null ? data : {}) as ProblemDetails;
   return new ApiError(status, problem);
+}
+
+/**
+ * Sends the page to /login once a refresh has failed. A logout in progress already ends this session, and its page
+ * moves on by itself. A hard navigation here could cut that request short, which would leave the server session alive.
+ */
+export function redirectToLoginUnlessSigningOut(
+  navigate: (href: string) => void = (href) => {
+    window.location.href = href;
+  },
+): void {
+  if (typeof window === "undefined" || isLoggingOut()) {
+    return;
+  }
+
+  navigate("/login");
 }
 
 export const apiClient = axios.create({
@@ -43,9 +59,7 @@ apiClient.interceptors.response.use(
       }
 
       useAuthStore.getState().clear();
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
-      }
+      redirectToLoginUnlessSigningOut();
     }
 
     throw toApiError(error);
