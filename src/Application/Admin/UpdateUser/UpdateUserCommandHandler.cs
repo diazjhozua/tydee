@@ -52,13 +52,6 @@ internal sealed class UpdateUserCommandHandler(
                 // and the JWT validator rejects the access token on each request.
                 user.RevokeActiveSessions(dateTimeProvider.UtcNow);
             }
-            else
-            {
-                // Unlock also clears the failed-login lockout. This is the only
-                // admin path that ends a 15-minute failed-login lock.
-                user.LockoutEndUtc = null;
-                user.FailedLoginAttempts = 0;
-            }
         }
 
         await context.SaveChangesAsync(cancellationToken);

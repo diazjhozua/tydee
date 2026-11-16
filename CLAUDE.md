@@ -72,7 +72,7 @@ Errors: expected failures use `Result`/`Error`/`ErrorType` from `SharedKernel`, 
 - JWT access tokens last 15 minutes; refresh tokens last 7 days and are stored as SHA-256 hashes.
 - The BFF keeps the refresh token in an httpOnly cookie that is a session cookie by default; ticking "Remember me" on the login page makes it persist for 7 days, recorded by an httpOnly `remember_me` companion cookie that the refresh route reads so rotation preserves the choice.
 - Refresh tokens rotate on every use. Reusing a revoked token revokes every active session for that user (`TokenReuseDetected`). Password reset also revokes all active sessions.
-- Login locks an account for 15 minutes after 5 failed attempts. Locked and unknown accounts answer exactly like a wrong password.
+- Login has no failed-attempt lockout. Admin-locked (`IsLocked`) and unknown accounts answer exactly like a wrong password.
 - Email verification tokens expire after 24 hours; password reset tokens after 1 hour. `ForgotPassword` answers identically for unknown emails.
 - Passwords use ASP.NET Core Identity's `PasswordHasher`. The `Admin` policy requires the `Admin` role; `Admin:Emails` grants it on login and never revokes a manually set flag.
 - Rate limiting: a global fixed window, an `auth` policy on auth endpoints, and a `suggestion` policy. Configuration lives under `RateLimiting` in `appsettings.json`.

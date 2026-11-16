@@ -17,8 +17,6 @@ internal sealed class LoginCommandHandler(
 {
     private const int RefreshTokenLifetimeDays = 7;
     private const int AccessTokenLifetimeMinutes = 15;
-    private const int MaxFailedLoginAttempts = 5;
-    private const int LockoutMinutes = 15;
 
     public async Task<Result<AuthTokensResponse>> Handle(LoginCommand command, CancellationToken cancellationToken)
     {
@@ -37,34 +35,17 @@ internal sealed class LoginCommandHandler(
             return Result.Failure<AuthTokensResponse>(UserErrors.InvalidCredentials);
         }
 
-        // Locked accounts (admin lock or failed-login lockout) answer exactly like a
-        // wrong password so the lock can't be used to probe accounts or confirm a
-        // guessed password.
-        if (user.IsLocked || user.LockoutEndUtc > dateTimeProvider.UtcNow)
+        // An admin-locked account answers exactly like a wrong password so the lock
+        // can't be used to probe accounts or confirm a guessed password.
+        if (user.IsLocked)
         {
             return Result.Failure<AuthTokensResponse>(UserErrors.InvalidCredentials);
         }
 
+        // A wrong password writes nothing. Disposing the lock without a commit rolls back.
         if (!passwordHasher.Verify(command.Password, user.PasswordHash))
         {
-            user.FailedLoginAttempts++;
-
-            if (user.FailedLoginAttempts >= MaxFailedLoginAttempts)
-            {
-                user.LockoutEndUtc = dateTimeProvider.UtcNow.AddMinutes(LockoutMinutes);
-                user.FailedLoginAttempts = 0;
-            }
-
-            await context.SaveChangesAsync(cancellationToken);
-            await userLock.CommitAsync(cancellationToken);
-
             return Result.Failure<AuthTokensResponse>(UserErrors.InvalidCredentials);
-        }
-
-        if (user.FailedLoginAttempts > 0 || user.LockoutEndUtc is not null)
-        {
-            user.FailedLoginAttempts = 0;
-            user.LockoutEndUtc = null;
         }
 
         if (!user.IsEmailVerified)

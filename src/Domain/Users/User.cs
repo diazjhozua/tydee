@@ -18,8 +18,6 @@ public sealed class User : Entity
     public DateTime? EmailVerificationTokenExpiresAt { get; set; }
     public string? PasswordResetTokenHash { get; set; }
     public DateTime? PasswordResetTokenExpiresAt { get; set; }
-    public int FailedLoginAttempts { get; set; }
-    public DateTime? LockoutEndUtc { get; set; }
 
     public List<RefreshToken> RefreshTokens { get; } = [];
 

@@ -518,10 +518,6 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("email_verification_token_expires_at");
 
-                    b.Property<int>("FailedLoginAttempts")
-                        .HasColumnType("integer")
-                        .HasColumnName("failed_login_attempts");
-
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -545,10 +541,6 @@ namespace Infrastructure.Database.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("last_name");
-
-                    b.Property<DateTime?>("LockoutEndUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("lockout_end_utc");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
