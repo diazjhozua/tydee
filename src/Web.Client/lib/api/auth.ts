@@ -73,6 +73,27 @@ export function logout(): Promise<null> {
 // Single-flight: concurrent 401s and the AuthProvider mount share one refresh call.
 let refreshPromise: Promise<string | null> | null = null;
 
+/**
+ * Resolves once no refresh is in flight. Logout waits on it, so a refresh that
+ * started before the click cannot set its cookie after logout has cleared it.
+ */
+const SETTLE_LIMIT_MS = 3000;
+
+export function settleRefresh(): Promise<void> {
+  if (!refreshPromise) {
+    return Promise.resolve();
+  }
+
+  const finished = refreshPromise.then(
+    () => undefined,
+    () => undefined,
+  );
+  // A stalled refresh must not hold logout forever.
+  const limit = new Promise<void>((resolve) => setTimeout(resolve, SETTLE_LIMIT_MS));
+
+  return Promise.race([finished, limit]);
+}
+
 export function refreshAccessToken(): Promise<string | null> {
   refreshPromise ??= doRefresh().finally(() => {
     refreshPromise = null;

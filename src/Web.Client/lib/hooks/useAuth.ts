@@ -9,6 +9,7 @@ import {
   register,
   resendVerification,
   resetPassword,
+  settleRefresh,
   verifyEmail,
 } from "@/lib/api/auth";
 import { getMe } from "@/lib/api/me";
@@ -82,7 +83,11 @@ export function useLogout() {
   const clear = useAuthStore((s) => s.clear);
 
   return useMutation({
-    mutationFn: logout,
+    mutationFn: async () => {
+      // A refresh still in flight would set its cookie after the logout clears it.
+      await settleRefresh();
+      return logout();
+    },
     onSettled: () => {
       queryClient.clear();
       clear();
