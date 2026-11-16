@@ -9,9 +9,11 @@ import { test } from 'node:test'
 
 const guard = path.join(path.dirname(fileURLToPath(import.meta.url)), 'guard-bash.mjs')
 
-function exitCodeFor(command, projectDir) {
+// `cwd` is the hook input's session directory; omitted, the guard falls back to CLAUDE_PROJECT_DIR.
+function exitCodeFor(command, projectDir, cwd) {
+  const hookInput = cwd ? { cwd, tool_input: { command } } : { tool_input: { command } }
   const result = spawnSync(process.execPath, [guard], {
-    input: JSON.stringify({ tool_input: { command } }),
+    input: JSON.stringify(hookInput),
     encoding: 'utf8',
     env: projectDir ? { ...process.env, CLAUDE_PROJECT_DIR: projectDir } : process.env,
   })
@@ -19,6 +21,7 @@ function exitCodeFor(command, projectDir) {
 }
 
 // Runs the guard against a temporary worktree. `linked` makes its src/Web.Client/node_modules a junction.
+// `command` may be a function of the worktree root, for commands that name the root path.
 function exitCodeInWorktree(command, linked) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'guard-worktree-'))
   const client = path.join(root, 'src', 'Web.Client')
@@ -32,7 +35,7 @@ function exitCodeInWorktree(command, linked) {
     fs.mkdirSync(modules)
   }
   try {
-    return exitCodeFor(command, root)
+    return exitCodeFor(typeof command === 'function' ? command(root) : command, root)
   } finally {
     if (linked) {
       fs.rmdirSync(modules)
@@ -241,6 +244,98 @@ test('blocks a dependency change that targets another folder', () => {
 
 test('blocks a dependency change after a cd', () => {
   assert.equal(exitCodeInWorktree('cd src/Web.Client && npm install lodash', false), 2)
+})
+
+// Mirrors a live worktree session: CLAUDE_PROJECT_DIR is the main checkout, and the hook input's cwd is the linked
+// worktree. `command` is a function of (worktree root, main checkout). `linked` makes the worktree's client
+// node_modules a junction into the main checkout.
+function exitCodeInSessionWorktree(command, linked) {
+  const main = fs.mkdtempSync(path.join(os.tmpdir(), 'guard-main-'))
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'guard-session-'))
+  fs.writeFileSync(path.join(root, '.git'), 'gitdir: ../main/.git/worktrees/session\n')
+  const client = path.join(root, 'src', 'Web.Client')
+  fs.mkdirSync(client, { recursive: true })
+  const modules = path.join(client, 'node_modules')
+  if (linked) {
+    const shared = path.join(main, 'node_modules')
+    fs.mkdirSync(shared)
+    fs.symlinkSync(shared, modules, 'junction')
+  } else {
+    fs.mkdirSync(modules)
+  }
+  try {
+    return exitCodeFor(command(root, main), main, root)
+  } finally {
+    if (linked) {
+      fs.rmdirSync(modules)
+    }
+    fs.rmSync(main, { recursive: true, force: true })
+    fs.rmSync(root, { recursive: true, force: true })
+  }
+}
+
+test('allows a dependency change in the session worktree with or without a cd to its root', () => {
+  assert.equal(exitCodeInSessionWorktree((root) => `cd "${root}" && npm --prefix src/Web.Client install lodash`, false), 0)
+  assert.equal(exitCodeInSessionWorktree((root) => `cd "${root}" && npm install lodash`, false), 0)
+  assert.equal(exitCodeInSessionWorktree(() => 'npm --prefix src/Web.Client install lodash', false), 0)
+})
+
+test('blocks a dependency change in the session worktree while its node_modules is a junction', () => {
+  assert.equal(exitCodeInSessionWorktree((root) => `cd "${root}" && npm --prefix src/Web.Client install lodash`, true), 2)
+  assert.equal(exitCodeInSessionWorktree(() => 'npm --prefix src/Web.Client install lodash', true), 2)
+})
+
+test('blocks a cd to the main checkout, or a dependency change that targets it, from a session worktree', () => {
+  assert.equal(exitCodeInSessionWorktree((root, main) => `cd "${main}" && npm --prefix src/Web.Client install lodash`, false), 2)
+  assert.equal(exitCodeInSessionWorktree((root, main) => `npm --prefix "${main}" install lodash`, false), 2)
+  assert.equal(exitCodeInSessionWorktree((root) => `cd "${root}/src" && npm --prefix src/Web.Client install lodash`, false), 2)
+})
+
+test('blocks a backslash-escaped cd, or an escaped or dot-escaped --prefix, that bash resolves outside the worktree', () => {
+  assert.equal(exitCodeInSessionWorktree((root, main) => `\\cd "${main}" && npm --prefix src/Web.Client install lodash`, false), 2)
+  assert.equal(exitCodeInSessionWorktree((root, main) => `npm \\--prefix=${main}/src/Web.Client install lodash`, false), 2)
+  assert.equal(exitCodeInSessionWorktree(() => 'npm \\--prefix=/tmp install lodash', false), 2)
+  assert.equal(exitCodeInSessionWorktree(() => 'npm --prefix .\\.//.\\.//.\\. install lodash', false), 2)
+})
+
+test('blocks a --prefix that follows the subcommand and points outside the worktree', () => {
+  assert.equal(exitCodeInSessionWorktree((root, main) => `npm install lodash --prefix "${main}"`, false), 2)
+})
+
+// Git Bash spelling of a Windows path: C:\a\b becomes /c/a/b.
+const gitBash = (winPath) => `/${winPath[0].toLowerCase()}${winPath.slice(2).replace(/\\/g, '/')}`
+
+test('allows Git Bash /c/ paths that point at the session worktree, and blocks ones outside it', () => {
+  assert.equal(exitCodeInSessionWorktree((root) => `cd "${gitBash(root)}" && npm --prefix src/Web.Client install lodash`, false), 0)
+  assert.equal(exitCodeInSessionWorktree((root) => `npm --prefix ${gitBash(root)}/src/Web.Client install lodash`, false), 0)
+  assert.equal(exitCodeInSessionWorktree((_root, main) => `npm --prefix ${gitBash(main)}/src/Web.Client install lodash`, false), 2)
+})
+
+test('a linked node_modules in the web client does not block a dependency change in another folder', () => {
+  assert.equal(exitCodeInSessionWorktree(() => 'npm --prefix tests/e2e install lodash', true), 0)
+})
+
+test('a cd after the dependency change does not move it', () => {
+  assert.equal(exitCodeInSessionWorktree(() => 'npm --prefix src/Web.Client install lodash && cd /tmp', false), 0)
+})
+
+test('allows a dependency change after a cd to the worktree root itself', () => {
+  assert.equal(exitCodeInWorktree((root) => `cd "${root}" && npm --prefix src/Web.Client install lodash`, false), 0)
+  assert.equal(exitCodeInWorktree((root) => `cd "${root}" && npm install lodash`, false), 0)
+})
+
+test('blocks a dependency change after a cd to the root while node_modules is a junction', () => {
+  assert.equal(exitCodeInWorktree((root) => `cd "${root}" && npm --prefix src/Web.Client install lodash`, true), 2)
+})
+
+test('blocks a dependency change after a cd that is not exactly the worktree root', () => {
+  assert.equal(exitCodeInWorktree((root) => `cd "${root}/src" && npm --prefix src/Web.Client install lodash`, false), 2)
+  assert.equal(exitCodeInWorktree((root) => `cd ${root}/.. && npm install lodash`, false), 2)
+  assert.equal(exitCodeInWorktree((root) => `cd "${root}" && pushd /tmp && npm install lodash`, false), 2)
+  assert.equal(exitCodeInWorktree((root) => `cd "${root}" && cd /tmp && npm install lodash`, false), 2)
+  assert.equal(exitCodeInWorktree((root) => `cd "${root}" && popd && npm install lodash`, false), 2)
+  assert.equal(exitCodeInWorktree(() => 'cd && npm install lodash', false), 2)
+  assert.equal(exitCodeInWorktree(() => 'cd ~ && npm install lodash', false), 2)
 })
 
 test('allows a backtick inside single quotes next to an rm', () => {
