@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.32.1](https://github.com/diazjhozua/tydee/compare/v1.32.0...v1.32.1) (2026-11-16)
+
+
+### Bug Fixes
+
+* **api:** add logout that ends every session ([7a0b347](https://github.com/diazjhozua/tydee/commit/7a0b34734258d49cd6d167a1457a1e8188a1d198))
+* **api:** limit login attempts per account ([8f49277](https://github.com/diazjhozua/tydee/commit/8f492779ef5ed21a050da807b22885da6d882880))
+* **auth:** remove failed-login lockout ([019dd4c](https://github.com/diazjhozua/tydee/commit/019dd4c3df742eb89f03a3d06d9ee3570b1dca4c))
+* **auth:** remove failed-login lockout, end sessions on logout ([9262117](https://github.com/diazjhozua/tydee/commit/926211798d4034e7f4a26c98bb7fc0ca4ce77aad))
+* **client:** clear the session on the server at logout ([7d2e190](https://github.com/diazjhozua/tydee/commit/7d2e190fe039b15954d35e0dba74ef0a895a6f89))
+* **client:** tell a rate-limited login to wait ([b5e7c45](https://github.com/diazjhozua/tydee/commit/b5e7c45810215fac10e810b9f27ea0598cc2f84f))
+* **client:** wait for an in-flight refresh before logout ([469a9c7](https://github.com/diazjhozua/tydee/commit/469a9c7ed11aad06a448af2c8392f246ddecef86))
+
 ## [1.32.0](https://github.com/diazjhozua/tydee/compare/v1.31.0...v1.32.0) (2026-11-16)
 
 
