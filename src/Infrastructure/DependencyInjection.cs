@@ -91,6 +91,8 @@ public static class DependencyInjection
         services.AddSingleton(adminSettings);
         services.AddSingleton<IAdminProvider, AdminProvider>();
 
+        services.AddScoped<LockedUserTokenValidator>();
+
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(o =>
             {
@@ -102,6 +104,8 @@ public static class DependencyInjection
                     ValidAudience = jwtSettings.Audience,
                     ClockSkew = TimeSpan.Zero,
                 };
+
+                o.EventsType = typeof(LockedUserTokenValidator);
             });
 
         services.AddHttpContextAccessor();
