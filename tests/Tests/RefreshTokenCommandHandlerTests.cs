@@ -78,4 +78,54 @@ public class RefreshTokenCommandHandlerTests
 
         result.Error.ShouldBe(UserErrors.InvalidRefreshToken);
     }
+
+    [Fact]
+    public async Task Admin_locked_user_cannot_refresh_and_the_token_is_left_alone()
+    {
+        using var db = TestDb.Create();
+        var clock = new FixedDateTimeProvider();
+        var user = Seed.User(db);
+        user.IsLocked = true;
+        db.SaveChanges();
+        var active = Token(db, user.Id, "active", clock.UtcNow.AddDays(5));
+
+        var result = await Handler(db, clock).Handle(
+            new RefreshTokenCommand("active"), CancellationToken.None);
+
+        result.Error.ShouldBe(UserErrors.InvalidRefreshToken);
+        db.RefreshTokens.Single(t => t.Id == active.Id).RevokedAt.ShouldBeNull();
+        db.RefreshTokens.Count().ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task Unverified_user_cannot_refresh()
+    {
+        using var db = TestDb.Create();
+        var clock = new FixedDateTimeProvider();
+        var user = Seed.User(db, verified: false);
+        Token(db, user.Id, "active", clock.UtcNow.AddDays(5));
+
+        var result = await Handler(db, clock).Handle(
+            new RefreshTokenCommand("active"), CancellationToken.None);
+
+        result.Error.ShouldBe(UserErrors.InvalidRefreshToken);
+    }
+
+    [Fact]
+    public async Task Locked_user_replaying_a_revoked_token_still_revokes_every_session()
+    {
+        using var db = TestDb.Create();
+        var clock = new FixedDateTimeProvider();
+        var user = Seed.User(db);
+        user.IsLocked = true;
+        db.SaveChanges();
+        Token(db, user.Id, "stolen", clock.UtcNow.AddDays(5), revokedAt: clock.UtcNow.AddMinutes(-5));
+        var active = Token(db, user.Id, "active", clock.UtcNow.AddDays(5));
+
+        var result = await Handler(db, clock).Handle(
+            new RefreshTokenCommand("stolen"), CancellationToken.None);
+
+        result.Error.ShouldBe(UserErrors.TokenReuseDetected);
+        db.RefreshTokens.Single(t => t.Id == active.Id).RevokedAt.ShouldNotBeNull();
+    }
 }

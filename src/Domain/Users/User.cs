@@ -11,6 +11,7 @@ public sealed class User : Entity
     public string PasswordHash { get; set; } = string.Empty;
     public bool IsEmailVerified { get; set; }
     public bool IsAdmin { get; set; }
+    public bool IsLocked { get; set; }
     public string Currency { get; set; } = "PHP";
     public string? DefaultPage { get; set; }
     public string? EmailVerificationToken { get; set; }
@@ -21,6 +22,21 @@ public sealed class User : Entity
     public DateTime? LockoutEndUtc { get; set; }
 
     public List<RefreshToken> RefreshTokens { get; } = [];
+
+    /// <summary>
+    /// Revokes every refresh token that is still active at <paramref name="utcNow"/>.
+    /// Used when an admin locks the account, on password reset, and on token reuse.
+    /// </summary>
+    public void RevokeActiveSessions(DateTime utcNow)
+    {
+        foreach (RefreshToken token in RefreshTokens)
+        {
+            if (token.IsActive(utcNow))
+            {
+                token.RevokedAt = utcNow;
+            }
+        }
+    }
 }
 
 public static class DefaultPages

@@ -536,6 +536,10 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_email_verified");
 
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_locked");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasMaxLength(100)

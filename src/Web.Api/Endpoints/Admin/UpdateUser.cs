@@ -1,3 +1,4 @@
+using Application.Abstractions.Authentication;
 using Application.Abstractions.Messaging;
 using Application.Admin.UpdateUser;
 using Contracts.Admin;
@@ -15,9 +16,14 @@ internal sealed class UpdateUser : IEndpoint
             Guid userId,
             UpdateUserRequest request,
             ICommandHandler<UpdateUserCommand> handler,
+            IUserContext userContext,
             CancellationToken cancellationToken) =>
         {
-            var command = new UpdateUserCommand(userId, request.IsEmailVerified, request.IsLocked);
+            var command = new UpdateUserCommand(
+                userId,
+                request.IsEmailVerified,
+                request.IsLocked,
+                userContext.UserId);
 
             Result result = await handler.Handle(command, cancellationToken);
 

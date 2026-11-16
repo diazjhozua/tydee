@@ -39,4 +39,8 @@ public static class UserErrors
     public static readonly Error NotFound = Error.NotFound(
         "Users.NotFound",
         "The user was not found.");
+
+    public static readonly Error CannotLockSelf = Error.Forbidden(
+        "Users.CannotLockSelf",
+        "You cannot lock your own account.");
 }

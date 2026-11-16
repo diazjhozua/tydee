@@ -26,4 +26,17 @@ public interface IApplicationDbContext
     DbSet<Suggestion> Suggestions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Locks one user row for the life of the returned transaction, so an admin lock
+    /// and a login or refresh cannot interleave. Load the user only after this call,
+    /// so the read sees the state the other side committed.
+    /// </summary>
+    Task<IUserLock> LockUserByIdAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Locks the user row with this email. Used by login, before the user is loaded.
+    /// Does nothing when no user has the email.
+    /// </summary>
+    Task<IUserLock> LockUserByEmailAsync(string email, CancellationToken cancellationToken = default);
 }

@@ -21,11 +21,22 @@ internal sealed class RefreshTokenCommandHandler(
     {
         string hashedToken = tokenProvider.HashRefreshToken(command.RefreshToken);
 
+        // Find the owner first, so the row lock is taken before the user is read.
+        Guid? ownerId = await context.RefreshTokens
+            .Where(t => t.Token == hashedToken)
+            .Select(t => (Guid?)t.UserId)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (ownerId is null)
+        {
+            return Result.Failure<AuthTokensResponse>(UserErrors.InvalidRefreshToken);
+        }
+
+        await using IUserLock userLock = await context.LockUserByIdAsync(ownerId.Value, cancellationToken);
+
         User? user = await context.Users
             .Include(u => u.RefreshTokens)
-            .SingleOrDefaultAsync(
-                u => u.RefreshTokens.Any(t => t.Token == hashedToken),
-                cancellationToken);
+            .SingleOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == hashedToken), cancellationToken);
 
         Domain.Users.RefreshToken? existingToken = user?.RefreshTokens
             .SingleOrDefault(t => t.Token == hashedToken);
@@ -39,17 +50,23 @@ internal sealed class RefreshTokenCommandHandler(
         // rotation, so kill every active session for this user.
         if (existingToken.RevokedAt is not null)
         {
-            foreach (Domain.Users.RefreshToken token in user.RefreshTokens.Where(t => t.IsActive(dateTimeProvider.UtcNow)))
-            {
-                token.RevokedAt = dateTimeProvider.UtcNow;
-            }
+            user.RevokeActiveSessions(dateTimeProvider.UtcNow);
 
             await context.SaveChangesAsync(cancellationToken);
+            await userLock.CommitAsync(cancellationToken);
 
             return Result.Failure<AuthTokensResponse>(UserErrors.TokenReuseDetected);
         }
 
         if (existingToken.IsExpired(dateTimeProvider.UtcNow))
+        {
+            return Result.Failure<AuthTokensResponse>(UserErrors.InvalidRefreshToken);
+        }
+
+        // Locked accounts had their tokens revoked when the lock was applied, so
+        // unlocking does not bring the session back. Unverified accounts keep their
+        // token, so verifying the account again resumes the session.
+        if (user.IsLocked || !user.IsEmailVerified)
         {
             return Result.Failure<AuthTokensResponse>(UserErrors.InvalidRefreshToken);
         }
@@ -69,6 +86,7 @@ internal sealed class RefreshTokenCommandHandler(
         });
 
         await context.SaveChangesAsync(cancellationToken);
+        await userLock.CommitAsync(cancellationToken);
 
         string accessToken = tokenProvider.CreateAccessToken(user);
 

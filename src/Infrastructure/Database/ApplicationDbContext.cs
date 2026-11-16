@@ -10,6 +10,7 @@ using Domain.Suggestions;
 using Domain.Users;
 using Infrastructure.DomainEvents;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using SharedKernel;
 
 namespace Infrastructure.Database;
@@ -59,6 +60,36 @@ public sealed class ApplicationDbContext(
         await domainEventsDispatcher.DispatchAsync(domainEvents, cancellationToken);
 
         return result;
+    }
+
+    public Task<IUserLock> LockUserByIdAsync(Guid userId, CancellationToken cancellationToken = default) =>
+        LockUserAsync($"SELECT 1 FROM public.users WHERE id = {userId} FOR UPDATE", cancellationToken);
+
+    public Task<IUserLock> LockUserByEmailAsync(string email, CancellationToken cancellationToken = default) =>
+        LockUserAsync($"SELECT 1 FROM public.users WHERE email = {email} FOR UPDATE", cancellationToken);
+
+    private async Task<IUserLock> LockUserAsync(FormattableString lockStatement, CancellationToken cancellationToken)
+    {
+        if (!Database.IsRelational())
+        {
+            return UserLock.None;
+        }
+
+        IDbContextTransaction transaction = await Database.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            // FOR UPDATE holds the row until the transaction ends. The statement's
+            // parameters are bound, so the email and id are never spliced into SQL.
+            await Database.ExecuteSqlInterpolatedAsync(lockStatement, cancellationToken);
+
+            return new UserLock(transaction);
+        }
+        catch
+        {
+            await transaction.DisposeAsync();
+            throw;
+        }
     }
 
     private List<IDomainEvent> ExtractDomainEvents()

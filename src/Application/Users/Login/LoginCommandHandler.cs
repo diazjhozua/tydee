@@ -24,6 +24,10 @@ internal sealed class LoginCommandHandler(
     {
         string email = command.Email.ToLowerInvariant();
 
+        // Taken before the user is read, so an admin lock that commits meanwhile is
+        // seen here, and no token is issued after it. Every write is committed through it.
+        await using IUserLock userLock = await context.LockUserByEmailAsync(email, cancellationToken);
+
         User? user = await context.Users
             .Include(u => u.RefreshTokens)
             .SingleOrDefaultAsync(u => u.Email == email, cancellationToken);
@@ -33,9 +37,10 @@ internal sealed class LoginCommandHandler(
             return Result.Failure<AuthTokensResponse>(UserErrors.InvalidCredentials);
         }
 
-        // Locked accounts answer exactly like a wrong password so the lockout
-        // can't be used to probe accounts or confirm a guessed password.
-        if (user.LockoutEndUtc > dateTimeProvider.UtcNow)
+        // Locked accounts (admin lock or failed-login lockout) answer exactly like a
+        // wrong password so the lock can't be used to probe accounts or confirm a
+        // guessed password.
+        if (user.IsLocked || user.LockoutEndUtc > dateTimeProvider.UtcNow)
         {
             return Result.Failure<AuthTokensResponse>(UserErrors.InvalidCredentials);
         }
@@ -51,6 +56,7 @@ internal sealed class LoginCommandHandler(
             }
 
             await context.SaveChangesAsync(cancellationToken);
+            await userLock.CommitAsync(cancellationToken);
 
             return Result.Failure<AuthTokensResponse>(UserErrors.InvalidCredentials);
         }
@@ -88,6 +94,7 @@ internal sealed class LoginCommandHandler(
         });
 
         await context.SaveChangesAsync(cancellationToken);
+        await userLock.CommitAsync(cancellationToken);
 
         string accessToken = tokenProvider.CreateAccessToken(user);
 
