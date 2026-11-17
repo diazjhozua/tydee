@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.32.2](https://github.com/diazjhozua/tydee/compare/v1.32.1...v1.32.2) (2026-11-17)
+
+
+### Bug Fixes
+
+* **auth:** close refresh, login, and logout session races ([2698018](https://github.com/diazjhozua/tydee/commit/2698018b5d014706a936f7ce061728c7690616d8))
+
 ## [1.32.1](https://github.com/diazjhozua/tydee/compare/v1.32.0...v1.32.1) (2026-11-16)
 
 
