@@ -345,3 +345,197 @@ test('allows a backtick inside single quotes next to an rm', () => {
 test('blocks an expansion inside an rm argument', () => {
   assert.equal(exitCodeFor('rm -f "$TARGET"'), 2)
 })
+
+test('blocks MSBuild property switches on every dotnet verb', () => {
+  for (const command of [
+    'dotnet build tydee.slnx -p:PreBuildEvent=calc',
+    'dotnet build tydee.slnx /p:X=1',
+    'dotnet test tydee.slnx -property:X=1',
+    'dotnet run --project src/Web.Api /property:X=1',
+    'dotnet restore tydee.slnx -p:X=1',
+  ]) {
+    assert.equal(exitCodeFor(command), 2, command)
+  }
+})
+
+test('blocks MSBuild logger switches on dotnet build', () => {
+  for (const command of [
+    'dotnet build tydee.slnx -logger:FileLogger,Foo',
+    'dotnet build tydee.slnx -l:FileLogger',
+    'dotnet build tydee.slnx -dl:FileLogger',
+  ]) {
+    assert.equal(exitCodeFor(command), 2, command)
+  }
+})
+
+test('blocks test adapter, logger, and settings switches on dotnet test', () => {
+  for (const command of [
+    'dotnet test tydee.slnx --test-adapter-path x',
+    'dotnet test tydee.slnx --logger=trx',
+    'dotnet test tydee.slnx --logger trx',
+    'dotnet test tydee.slnx -l trx',
+    'dotnet test tydee.slnx -s x.runsettings',
+    'dotnet test tydee.slnx --settings x.runsettings',
+  ]) {
+    assert.equal(exitCodeFor(command), 2, command)
+  }
+})
+
+test('blocks compose down or rm with volumes, through global options and the legacy binary', () => {
+  for (const command of [
+    'docker compose down -v',
+    'docker compose down --volumes',
+    'docker compose down -t 5 -v',
+    'docker compose -p x down -v',
+    'docker --context default compose down -v',
+    'docker-compose down -v',
+    'docker compose rm -v',
+  ]) {
+    assert.equal(exitCodeFor(command), 2, command)
+  }
+})
+
+test('blocks docker volume rm', () => {
+  assert.equal(exitCodeFor('docker volume rm tydee_postgres-data'), 2)
+})
+
+test('blocks the same forms when joined to other commands', () => {
+  for (const command of [
+    'dotnet build tydee.slnx && dotnet build -p:X=y',
+    'echo x; docker compose down -v',
+  ]) {
+    assert.equal(exitCodeFor(command), 2, command)
+  }
+})
+
+test('blocks the same forms inside powershell, pwsh, and cmd wrappers', () => {
+  for (const command of [
+    'powershell -Command "dotnet build tydee.slnx -p:X=y"',
+    'pwsh -c "docker compose down -v"',
+    'cmd /c "dotnet test tydee.slnx --logger trx"',
+    'cmd /c "docker volume rm data"',
+    `powershell -Command "Start-Process dotnet -ArgumentList 'build','-p:A=B'"`,
+  ]) {
+    assert.equal(exitCodeFor(command), 2, command)
+  }
+})
+
+test('blocks the same forms nested in sh -c, env, and timeout', () => {
+  for (const command of [
+    'sh -c "dotnet build -p:A=B"',
+    'env FOO=1 dotnet build -p:A=B',
+    'timeout 60 dotnet build -p:A=B',
+  ]) {
+    assert.equal(exitCodeFor(command), 2, command)
+  }
+})
+
+test('allows the bare dotnet forms this repo uses', () => {
+  for (const command of [
+    'dotnet build tydee.slnx',
+    'dotnet test tydee.slnx',
+    'dotnet test tydee.slnx --filter FullyQualifiedName~CreateIncomeCommandHandlerTests',
+    'dotnet run --project src/Web.Api',
+    'dotnet restore tydee.slnx',
+    'dotnet ef migrations add AddX -p src/Infrastructure -s src/Web.Api',
+  ]) {
+    assert.equal(exitCodeFor(command), 0, command)
+  }
+})
+
+test('allows compose up and down without volumes, and docker volume ls', () => {
+  for (const command of [
+    'docker compose up -d postgres',
+    'docker compose down',
+    'docker compose down --remove-orphans',
+    'docker compose down -t 5',
+    'docker compose logs -f',
+    'docker volume ls',
+  ]) {
+    assert.equal(exitCodeFor(command), 0, command)
+  }
+})
+
+test('allows the same text when no dotnet or docker command runs it', () => {
+  for (const command of [
+    'echo "dotnet build -p:A=B"',
+    'echo docker compose down -v',
+    'git commit -m "docs: explain dotnet build -p:A=B"',
+    'powershell -ExecutionPolicy Bypass -File scripts/link-worktree-env.ps1 -Worktree ../x',
+  ]) {
+    assert.equal(exitCodeFor(command), 0, command)
+  }
+})
+
+test('blocks bare MSBuild switches whose value is the next word', () => {
+  for (const command of [
+    'dotnet build tydee.slnx -p PreBuildEvent=calc',
+    'dotnet test tydee.slnx --filter FullyQualifiedName~X -p PreBuildEvent=calc',
+    'dotnet build tydee.slnx --property X=1',
+    'dotnet build tydee.slnx -l FileLogger',
+  ]) {
+    assert.equal(exitCodeFor(command), 2, command)
+  }
+})
+
+test('blocks slash-style test adapter and settings switches', () => {
+  for (const command of [
+    'dotnet vstest x.dll /TestAdapterPath:C:/x',
+    'dotnet test tydee.slnx /settings:x.runsettings',
+  ]) {
+    assert.equal(exitCodeFor(command), 2, command)
+  }
+})
+
+test('blocks docker volume remove, volume prune, and system prune with volumes', () => {
+  for (const command of [
+    'docker volume remove tydee_postgres-data',
+    'docker volume prune -f',
+    'docker system prune --volumes',
+    'docker system prune -af --volumes',
+  ]) {
+    assert.equal(exitCodeFor(command), 2, command)
+  }
+})
+
+test('blocks dotnet and docker arguments that use shell expansion', () => {
+  for (const command of [
+    "dotnet build tydee.slnx $'-p:X=1'",
+    'dotnet build tydee.slnx {-p:X=1,}',
+    'dotnet build tydee.slnx $(printf -- -p:X=1)',
+    'docker compose down $(echo -v)',
+  ]) {
+    assert.equal(exitCodeFor(command), 2, command)
+  }
+})
+
+test('blocks the same forms behind a command name the guard cannot resolve', () => {
+  for (const command of ['$DN build -p:X=1', '$(which dotnet) build -p X=1']) {
+    assert.equal(exitCodeFor(command), 2, command)
+  }
+})
+
+test('blocks the same forms behind prefix wrappers that take option values', () => {
+  for (const command of ['env -u FOO dotnet build -p:X=1', 'timeout -s KILL 60 dotnet build -p:X=1']) {
+    assert.equal(exitCodeFor(command), 2, command)
+  }
+})
+
+test('allows dotnet ef with -p and -s, including inside powershell', () => {
+  for (const command of [
+    'dotnet ef database update -p src/Infrastructure -s src/Web.Api',
+    'powershell -Command "dotnet ef database update -p src/Infrastructure -s src/Web.Api"',
+  ]) {
+    assert.equal(exitCodeFor(command), 0, command)
+  }
+})
+
+test('allows docker commands that keep volumes, and brace-formatted output', () => {
+  for (const command of ['docker system prune -af', "docker ps --format '{{.Names}}'"]) {
+    assert.equal(exitCodeFor(command), 0, command)
+  }
+})
+
+test('allows a commit message that mentions -p', () => {
+  assert.equal(exitCodeFor('git commit -m "fix: drop -p flag"'), 0)
+})
