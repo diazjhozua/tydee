@@ -58,8 +58,28 @@ function isSameOrAncestor(candidate, target) {
   return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
 }
 
+// The worktree that holds `dir`: the nearest folder with a .git entry (a file in a linked worktree, a folder in the
+// main checkout). Falls back to `dir` when no .git is found.
+function worktreeRootOf(dir) {
+  for (let current = dir; ; current = path.dirname(current)) {
+    if (fs.existsSync(path.join(current, '.git'))) {
+      return current
+    }
+    if (path.dirname(current) === current) {
+      return dir
+    }
+  }
+}
+
 function expandHome(target, home) {
   return target === '~' || target.startsWith('~/') ? path.join(home, target.slice(1)) : target
+}
+
+// Git Bash writes a Windows drive as /c/..., which Node would read as a folder at the root of the current drive.
+// Map it to C:\... before any path check.
+function gitBashPath(target) {
+  const drive = /^\/([a-zA-Z])(?:\/(.*))?$/.exec(target)
+  return drive ? `${drive[1].toUpperCase()}:\\${(drive[2] ?? '').replace(/\//g, '\\')}` : target
 }
 
 function splitSegments(command) {
@@ -465,6 +485,11 @@ if (gitInvocations(command).some(({ subcommand, args }) => subcommand === 'add' 
 }
 
 const projectDir = path.resolve(process.env.CLAUDE_PROJECT_DIR ?? process.cwd())
+// CLAUDE_PROJECT_DIR stays at the folder the session started in, so in a worktree session it points at the main
+// checkout. The hook input's cwd follows the session into its worktree, so dependency checks use that worktree.
+const hasSessionCwd = typeof input?.cwd === 'string' && input.cwd !== ''
+const sessionCwd = hasSessionCwd ? path.resolve(input.cwd) : projectDir
+const sessionRoot = hasSessionCwd ? worktreeRootOf(sessionCwd) : projectDir
 const home = os.homedir()
 
 // A worktree whose client node_modules is a junction shares the main checkout's copy. A dependency
@@ -482,9 +507,14 @@ function isLink(target) {
   }
 }
 
-// Reads one shell clause that starts with npm: its subcommand (the first non-flag word) and any --prefix target.
-function npmClause(clause) {
+// Reads one shell clause that starts with npm. `subcommand` is the first non-flag word. `prefixes` holds every
+// --prefix value, wherever the flag sits. Each value is read two ways, as bash passes it (backslashes removed) and
+// as written (backslashes kept), and the caller fails if either lands outside this worktree. `clause` has
+// backslashes removed, so an escaped command name (n\pm) is still read as npm. `rawClause` keeps them.
+// `unresolved` is set when the two token lists do not line up, which an escaped space causes.
+function npmClause(clause, rawClause) {
   const tokens = clause.trim().split(/\s+/).filter(Boolean)
+  const rawTokens = rawClause.trim().split(/\s+/).filter(Boolean)
   let index = 0
   while (index < tokens.length && ASSIGNMENT.test(tokens[index])) {
     index++
@@ -492,41 +522,78 @@ function npmClause(clause) {
   if (index >= tokens.length || !/^npm(\.cmd)?$/i.test(path.basename(tokens[index]))) {
     return null
   }
-  let prefix = null
+
+  const prefixes = []
+  let subcommand = null
   for (let j = index + 1; j < tokens.length; j++) {
     const token = tokens[j]
     if (token === '--prefix') {
-      prefix = tokens[j + 1] ?? ''
+      prefixes.push(rawTokens[j + 1] ?? '', tokens[j + 1] ?? '')
       j++
     } else if (token.startsWith('--prefix=')) {
-      prefix = token.slice('--prefix='.length)
-    } else if (!token.startsWith('-')) {
-      return { subcommand: token, prefix }
+      const raw = rawTokens[j] ?? ''
+      prefixes.push(raw.slice(raw.indexOf('=') + 1), token.slice('--prefix='.length))
+    } else if (!token.startsWith('-') && subcommand === null) {
+      subcommand = token
     }
   }
-  return { subcommand: null, prefix }
+
+  return {
+    subcommand,
+    prefixes: prefixes.length > 0 ? prefixes : [null],
+    unresolved: tokens.length !== rawTokens.length,
+  }
 }
 
-const npmClauses = maskQuotedSeparators(command).replace(/["'\\]/g, '').split(/[\n;&|()`]+/)
+const DIRECTORY_CHANGES = new Set(['cd', 'pushd', 'popd'])
+
+// Every directory change must be exactly `cd <worktree root>`. Then a --prefix relative to the root still
+// resolves in this worktree. A relative path, another folder, pushd, popd, or a bare cd (which goes home)
+// fails closed. Reads the raw clauses so Windows backslashes in the path survive.
+function changesDirectoryOnlyToRoot(command, projectDir, beforeIndex) {
+  return maskQuotedSeparators(command)
+    .split(/[\n;&|()`]+/)
+    .slice(0, beforeIndex)
+    .filter((clause) => DIRECTORY_CHANGES.has(clause.replace(/["'\\]/g, '').trim().split(/\s+/)[0]))
+    .every((clause) => {
+      const match = /^cd\s+(?:"([^"]+)"|'([^']+)'|(\S+))$/.exec(clause.trim())
+      if (!match) {
+        return false
+      }
+      const target = gitBashPath(match[1] ?? match[2] ?? match[3])
+      return path.isAbsolute(target) && samePath(path.resolve(target), projectDir)
+    })
+}
+
+const npmRawClauses = maskQuotedSeparators(command).replace(/["']/g, '').split(/[\n;&|()`]+/)
+const npmClauses = npmRawClauses.map((clause) => clause.replace(/\\/g, ''))
 const npmChanges = npmClauses
-  .map(npmClause)
-  .filter((invocation) => invocation && NPM_DEPENDENCY_SUBCOMMANDS.has(invocation.subcommand))
-const changesDirectory = npmClauses.some((clause) => ['cd', 'pushd'].includes(clause.trim().split(/\s+/)[0]))
+  .map((clause, index) => ({ index, invocation: npmClause(clause, npmRawClauses[index]) }))
+  .filter(({ invocation }) => invocation && NPM_DEPENDENCY_SUBCOMMANDS.has(invocation.subcommand))
+  .map(({ index, invocation }) => ({ index, ...invocation }))
+// The clauses before the first dependency change decide where npm runs. A cd after that change does not.
+const firstNpmChange = npmChanges.length > 0 ? npmChanges[0].index : npmClauses.length
+const changesDirectory = npmClauses.some(
+  (clause, index) => index < firstNpmChange && DIRECTORY_CHANGES.has(clause.trim().split(/\s+/)[0]),
+)
 
 if (npmChanges.length > 0) {
-  if (isLink(path.join(projectDir, 'src', 'Web.Client', 'node_modules'))) {
+  if (changesDirectory && !changesDirectoryOnlyToRoot(command, sessionRoot, firstNpmChange)) {
     block(
-      'node_modules is a junction into the main checkout; a dependency change would write to the shared copy. ' +
-        'Remove only the link with `cmd /c rmdir src\\Web.Client\\node_modules` (no /S), then install in this worktree.',
+      'a dependency change after a cd must cd to the worktree root itself, or run npm with --prefix from the worktree root without a cd.',
     )
   }
-  if (changesDirectory) {
-    block('a cd before a dependency change cannot be checked. Run npm with --prefix from the worktree root.')
-  }
-  const outsideOrLinked = npmChanges.some(({ prefix }) => {
-    const target = prefix ? path.resolve(projectDir, expandHome(prefix, home)) : projectDir
-    return !isSameOrAncestor(projectDir, target) || isLink(path.join(target, 'node_modules'))
-  })
+  // npm resolves --prefix from the folder it runs in: the session root after a cd to it, otherwise the session cwd.
+  const npmBase = changesDirectory ? sessionRoot : sessionCwd
+  // A linked node_modules is checked in each folder npm installs into, not once for the session root.
+  const outsideOrLinked = npmChanges.some(
+    ({ prefixes, unresolved }) =>
+      unresolved ||
+      prefixes.some((prefix) => {
+        const target = prefix ? path.resolve(npmBase, expandHome(gitBashPath(prefix), home)) : npmBase
+        return !isSameOrAncestor(sessionRoot, target) || isLink(path.join(target, 'node_modules'))
+      }),
+  )
   if (outsideOrLinked) {
     block('a dependency change must target this worktree, not another folder or a linked node_modules.')
   }

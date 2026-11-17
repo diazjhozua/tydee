@@ -23,10 +23,13 @@ export async function POST(request: NextRequest) {
 
   let res: Response;
   try {
+    // Bounded, so a stalled API cannot hold the cross-tab auth lock indefinitely. A cut refresh may still have
+    // rotated the token on the server; the cookie is kept, and the next refresh then reads as reuse.
     res = await fetch(`${API_URL}/api/v1/auth/refresh-token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
+      signal: AbortSignal.timeout(10_000),
     });
   } catch {
     return NextResponse.json({}, { status: 503 });

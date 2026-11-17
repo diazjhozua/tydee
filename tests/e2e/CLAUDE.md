@@ -14,12 +14,12 @@ Repository-wide guidance lives in the root `CLAUDE.md`.
 
 ## Structure
 
-- `support/` — leaf primitives: `env.ts` (URLs, consent storage state), `state.ts` (`.e2e-state.json`), `db.ts` (verification tokens, admin promotion; one connection per call), `time.ts` (UTC dates, unique emails), `select.ts` (Base UI selects), `domain.ts` (shared unions).
+- `support/` — leaf primitives: `env.ts` (URLs, consent storage state), `state.ts` (`.e2e-state.json`), `db.ts` (verification tokens, admin promotion, password reset token seeding; one connection per call), `held-refresh.ts` (holds a page's next refresh response), `time.ts` (UTC dates, unique emails), `select.ts` (Base UI selects), `domain.ts` (shared unions).
 - `api/` — typed HTTP client with one module per API area and `types.ts` mirroring `src/Contracts`. Specs never call `fetch` directly.
 - `builders/` — pure payload builders. No ids, no HTTP.
 - `seed/seed.ts` — resolves account names to ids and seeds accounts, template, income, expenses, transfers, recurring expenses, and suggestions through the API.
 - `pages/` — one page object per screen, plus `pages/overlays/` for the entry sheets. Page objects own every locator.
-- `fixtures/users.ts` — creates verified, unverified, and admin users and signs them in through the BFF.
+- `fixtures/users.ts` — creates verified, unverified, and admin users, signs them in through the BFF, and refreshes through the BFF.
 - `fixtures/index.ts` — extends the Playwright `test` with `verifiedUser`, `userApi`, `adminUser`, `adminApi`, `seed`, `signedIn`, `adminSignedIn`, `app`, and `adminApp`.
 - `specs/` — user stories only. No locators, no raw HTTP, no SQL.
 
@@ -44,9 +44,10 @@ Repository-wide guidance lives in the root `CLAUDE.md`.
 ## Tests
 
 - `onboarding.spec.ts` is the only UI-driven registration and setup flow; it reads the verification token with `support/db.ts`.
-- `auth.spec.ts`, `legal.spec.ts`, `marketing.spec.ts`, `accounts.spec.ts`, `recurring.spec.ts`, `settings.spec.ts`, `admin.spec.ts`, and `offline.spec.ts` cover their named areas. `specs/money/` splits income, expense, transfer, adjustment, and dashboard behavior.
+- `auth.spec.ts`, `legal.spec.ts`, `marketing.spec.ts`, `accounts.spec.ts`, `recurring.spec.ts`, `settings.spec.ts`, `admin.spec.ts`, `default-page.spec.ts`, `layout.spec.ts`, and `offline.spec.ts` cover their named areas. `specs/money/` splits income, expense, transfer, adjustment, and dashboard behavior.
+- `auth-races.spec.ts` runs the user-row lock races (parallel refresh reuse, admin lock against login, logout against refresh, password reset against login) against the disposable database. The unit tests cannot cover them: the lock is a no-op on InMemory. `logout-race.spec.ts` holds a refresh in one tab while another tab logs out, and checks the cookie and a new session.
 - Offline tests use `context.setOffline` plus a synthetic `offline`/`online` event, then assert the durable result (API row, pending row cleared, dashboard total). Do not assert on email bodies or SMTP output; read the database for tokens.
-- Password reset cannot be completed end to end: the reset token is stored only as a hash and `FakeEmailSender` discards the raw token. Cover the request and missing-token states.
+- Password reset through the UI cannot be completed: the reset token is stored only as a hash and `FakeEmailSender` discards the raw token. The API race test completes a reset by seeding a token with `seedPasswordResetToken`. Cover the request and missing-token states in the UI.
 
 ## Commands
 

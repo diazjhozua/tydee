@@ -207,6 +207,7 @@ export default function SettingsPage() {
               size="sm"
               className="rounded-full text-destructive hover:text-destructive"
               onClick={() => logout.mutate()}
+              disabled={logout.isPending}
             >
               <LogOut className="size-4" /> Log out
             </Button>

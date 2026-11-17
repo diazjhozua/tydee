@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import type { BrowserContext, Page } from "@playwright/test";
 import { createApi } from "../api";
 import type { AuthResponse } from "../api/types";
 import { userSpec, type UserSpec } from "../builders/user.builder";
@@ -72,4 +72,17 @@ export async function signInThroughBff(page: Page, user: Pick<UserSpec, "email" 
   if (!response.ok()) {
     throw new Error(`BFF login failed for ${user.email}: ${response.status()}`);
   }
+}
+
+/**
+ * Refreshes through the Next BFF with the refresh cookie the context holds. Returns the HTTP status and, when the
+ * server refused, the Error.Code it sent (for example Users.TokenReuseDetected).
+ */
+export async function refreshThroughBff(
+  context: BrowserContext,
+): Promise<{ status: number; title?: string }> {
+  const response = await context.request.post("/api/auth/refresh");
+  const body = (await response.json().catch(() => null)) as { title?: string } | null;
+
+  return { status: response.status(), title: body?.title };
 }
