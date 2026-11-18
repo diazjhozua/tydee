@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.32.3](https://github.com/diazjhozua/tydee/compare/v1.32.2...v1.32.3) (2026-11-18)
+
+
+### Bug Fixes
+
+* **auth:** add trusted-network settings for the client address ([7eda62b](https://github.com/diazjhozua/tydee/commit/7eda62bcf6bc707345d0c753f01645c2dfbc0f77))
+* **auth:** rate-limit per visitor behind the Cloudflare tunnel ([d89b5b0](https://github.com/diazjhozua/tydee/commit/d89b5b09de3a577477a3b91b0ca508bc2f2e649e))
+* **auth:** read the visitor address from CF-Connecting-IP ([e337726](https://github.com/diazjhozua/tydee/commit/e337726ad8899642840c445597bec954f16b5def))
+* **auth:** run the client address step before the rate limiter ([1504950](https://github.com/diazjhozua/tydee/commit/15049507930d4ac6ebac7d90439946fdada8d2e1))
+* **client:** add the BFF helper that reads CF-Connecting-IP ([f19aa64](https://github.com/diazjhozua/tydee/commit/f19aa64298d305bf5c5f7fb9f54af968247a846d))
+* **client:** forward the visitor address from session routes ([4dbe330](https://github.com/diazjhozua/tydee/commit/4dbe33049b0cf433ef38fe051b74a24faae4d469))
+* **client:** forward the visitor address from signup routes ([1d2aa65](https://github.com/diazjhozua/tydee/commit/1d2aa65b21528b93e472e3562b3f3bf2d8b13b0f))
+
 ## [1.32.2](https://github.com/diazjhozua/tydee/compare/v1.32.1...v1.32.2) (2026-11-17)
 
 
