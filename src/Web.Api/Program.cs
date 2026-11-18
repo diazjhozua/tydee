@@ -22,6 +22,8 @@ builder.Services
 
 builder.Services.AddEndpoints(Assembly.GetExecutingAssembly());
 
+builder.Services.AddClientAddress(builder.Configuration);
+
 builder.Services.AddRateLimitingInternal(builder.Configuration);
 
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
@@ -34,7 +36,7 @@ WebApplication app = builder.Build();
 
 app.UseCors();
 
-app.UseRateLimiter();
+app.UseClientAddressRateLimiting();
 
 app.UseSecurityHeaders();
 
