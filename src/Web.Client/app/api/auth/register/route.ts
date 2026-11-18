@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { clientIpHeaders } from "@/lib/auth/clientIp";
 
 export const maxDuration = 60;
 
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
   try {
     res = await fetch(`${API_URL}/api/v1/auth/register`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...clientIpHeaders(request) },
       body: JSON.stringify(body),
     });
   } catch {
