@@ -55,7 +55,9 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
 | Variable (`.env.local`) | Purpose |
 |---|---|
 | `NEXT_PUBLIC_API_URL` | Browser-side API base URL (bearer-token calls); inlined at build time |
-| `API_URL` | Server-side API base URL for the auth BFF routes |
+| `API_URL` | Server-side API base URL for the auth BFF routes. Behind the tunnel, set to the internal `http://tydee-api:5000` so calls skip Cloudflare |
+
+`login`, `refresh`, `logout`, `register`, and `verify-email` forward the visitor's `CF-Connecting-IP` to the API when it is one valid IP (`lib/auth/clientIp.ts`).
 | `NEXT_PUBLIC_APP_URL` | Public site URL used by metadata and verification links |
 
 ## Commands
