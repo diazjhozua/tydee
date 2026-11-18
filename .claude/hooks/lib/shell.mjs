@@ -10,6 +10,7 @@ const SHELL_WRAPPERS = new Set(['bash', 'sh', 'zsh', 'dash', 'ksh', 'fish'])
 const PREFIX_WRAPPERS = new Set([
   'builtin',
   'command',
+  'coproc',
   'env',
   'exec',
   'ionice',
@@ -20,6 +21,7 @@ const PREFIX_WRAPPERS = new Set([
   'sudo',
   'time',
   'timeout',
+  'watch',
   'xargs',
 ])
 
@@ -54,6 +56,13 @@ const KEYWORDS = new Set(['!', 'do', 'elif', 'else', 'if', 'then', 'until', 'whi
 const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/
 const NUMERIC_ARG = /^\d+(\.\d+)?[smhd]?$/
 const MAX_DEPTH = 6
+
+// Brace expansion in an unquoted word (`{rm,-rf,x}`, `{a,b}`, `{1..3}`). The shell builds such words at run time.
+const BRACE_EXPANSION = /\{[^{}\s]*(?:,|\.\.)[^{}\s]*\}/
+
+// Commands that only read a here-document body as data and write no file from it. A quoted body given to one of these
+// is literal text. `git commit` is listed in full because plain `git` also runs `apply`, which writes files.
+const HEREDOC_DATA_CONSUMERS = new Set(['cat', 'git commit'])
 
 // Name given to a command the reader will not follow because nesting is too deep. Guards block it.
 export const OVERFLOW = '<overflow>'
@@ -98,12 +107,93 @@ function readSubstitution(input, start) {
   return { body: input.slice(start), next: input.length }
 }
 
+// The command a here-document body is fed to, as HEREDOC_DATA_CONSUMERS names it: `cat`, or `git commit`.
+function heredocOwner(words) {
+  if (words.length === 0) {
+    return null
+  }
+  const name = commandName(words[0].value)
+  return name === 'git' && words.length > 1 ? `git ${words[1].value}` : name
+}
+
+// Reads the delimiter after `<<` or `<<-` at `pos` and records the here-document as pending. Returns the index after it.
+// The owner is the command the body is fed to (see heredocOwner).
+function readHeredocDelimiter(input, pos, words, pending) {
+  let i = pos
+  const strip = input[i] === '-'
+  if (strip) {
+    i++
+  }
+  while (input[i] === ' ' || input[i] === '\t') {
+    i++
+  }
+  const owner = heredocOwner(words)
+  let delim = ''
+  let quoted = false
+  if (input[i] === '"' || input[i] === "'") {
+    const end = input.indexOf(input[i], i + 1)
+    const stop = end === -1 ? input.length : end
+    delim = input.slice(i + 1, stop)
+    quoted = true
+    i = stop + 1
+  } else {
+    if (input[i] === '\\') {
+      quoted = true
+      i++
+    }
+    while (i < input.length && !/[\s;&|()<>]/.test(input[i])) {
+      delim += input[i]
+      i++
+    }
+  }
+  if (delim) {
+    pending.push({ delim, strip, quoted, owner })
+  }
+  return i
+}
+
+// Called at the newline that ends the line with the `<<` operators. A body is skipped only when every
+// here-document on the line has a quoted delimiter and a data consumer, and no pipe is present. Otherwise the body
+// stays in the scan, so `sh <<'EOF'` (the body is a script) and `cat <<EOF` (the shell expands the body) are checked.
+function skipHeredocBodies(input, start, pending, ctx) {
+  // `start` follows the newline that ends the operator line. A redirect on that line can send the body to a file that a
+  // later command runs, so the body then stays in the scan.
+  const newline = start - 1
+  const lineStart = input.lastIndexOf('\n', newline - 1) + 1
+  const redirected = input.slice(lineStart, newline).includes('>')
+  const literal = !ctx.pipes && !redirected && pending.every((h) => h.quoted && HEREDOC_DATA_CONSUMERS.has(h.owner))
+  if (!literal) {
+    return start
+  }
+  let i = start
+  for (const h of pending) {
+    i = skipHeredocBody(input, i, h)
+  }
+  return i
+}
+
+// Returns the index of the newline that ends the terminator line, or the end of input when it never appears.
+function skipHeredocBody(input, start, { delim, strip }) {
+  let i = start
+  while (i < input.length) {
+    const eol = input.indexOf('\n', i)
+    const end = eol === -1 ? input.length : eol
+    const line = strip ? input.slice(i, end).replace(/^\t+/, '') : input.slice(i, end)
+    if (line === delim) {
+      return end
+    }
+    i = end + 1
+  }
+  return input.length
+}
+
 // Parse a command string into simple commands (arrays of words) plus nested substitution bodies.
 // A word is { value, expandable }: value has quotes removed; expandable is true when the word
 // contains an unquoted or double-quoted $ or backtick, so the shell may expand it.
-function parseShell(input) {
+function parseShell(input, ctx) {
   const commands = []
   const nested = []
+  const pendingHeredocs = []
   let words = []
   let word = null
   let redirect = false
@@ -118,6 +208,10 @@ function parseShell(input) {
 
   const endWord = () => {
     if (word) {
+      // Brace expansion builds the word at run time, so it is treated like an expansion.
+      if (word.braces && BRACE_EXPANSION.test(word.value)) {
+        word.expandable = true
+      }
       if (!redirect) {
         words.push(word)
       }
@@ -245,17 +339,27 @@ function parseShell(input) {
       } else {
         endWord()
       }
-      redirect = true
+      const operatorStart = i
       i++
       while (i < input.length && '<>&|'.includes(input[i])) {
         i++
       }
+      if (input.slice(operatorStart, i) === '<<') {
+        // A here-document has no target word. Its body starts on the next line.
+        i = readHeredocDelimiter(input, i, words, pendingHeredocs)
+        continue
+      }
+      redirect = true
       continue
     }
 
     if (c === '&' || c === '|' || c === ';' || c === '\n' || c === '(' || c === ')') {
       endCommand()
       i++
+      if (c === '\n' && pendingHeredocs.length > 0) {
+        i = skipHeredocBodies(input, i, pendingHeredocs, ctx)
+        pendingHeredocs.length = 0
+      }
       continue
     }
 
@@ -274,7 +378,11 @@ function parseShell(input) {
       continue
     }
 
-    ensureWord().value += c
+    const w = ensureWord()
+    if (c === '{' || c === '}') {
+      w.braces = true
+    }
+    w.value += c
     i++
   }
 
@@ -307,30 +415,33 @@ function effectiveWords(words) {
 // Commands a guard must see even when a prefix wrapper takes option values the reader does not model.
 const CANDIDATE_NAMES = new Set([...INTERPRETERS, 'git', 'rm'])
 
-function addCommand(words, raw, depth, found) {
+function addCommand(words, raw, depth, found, ctx) {
   const name = commandName(words[0].value)
-  found.push({ name, words, raw })
+  found.push({ name, words, raw, unresolved: words[0].expandable })
 
   if (SHELL_WRAPPERS.has(name)) {
     const rest = words.slice(1)
     const flagIndex = rest.findIndex((w) => /^-[a-zA-Z]*c[a-zA-Z]*$/.test(w.value))
     const payload = flagIndex === -1 ? undefined : rest[flagIndex + 1]
     if (payload) {
-      found.push(...findCommands(payload.value, depth + 1))
+      found.push(...findCommands(payload.value, depth + 1, ctx))
     }
   } else if (name === 'eval') {
-    found.push(...findCommands(words.slice(1).map((w) => w.value).join(' '), depth + 1))
+    found.push(...findCommands(words.slice(1).map((w) => w.value).join(' '), depth + 1, ctx))
   }
 }
 
 // Every simple command in `input`, including commands run by shell wrappers (sh -c, bash -c,
 // eval), by prefix wrappers (sudo, env -S, xargs, timeout), and by $(...) / backticks.
-// Each entry: { name, words, raw }. Nesting deeper than MAX_DEPTH yields one OVERFLOW entry.
-export function findCommands(input, depth = 0) {
+// Each entry: { name, words, raw, unresolved }. `unresolved` is true when the command word is built by expansion,
+// so the name the shell runs is unknown. Nesting deeper than MAX_DEPTH yields one OVERFLOW entry.
+export function findCommands(input, depth = 0, context = null) {
   if (depth > MAX_DEPTH) {
-    return [{ name: OVERFLOW, words: [], raw: [] }]
+    return [{ name: OVERFLOW, words: [], raw: [], unresolved: false }]
   }
-  const { commands, nested } = parseShell(input)
+  // `pipes` is decided once for the whole command, so a pipe anywhere keeps every heredoc body in the scan.
+  const ctx = context ?? { pipes: input.includes('|') }
+  const { commands, nested } = parseShell(input, ctx)
   const found = []
 
   for (const raw of commands) {
@@ -349,18 +460,18 @@ export function findCommands(input, depth = 0) {
       // env -S and similar options take a whole command line as one word.
       for (const w of raw) {
         if (/\s/.test(w.value)) {
-          found.push(...findCommands(w.value, depth + 1))
+          found.push(...findCommands(w.value, depth + 1, ctx))
         }
       }
     }
 
     for (const words of starts) {
-      addCommand(words, raw, depth, found)
+      addCommand(words, raw, depth, found, ctx)
     }
   }
 
   for (const body of nested) {
-    found.push(...findCommands(body, depth + 1))
+    found.push(...findCommands(body, depth + 1, ctx))
   }
   return found
 }

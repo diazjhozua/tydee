@@ -216,6 +216,110 @@ test('blocks a recursive delete hidden in a command substitution after a redirec
   assert.equal(exitCodeFor('echo x > $(rm -rf ~)'), 2)
 })
 
+// Issue #63: a command name built by substitution or backticks hides rm and git from the checks.
+test('blocks a command name built by a substitution or backticks', () => {
+  assert.equal(exitCodeFor('$(echo rm) -rf ~/Documents'), 2)
+  assert.equal(exitCodeFor('$(which git) commit --no-verify -m msg'), 2)
+  assert.equal(exitCodeFor('`echo rm` -rf ~/Documents'), 2)
+  assert.equal(exitCodeFor('`which git` push --force origin main'), 2)
+})
+
+test('names the expansion reason when the command name is built by a substitution', () => {
+  const result = spawnSync(process.execPath, [guard], {
+    input: JSON.stringify({ tool_input: { command: '$(echo rm) -rf ~/Documents' } }),
+    encoding: 'utf8',
+  })
+  assert.equal(result.status, 2)
+  assert.match(result.stderr, /command name built by expansion cannot be checked/)
+})
+
+test('blocks a substituted command name after a prefix wrapper, assignment, or keyword', () => {
+  assert.equal(exitCodeFor('env $(echo rm) -rf ~'), 2)
+  assert.equal(exitCodeFor('FOO=1 $(echo git) commit --no-verify -m "feat: x"'), 2)
+  assert.equal(exitCodeFor('if $(echo rm) -rf ~; then :; fi'), 2)
+})
+
+test('allows a substitution that sets a variable or fills an argument', () => {
+  assert.equal(exitCodeFor('x=$(git rev-parse HEAD) && echo "$x"'), 0)
+  assert.equal(exitCodeFor('echo $(date)'), 0)
+})
+
+// A delete name counts only as a whole word, so a path that contains rm does not trip the wrapper check.
+test('allows a worktree path with rm in its name when nothing can delete recursively', () => {
+  assert.equal(
+    exitCodeFor(
+      'powershell -ExecutionPolicy Bypass -File scripts\\link-worktree-env.ps1 -Worktree "$(pwd)/.claude/worktrees/fix+63-shell-guard-misses-rm-and-git-run"',
+    ),
+    0,
+  )
+})
+
+test('still blocks a delete command beside an expansion in a wrapper argument', () => {
+  assert.equal(exitCodeFor('powershell -Command "$x; Remove-Item $d"'), 2)
+  assert.equal(exitCodeFor('powershell -Command "$x; rm.exe $d"'), 2)
+})
+
+test('blocks a cmd switch glued to a delete name', () => {
+  assert.equal(exitCodeFor('cmd /c rmdir/s $d'), 2)
+  assert.equal(exitCodeFor('cmd /c del/s/q $d'), 2)
+  assert.equal(exitCodeFor('cmd /c "rd/s/q $d"'), 2)
+  assert.equal(exitCodeFor('cmd /c "rmdir /s $d"'), 2)
+})
+
+test('blocks a delete name with a leading dot', () => {
+  assert.equal(exitCodeFor('powershell -Command ".\\rm.exe $d"'), 2)
+})
+
+test('blocks a brace expansion that builds a command name or a delete target', () => {
+  assert.equal(exitCodeFor('{r,}m -rf ~/Documents'), 2)
+  assert.equal(exitCodeFor('{rm,-rf,~/Documents}'), 2)
+  assert.equal(exitCodeFor('rm -rf {~,x}'), 2)
+})
+
+test('allows braces that are literal words', () => {
+  assert.equal(exitCodeFor('echo {a,b}'), 0)
+  assert.equal(exitCodeFor('echo "{a,b}"'), 0)
+})
+
+test('blocks a substitution hidden in text fed to a shell', () => {
+  assert.equal(exitCodeFor("echo '$(echo rm) -rf ~/Documents' | sh"), 2)
+  assert.equal(exitCodeFor("sh <<< '$(echo rm) -rf ~/Documents'"), 2)
+  assert.equal(exitCodeFor('source <(echo $(echo rm) -rf ~/Documents)'), 2)
+})
+
+test('blocks a delete run through watch or coproc, with or without a substitution', () => {
+  assert.equal(exitCodeFor('watch $(echo rm) -rf ~/Documents'), 2)
+  assert.equal(exitCodeFor('watch rm -rf ~/Documents'), 2)
+  assert.equal(exitCodeFor('coproc rm -rf ~/Documents'), 2)
+})
+
+// Here-documents: a quoted delimiter makes the body literal data for a data consumer, so a commit message can carry
+// backtick-led lines. A body given to a shell, a pipe, or an unquoted delimiter (bash expands it) is still scanned.
+test('allows a commit message with a backtick-led line in a quoted heredoc', () => {
+  assert.equal(exitCodeFor("echo \"$(cat <<'EOF'\nfeat: x\n\n`npm test` passes\nEOF\n)\""), 0)
+  assert.equal(exitCodeFor("git commit -F - <<'EOF'\nfeat: x\n\n`npm test` passes\nEOF"), 0)
+})
+
+test('blocks a backtick line in an unquoted heredoc, which bash expands', () => {
+  assert.equal(exitCodeFor('cat <<EOF\n`npm test` passes\nEOF'), 2)
+})
+
+test('blocks a quoted heredoc whose body a shell or a pipe runs', () => {
+  assert.equal(exitCodeFor("sh <<'EOF'\n$(echo rm) -rf ~/Documents\nEOF"), 2)
+  assert.equal(exitCodeFor("cat <<'EOF' | sh\n$(echo rm) -rf ~/Documents\nEOF"), 2)
+})
+
+test('blocks a heredoc body redirected to a file, which a later command could run', () => {
+  assert.equal(exitCodeFor("cat <<'EOF' > out.sh\n$(echo rm) -rf ~/Documents\nEOF"), 2)
+})
+
+test('still checks commands after a skipped heredoc body', () => {
+  assert.equal(exitCodeFor("cat <<'EOF'\nnothing here\nEOF\nrm -rf ~/Documents"), 2)
+  assert.equal(exitCodeFor("cat <<'EOF'; rm -rf ~/Documents\nbody\nEOF"), 2)
+  assert.equal(exitCodeFor('echo "$(cat <<\'EOF\'\nfeat: x\nEOF\n)" && rm -rf ~/Documents'), 2)
+  assert.equal(exitCodeFor("cat <<-'EOF'\n\tbody\n\tEOF\nrm -rf ~/Documents"), 2)
+})
+
 test('blocks a dependency change while node_modules is a junction', () => {
   assert.equal(exitCodeInWorktree('npm --prefix src/Web.Client install lodash', true), 2)
   assert.equal(exitCodeInWorktree('npm --prefix src/Web.Client install', true), 2)

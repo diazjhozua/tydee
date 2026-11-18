@@ -109,6 +109,7 @@ const SHELL_WRAPPERS = new Set([
 const PREFIX_WRAPPERS = new Set([
   'builtin',
   'command',
+  'coproc',
   'env',
   'exec',
   'ionice',
@@ -120,6 +121,7 @@ const PREFIX_WRAPPERS = new Set([
   'sudo',
   'time',
   'timeout',
+  'watch',
   'xargs',
 ])
 
@@ -210,8 +212,11 @@ function stripRedirectTargets(command) {
 // PowerShell `-Worktree` or `-Force` are not short clusters, so they do not match.
 const RECURSIVE_SHORT_CLUSTER = /^-[a-zA-Z]{1,4}$/
 const RECURSIVE_NAMED_SWITCH = /^(-recurse|\/s)$/i
-// Commands that delete: rm, PowerShell Remove-Item and its aliases, cmd rd/rmdir/del/erase.
-const DELETE_COMMAND = /\b(rm|ri|rd|rmdir|del|erase|unlink|shred|remove-item)\b/i
+// Commands that delete: rm, PowerShell Remove-Item and its aliases, cmd rd/rmdir/del/erase. Matched only as a whole
+// word, so a name inside a path (`fix+63-...-rm-and-...`) does not count. A cmd switch glued to the name (`rmdir/s`)
+// does, and so does `.exe` after the name.
+const DELETE_COMMAND =
+  /(?:^|[\s;&|(){}`/.])(?:rm|ri|rd|rmdir|del|erase|unlink|shred|remove-item)(?:\.exe)?(?=$|[\s;&|(){}`]|\/[a-z](?=$|[\s/;&|(){}`]))/i
 
 // An unresolved wrapper argument only matters when the command could delete recursively: it names a delete
 // command or carries a recursive switch. Without either, `powershell -File x.ps1 -Worktree "$(pwd)"` is not a delete.
@@ -357,7 +362,12 @@ function recursiveDeleteTargets(command, projectDir, home) {
   if (recursiveRms.length === 0) {
     // The reader cannot follow every payload (powershell -Command, cmd /c, here-strings, pipes into
     // sh). When an interpreter or wrapper is present and the text names a recursive rm, fail closed.
-    return usesInterpreter(command) && textRecursiveRm(command) ? [{ resolved: null, cwd: projectDir }] : []
+    // A substitution hides its command name from that text check (`echo '$(echo rm) -rf ~' | sh`), so a
+    // delete name next to a substitution fails closed too.
+    const hiddenDelete = /\$\(|`/.test(command) && mayDeleteRecursively(command)
+    return usesInterpreter(command) && (textRecursiveRm(command) || hiddenDelete)
+      ? [{ resolved: null, cwd: projectDir }]
+      : []
   }
 
   const tokens = splitSegments(command).flatMap((segment) => segment.split(/\s+/).filter(Boolean))
@@ -423,8 +433,15 @@ if (!command) {
 }
 
 // Strip quotes and backslashes so `"--out"put` cannot hide a flag from the checks below.
-if (findCommands(command).some((c) => c.name === OVERFLOW)) {
+const commands = findCommands(command)
+if (commands.some((c) => c.name === OVERFLOW)) {
   block('command nesting is too deep to check.')
+}
+
+// A command word built by expansion or substitution (`$(echo rm)`, `` `which git` ``, `$CMD`, `{r,}m`) hides the
+// command the shell runs, so the guard fails closed. The reader sees these where the segment splitter below does not.
+if (commands.some((c) => c.unresolved)) {
+  block('command name built by expansion cannot be checked.')
 }
 
 const normalized = command.replace(/["'\\]/g, '')
