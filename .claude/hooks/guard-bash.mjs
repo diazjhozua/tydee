@@ -27,6 +27,119 @@ const GIT_DIFF = gitRuns('diff|log|difftool')
 
 const isNoVerifyFlag = (flag) => flag === '--no-verify' || /^--no-v[a-z-]*$/.test(flag) || /^-[a-zA-Z]*n[a-zA-Z]*$/.test(flag)
 
+// dotnet and docker arguments that run code or delete data. Prefix allow rules cannot exclude arguments
+// that follow an allowed prefix, so each simple command's arguments are checked here.
+const MSBUILD_SWITCH = /^(?:--?|\/)(?:p|property|logger|l|dl)(?:[:=]|$)/i
+const TEST_CODE_FLAG = /^(?:--?|\/)(?:test-?adapter-?path|logger|settings|l|s)(?:[:=]|$)/i
+// Expansion the shell reader does not resolve: $, backticks, and brace expansion such as {-p:X,}.
+const UNRESOLVED_ARG = /[$`]|\{[^{}]*,[^{}]*\}/
+const UNRESOLVED_REASON = 'dotnet and docker arguments that use shell expansion cannot be checked.'
+const DOCKER_GLOBAL_VALUE_FLAGS = new Set([
+  '-c', '--context', '-H', '--host', '--config', '-l', '--log-level', '--tlscacert', '--tlscert', '--tlskey',
+])
+const COMPOSE_GLOBAL_VALUE_FLAGS = new Set([
+  '-f', '--file', '-p', '--project-name', '--profile', '--env-file', '--project-directory', '--ansi', '--progress', '--parallel',
+])
+const VOLUME_FLAG = (token) => token === '--volumes' || token.startsWith('--volumes=') || (/^-[a-z]+$/i.test(token) && /v/i.test(token))
+const WRAPPER_SHELLS = new Set(['powershell', 'pwsh', 'cmd'])
+// Raw text checks for wrapper shells, which the shell reader does not unwrap.
+const RAW_COLON_SWITCH = /(?<![\w-])(?:--?|\/)(?:p|property|logger|l|dl)[:=]/i
+const RAW_BARE_SWITCH = /(?<![\w-])(?:--?|\/)(?:p|property|logger|l|dl)(?=\s|$)/i
+const RAW_TEST_FLAG = /(?<![\w-])(?:(?:--?|\/)(?:test-?adapter-?path|logger|settings)(?:[:=]|(?=\s|$))|(?:--?|\/)[ls](?=\s|$))/i
+const DOCKER_DATA_RAW = /\bvolume\s+(?:rm|remove|prune)\b|\bsystem\s+prune\b[^\n;&|]*\s--volumes\b|\b(?:down|rm)\b[^\n;&|]*?(?:\s--volumes\b|\s-[a-z]*v[a-z]*(?=\s|$))/i
+
+function dotnetSwitchReason(args) {
+  // `dotnet ef -p` names a project, not an MSBuild property, so a bare -p is allowed there.
+  const isEf = args[0] === 'ef'
+  if (args.some((token) => MSBUILD_SWITCH.test(token) && !(isEf && /^(?:--?|\/)p$/i.test(token)))) {
+    return 'dotnet MSBuild switches can run arbitrary commands during the build.'
+  }
+  if (args.some((token) => token === 'test' || token === 'vstest') && args.some((token) => TEST_CODE_FLAG.test(token))) {
+    return 'dotnet test adapter, logger, and settings switches can load code from outside the repo.'
+  }
+  return null
+}
+
+// Handles `docker [globals] compose [globals] down|rm`, `docker [globals] volume rm`, and the legacy docker-compose binary.
+function dockerDataReason(name, args) {
+  let i = 0
+  const skipFlags = (valueFlags) => {
+    while (i < args.length && args[i].startsWith('-')) {
+      i += valueFlags.has(args[i]) ? 2 : 1
+    }
+  }
+  let group = name === 'docker-compose' ? 'compose' : undefined
+  if (name === 'docker') {
+    skipFlags(DOCKER_GLOBAL_VALUE_FLAGS)
+    group = args[i++]
+  }
+  if (group === 'volume' && ['rm', 'remove', 'prune'].includes(args[i])) {
+    return 'docker volume rm, remove, and prune delete volume data.'
+  }
+  if (group === 'system' && args[i] === 'prune' && args.slice(i + 1).some(VOLUME_FLAG)) {
+    return 'docker system prune --volumes deletes volume data.'
+  }
+  if (group === 'compose') {
+    skipFlags(COMPOSE_GLOBAL_VALUE_FLAGS)
+    const sub = args[i]
+    if ((sub === 'down' || sub === 'rm') && args.slice(i + 1).some(VOLUME_FLAG)) {
+      return 'docker compose down or rm with --volumes deletes the Postgres volume.'
+    }
+  }
+  return null
+}
+
+function rawDotnetReason(text) {
+  if (RAW_COLON_SWITCH.test(text)) {
+    return 'dotnet MSBuild switches can run arbitrary commands during the build.'
+  }
+  if (!/\bdotnet\s+ef\b/i.test(text) && RAW_BARE_SWITCH.test(text)) {
+    return 'dotnet MSBuild switches can run arbitrary commands during the build.'
+  }
+  if (/\b(?:test|vstest)\b/i.test(text) && RAW_TEST_FLAG.test(text)) {
+    return 'dotnet test adapter, logger, and settings switches can load code from outside the repo.'
+  }
+  return null
+}
+
+// Wrapper shells (powershell, pwsh, cmd) are not unwrapped by the shell reader, so their text is checked directly.
+function rawReason(command, commands) {
+  if (!commands.some((c) => WRAPPER_SHELLS.has(c.name))) {
+    return null
+  }
+  const text = command.replace(/["'`^]/g, '')
+  if (/\bdotnet(?:\.exe)?\b/i.test(text)) {
+    const reason = rawDotnetReason(text)
+    if (reason) {
+      return reason
+    }
+  }
+  if (/\bdocker(?:-compose)?\b/i.test(text) && DOCKER_DATA_RAW.test(text)) {
+    return 'docker commands that delete volume data are blocked inside a shell wrapper.'
+  }
+  return null
+}
+
+function dotnetDockerReason(command, commands) {
+  for (const { name, words } of commands) {
+    if (name === OVERFLOW) {
+      continue
+    }
+    const args = words.slice(1).map((w) => w.value)
+    const unresolvedArgs = args.some((arg) => UNRESOLVED_ARG.test(arg))
+    let reason = null
+    if (name === 'dotnet') {
+      reason = unresolvedArgs ? UNRESOLVED_REASON : dotnetSwitchReason(args)
+    } else if (name === 'docker' || name === 'docker-compose') {
+      reason = unresolvedArgs ? UNRESOLVED_REASON : dockerDataReason(name, args)
+    }
+    if (reason) {
+      return reason
+    }
+  }
+  return rawReason(command, commands)
+}
+
 function readInput() {
   return new Promise((resolve) => {
     let raw = ''
@@ -442,6 +555,11 @@ if (commands.some((c) => c.name === OVERFLOW)) {
 // command the shell runs, so the guard fails closed. The reader sees these where the segment splitter below does not.
 if (commands.some((c) => c.unresolved)) {
   block('command name built by expansion cannot be checked.')
+}
+
+const dataReason = dotnetDockerReason(command, commands)
+if (dataReason) {
+  block(dataReason)
 }
 
 const normalized = command.replace(/["'\\]/g, '')

@@ -413,7 +413,7 @@ function effectiveWords(words) {
 }
 
 // Commands a guard must see even when a prefix wrapper takes option values the reader does not model.
-const CANDIDATE_NAMES = new Set([...INTERPRETERS, 'git', 'rm'])
+const CANDIDATE_NAMES = new Set([...INTERPRETERS, 'git', 'rm', 'dotnet', 'docker', 'docker-compose'])
 
 function addCommand(words, raw, depth, found, ctx) {
   const name = commandName(words[0].value)
