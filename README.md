@@ -196,6 +196,17 @@ The client image bakes in `NEXT_PUBLIC_API_URL` at build time (the workflow uses
 public API URL) and uses the same value for `API_URL` so the auth BFF can reach the API.
 The API image listens on port 5000 and applies migrations on startup.
 
+Behind Cloudflare Tunnel, set the client's `API_URL` to the internal address
+`http://tydee-api:5000` so the auth BFF calls stay on the Docker network. The API reads
+the visitor's address from `CF-Connecting-IP`, but only from senders in
+`ClientAddress:TrustedNetworks` (default `172.16.0.0/12`). Set
+`ClientAddress__TrustedNetworks__0` if your Docker network uses another range. Do not set
+`ASPNETCORE_FORWARDEDHEADERS_ENABLED`; it makes the API trust every sender. Keep ports
+3000 and 5000 unpublished on the host. The client and API must be reachable only through
+the Docker network and the tunnel, because any sender in the trusted range can set
+`CF-Connecting-IP`. Accepted risk: any container on that network can pick its own
+rate-limit bucket.
+
 Provide production configuration through environment variables or a secret store:
 
 ```
