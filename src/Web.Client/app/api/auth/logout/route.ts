@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { REFRESH_TOKEN_COOKIE, clearSessionCookies } from "@/lib/auth/cookies";
+import { clientIpHeaders } from "@/lib/auth/clientIp";
 
 const API_URL = process.env.API_URL;
 
@@ -12,7 +13,7 @@ export async function POST(request: NextRequest) {
     try {
       const res = await fetch(`${API_URL}/api/v1/auth/logout`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...clientIpHeaders(request) },
         body: JSON.stringify({ refreshToken }),
         signal: AbortSignal.timeout(5000),
       });

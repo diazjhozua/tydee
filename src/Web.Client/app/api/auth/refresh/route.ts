@@ -5,6 +5,7 @@ import {
   clearSessionCookies,
   hasRememberMe,
 } from "@/lib/auth/cookies";
+import { clientIpHeaders } from "@/lib/auth/clientIp";
 
 export const maxDuration = 60;
 
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
     // rotated the token on the server; the cookie is kept, and the next refresh then reads as reuse.
     res = await fetch(`${API_URL}/api/v1/auth/refresh-token`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...clientIpHeaders(request) },
       body: JSON.stringify({ refreshToken }),
       signal: AbortSignal.timeout(10_000),
     });
