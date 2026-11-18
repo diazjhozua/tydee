@@ -76,6 +76,7 @@ Errors: expected failures use `Result`/`Error`/`ErrorType` from `SharedKernel`, 
 - Email verification tokens expire after 24 hours; password reset tokens after 1 hour. `ForgotPassword` answers identically for unknown emails.
 - Passwords use ASP.NET Core Identity's `PasswordHasher`. The `Admin` policy requires the `Admin` role; `Admin:Emails` grants it on login and never revokes a manually set flag.
 - Rate limiting: a global fixed window, an `auth` policy on auth endpoints, a per-account login budget (`LoginAttemptLimiter`), and a `suggestion` policy. Configuration lives under `RateLimiting` in `appsettings.json`.
+- The limiters count the client address that `ClientAddressMiddleware` sets before they run: `CF-Connecting-IP` when the TCP peer is inside `ClientAddress:TrustedNetworks`, otherwise the peer itself. Never enable `ASPNETCORE_FORWARDEDHEADERS_ENABLED`; it makes the API trust every sender's forwarded address.
 - CORS origins come from `Cors:AllowedOrigins`. Security headers (`nosniff`, `DENY`, `no-referrer`) are set in `UseSecurityHeaders`; HSTS is enabled outside Development; the Kestrel `Server` header is disabled.
 
 ## Client

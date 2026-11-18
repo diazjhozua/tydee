@@ -72,8 +72,9 @@ public static class RateLimitingExtensions
         }
     }
 
-    // Requires forwarded headers to be honored behind a proxy (App Service),
-    // otherwise every caller shares the proxy's address.
+    // ClientAddressMiddleware sets RemoteIpAddress to the visitor's address (CF-Connecting-IP from a
+    // trusted network) before these limiters run. Without it, every caller behind the tunnel shares
+    // the proxy's address.
     private static string ClientKey(HttpContext context) =>
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 }
