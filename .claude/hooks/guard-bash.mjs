@@ -33,8 +33,6 @@ const MSBUILD_SWITCH = /^(?:--?|\/)(?:p|property|logger|l|dl)(?:[:=]|$)/i
 const TEST_CODE_FLAG = /^(?:--?|\/)(?:test-?adapter-?path|logger|settings|l|s)(?:[:=]|$)/i
 // Expansion the shell reader does not resolve: $, backticks, and brace expansion such as {-p:X,}.
 const UNRESOLVED_ARG = /[$`]|\{[^{}]*,[^{}]*\}/
-// Command names that are not literal words, such as $DN or $(which dotnet).
-const UNRESOLVED_NAME = /[$`(){}]/
 const UNRESOLVED_REASON = 'dotnet and docker arguments that use shell expansion cannot be checked.'
 const DOCKER_GLOBAL_VALUE_FLAGS = new Set([
   '-c', '--context', '-H', '--host', '--config', '-l', '--log-level', '--tlscacert', '--tlscert', '--tlskey',
@@ -44,11 +42,10 @@ const COMPOSE_GLOBAL_VALUE_FLAGS = new Set([
 ])
 const VOLUME_FLAG = (token) => token === '--volumes' || token.startsWith('--volumes=') || (/^-[a-z]+$/i.test(token) && /v/i.test(token))
 const WRAPPER_SHELLS = new Set(['powershell', 'pwsh', 'cmd'])
-// Raw text checks for wrapper shells and unresolved command names, which the shell reader does not resolve.
+// Raw text checks for wrapper shells, which the shell reader does not unwrap.
 const RAW_COLON_SWITCH = /(?<![\w-])(?:--?|\/)(?:p|property|logger|l|dl)[:=]/i
 const RAW_BARE_SWITCH = /(?<![\w-])(?:--?|\/)(?:p|property|logger|l|dl)(?=\s|$)/i
 const RAW_TEST_FLAG = /(?<![\w-])(?:(?:--?|\/)(?:test-?adapter-?path|logger|settings)(?:[:=]|(?=\s|$))|(?:--?|\/)[ls](?=\s|$))/i
-const DOTNET_VERB_RAW = /\b(?:build|test|vstest|run|restore|publish|pack|msbuild)\b/i
 const DOCKER_DATA_RAW = /\bvolume\s+(?:rm|remove|prune)\b|\bsystem\s+prune\b[^\n;&|]*\s--volumes\b|\b(?:down|rm)\b[^\n;&|]*?(?:\s--volumes\b|\s-[a-z]*v[a-z]*(?=\s|$))/i
 
 function dotnetSwitchReason(args) {
@@ -105,31 +102,26 @@ function rawDotnetReason(text) {
   return null
 }
 
-// Wrapper shells (powershell, pwsh, cmd) are not unwrapped by the shell reader, and command names such as $DN or
-// $(which dotnet) cannot be resolved. Their text is checked directly.
-function rawReason(command, parsed) {
-  const wrapped = parsed.some((c) => WRAPPER_SHELLS.has(c.name))
-  const unresolvedName = parsed.some((c) => c.name !== OVERFLOW && UNRESOLVED_NAME.test(c.name))
-  if (!wrapped && !unresolvedName) {
+// Wrapper shells (powershell, pwsh, cmd) are not unwrapped by the shell reader, so their text is checked directly.
+function rawReason(command, commands) {
+  if (!commands.some((c) => WRAPPER_SHELLS.has(c.name))) {
     return null
   }
   const text = command.replace(/["'`^]/g, '')
-  const mentionsDotnet = /\bdotnet(?:\.exe)?\b/i.test(text)
-  const mentionsDocker = /\bdocker(?:-compose)?\b/i.test(text)
-  if (mentionsDotnet || (unresolvedName && DOTNET_VERB_RAW.test(text))) {
+  if (/\bdotnet(?:\.exe)?\b/i.test(text)) {
     const reason = rawDotnetReason(text)
     if (reason) {
       return reason
     }
   }
-  if ((mentionsDocker || unresolvedName) && DOCKER_DATA_RAW.test(text)) {
-    return 'docker commands that delete volume data are blocked here.'
+  if (/\bdocker(?:-compose)?\b/i.test(text) && DOCKER_DATA_RAW.test(text)) {
+    return 'docker commands that delete volume data are blocked inside a shell wrapper.'
   }
   return null
 }
 
-function dotnetDockerReason(command, parsed) {
-  for (const { name, words } of parsed) {
+function dotnetDockerReason(command, commands) {
+  for (const { name, words } of commands) {
     if (name === OVERFLOW) {
       continue
     }
@@ -145,7 +137,7 @@ function dotnetDockerReason(command, parsed) {
       return reason
     }
   }
-  return rawReason(command, parsed)
+  return rawReason(command, commands)
 }
 
 function readInput() {
@@ -230,6 +222,7 @@ const SHELL_WRAPPERS = new Set([
 const PREFIX_WRAPPERS = new Set([
   'builtin',
   'command',
+  'coproc',
   'env',
   'exec',
   'ionice',
@@ -241,6 +234,7 @@ const PREFIX_WRAPPERS = new Set([
   'sudo',
   'time',
   'timeout',
+  'watch',
   'xargs',
 ])
 
@@ -331,8 +325,11 @@ function stripRedirectTargets(command) {
 // PowerShell `-Worktree` or `-Force` are not short clusters, so they do not match.
 const RECURSIVE_SHORT_CLUSTER = /^-[a-zA-Z]{1,4}$/
 const RECURSIVE_NAMED_SWITCH = /^(-recurse|\/s)$/i
-// Commands that delete: rm, PowerShell Remove-Item and its aliases, cmd rd/rmdir/del/erase.
-const DELETE_COMMAND = /\b(rm|ri|rd|rmdir|del|erase|unlink|shred|remove-item)\b/i
+// Commands that delete: rm, PowerShell Remove-Item and its aliases, cmd rd/rmdir/del/erase. Matched only as a whole
+// word, so a name inside a path (`fix+63-...-rm-and-...`) does not count. A cmd switch glued to the name (`rmdir/s`)
+// does, and so does `.exe` after the name.
+const DELETE_COMMAND =
+  /(?:^|[\s;&|(){}`/.])(?:rm|ri|rd|rmdir|del|erase|unlink|shred|remove-item)(?:\.exe)?(?=$|[\s;&|(){}`]|\/[a-z](?=$|[\s/;&|(){}`]))/i
 
 // An unresolved wrapper argument only matters when the command could delete recursively: it names a delete
 // command or carries a recursive switch. Without either, `powershell -File x.ps1 -Worktree "$(pwd)"` is not a delete.
@@ -478,7 +475,12 @@ function recursiveDeleteTargets(command, projectDir, home) {
   if (recursiveRms.length === 0) {
     // The reader cannot follow every payload (powershell -Command, cmd /c, here-strings, pipes into
     // sh). When an interpreter or wrapper is present and the text names a recursive rm, fail closed.
-    return usesInterpreter(command) && textRecursiveRm(command) ? [{ resolved: null, cwd: projectDir }] : []
+    // A substitution hides its command name from that text check (`echo '$(echo rm) -rf ~' | sh`), so a
+    // delete name next to a substitution fails closed too.
+    const hiddenDelete = /\$\(|`/.test(command) && mayDeleteRecursively(command)
+    return usesInterpreter(command) && (textRecursiveRm(command) || hiddenDelete)
+      ? [{ resolved: null, cwd: projectDir }]
+      : []
   }
 
   const tokens = splitSegments(command).flatMap((segment) => segment.split(/\s+/).filter(Boolean))
@@ -544,12 +546,18 @@ if (!command) {
 }
 
 // Strip quotes and backslashes so `"--out"put` cannot hide a flag from the checks below.
-const parsed = findCommands(command)
-if (parsed.some((c) => c.name === OVERFLOW)) {
+const commands = findCommands(command)
+if (commands.some((c) => c.name === OVERFLOW)) {
   block('command nesting is too deep to check.')
 }
 
-const dataReason = dotnetDockerReason(command, parsed)
+// A command word built by expansion or substitution (`$(echo rm)`, `` `which git` ``, `$CMD`, `{r,}m`) hides the
+// command the shell runs, so the guard fails closed. The reader sees these where the segment splitter below does not.
+if (commands.some((c) => c.unresolved)) {
+  block('command name built by expansion cannot be checked.')
+}
+
+const dataReason = dotnetDockerReason(command, commands)
 if (dataReason) {
   block(dataReason)
 }
