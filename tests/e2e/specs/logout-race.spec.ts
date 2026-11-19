@@ -17,6 +17,26 @@ test("a logout in one tab waits for a refresh held in another, and the session e
 
   // Tab A refreshes the same cookie. The BFF rotates the token, and the response is held before the browser sees it.
   const refreshTab = await context.newPage();
+
+  // Track tab A's /api/auth/ requests, so the test can wait for a stale refresh before it closes the tab.
+  let pendingAuth = 0;
+  let lastAuthActivity = Date.now();
+  const isAuthRequest = (url: string) => url.includes("/api/auth/");
+  refreshTab.on("request", (request) => {
+    if (isAuthRequest(request.url())) {
+      pendingAuth += 1;
+      lastAuthActivity = Date.now();
+    }
+  });
+  const settleAuthRequest = (request: { url(): string }) => {
+    if (isAuthRequest(request.url())) {
+      pendingAuth -= 1;
+      lastAuthActivity = Date.now();
+    }
+  };
+  refreshTab.on("requestfinished", settleAuthRequest);
+  refreshTab.on("requestfailed", settleAuthRequest);
+
   const hold = await holdNextRefresh(refreshTab);
   await refreshTab.goto("/app", { waitUntil: "commit" });
   await hold.rotationHeld;
@@ -47,6 +67,12 @@ test("a logout in one tab waits for a refresh held in another, and the session e
   await expect
     .poll(async () => (await context.cookies()).map((cookie) => cookie.name), { timeout: 10_000 })
     .not.toContain("refresh_token");
+
+  // Tab A can still send a refresh after logout, and its "No session" reply clears cookies. Wait until tab A has no
+  // /api/auth/ request in flight and none has started for 500 ms, so that reply cannot land after the cookie is restored.
+  await expect
+    .poll(() => pendingAuth === 0 && Date.now() - lastAuthActivity > 500, { timeout: 10_000, intervals: [50] })
+    .toBe(true);
   await refreshTab.close();
 
   // The server revoked the session the held refresh created too. Presenting its token is reuse.

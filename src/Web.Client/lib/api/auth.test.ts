@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { OFFLINE_QUEUE_KEY } from "@/lib/offline/offlineQueue";
 
 type AuthModule = typeof import("@/lib/api/auth");
 type LoginArgs = Parameters<AuthModule["login"]>[0];
@@ -90,6 +91,7 @@ describe.each([
 ])("session ordering %s", (_label, withLocks) => {
   beforeEach(() => {
     channels.length = 0;
+    window.localStorage.clear();
     vi.stubGlobal("BroadcastChannel", FakeChannel);
     if (withLocks) {
       vi.stubGlobal("navigator", { locks: fakeLocks() });
@@ -428,5 +430,80 @@ describe.each([
 
     await settle();
     expect(callsTo(calls, LOGOUT)).toHaveLength(3);
+  });
+
+  it("a refresh answered 401 ends the session and discards the queued offline writes", async () => {
+    window.localStorage.setItem(OFFLINE_QUEUE_KEY, "{}");
+    const calls = queueFetch();
+    const { auth, useAuthStore } = await load();
+
+    const refreshing = auth.refreshAccessToken();
+    await settle();
+    callsTo(calls, REFRESH)[0].answer(unauthorized());
+
+    await expect(refreshing).resolves.toBeNull();
+    expect(useAuthStore.getState().accessToken).toBeNull();
+    expect(window.localStorage.getItem(OFFLINE_QUEUE_KEY)).toBeNull();
+  });
+
+  it("a refresh answered 401 notifies the session-ended handlers, and a network failure does not", async () => {
+    const calls = queueFetch();
+    const { auth } = await load();
+    const handler = vi.fn();
+    auth.onSessionEnded(handler);
+
+    const refreshing = auth.refreshAccessToken();
+    await settle();
+    callsTo(calls, REFRESH)[0].answer(unauthorized());
+    await refreshing;
+    expect(handler).toHaveBeenCalledTimes(1);
+
+    const retrying = auth.refreshAccessToken();
+    await settle();
+    callsTo(calls, REFRESH)[1].fail(new TypeError("Failed to fetch"));
+    await retrying;
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("a refresh that fails on the network keeps the queued offline writes", async () => {
+    window.localStorage.setItem(OFFLINE_QUEUE_KEY, "{}");
+    const calls = queueFetch();
+    const { auth } = await load();
+
+    const refreshing = auth.refreshAccessToken();
+    await settle();
+    callsTo(calls, REFRESH)[0].fail(new TypeError("Failed to fetch"));
+
+    await expect(refreshing).resolves.toBeNull();
+    expect(window.localStorage.getItem(OFFLINE_QUEUE_KEY)).toBe("{}");
+  });
+
+  it("a logout the server confirms discards the queued offline writes", async () => {
+    window.localStorage.setItem(OFFLINE_QUEUE_KEY, "{}");
+    const calls = queueFetch();
+    const { auth } = await load();
+
+    const loggingOut = auth.logout();
+    await settle();
+    callsTo(calls, LOGOUT)[0].answer(noContent());
+    await loggingOut;
+
+    expect(window.localStorage.getItem(OFFLINE_QUEUE_KEY)).toBeNull();
+
+    await settle();
+    callsTo(calls, LOGOUT).forEach((call) => call.answer(noContent()));
+  });
+
+  it("a logout the server does not confirm keeps the queued offline writes", async () => {
+    window.localStorage.setItem(OFFLINE_QUEUE_KEY, "{}");
+    const calls = queueFetch();
+    const { auth } = await load();
+
+    const loggingOut = auth.logout();
+    await settle();
+    callsTo(calls, LOGOUT)[0].answer(new Response(null, { status: 503 }));
+
+    await expect(loggingOut).rejects.toMatchObject({ status: 503 });
+    expect(window.localStorage.getItem(OFFLINE_QUEUE_KEY)).toBe("{}");
   });
 });

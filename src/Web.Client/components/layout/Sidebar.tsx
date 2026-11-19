@@ -5,15 +5,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/brand/Logo";
 import { NavItemLink } from "@/components/layout/NavItemLink";
-import { useLogout } from "@/lib/hooks/useAuth";
+import { SignOutDialog } from "@/components/layout/SignOutDialog";
 import { useMe } from "@/lib/hooks/useMe";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
+import { useSignOut } from "@/lib/hooks/useSignOut";
 import { adminNav, isNavActive, type NavItem, primaryNav, settingsNav } from "@/lib/navigation";
 
 export function Sidebar({ items = primaryNav }: { items?: NavItem[] }) {
   const pathname = usePathname();
   const { data: me } = useMe();
-  const logout = useLogout();
+  const signOut = useSignOut();
   const isOnline = useOnlineStatus();
 
   return (
@@ -45,8 +46,8 @@ export function Sidebar({ items = primaryNav }: { items?: NavItem[] }) {
       <div className="p-3">
         <button
           type="button"
-          onClick={() => logout.mutate()}
-          disabled={!isOnline || logout.isPending}
+          onClick={signOut.requestSignOut}
+          disabled={!isOnline || signOut.isPending}
           aria-describedby={isOnline ? undefined : "sidebar-sign-out-hint"}
           className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
         >
@@ -59,6 +60,14 @@ export function Sidebar({ items = primaryNav }: { items?: NavItem[] }) {
           </p>
         )}
       </div>
+
+      <SignOutDialog
+        open={signOut.askOpen}
+        onOpenChange={signOut.setAskOpen}
+        count={signOut.count}
+        pending={signOut.isPending}
+        onConfirm={signOut.confirm}
+      />
     </aside>
   );
 }

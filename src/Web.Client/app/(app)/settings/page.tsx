@@ -27,7 +27,8 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { LEGAL_LINKS } from "@/lib/legal/constants";
-import { useLogout } from "@/lib/hooks/useAuth";
+import { SignOutDialog } from "@/components/layout/SignOutDialog";
+import { useSignOut } from "@/lib/hooks/useSignOut";
 import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
 import { useMe, useUpdateCurrency, useUpdateDefaultPage } from "@/lib/hooks/useMe";
 import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
@@ -67,7 +68,7 @@ export default function SettingsPage() {
   const { data: me } = useMe();
   const updateCurrency = useUpdateCurrency();
   const updateDefaultPage = useUpdateDefaultPage();
-  const logout = useLogout();
+  const signOut = useSignOut();
   const isOnline = useOnlineStatus();
   const install = useInstallPrompt();
   const { theme, setTheme } = useTheme();
@@ -209,8 +210,8 @@ export default function SettingsPage() {
                 variant="ghost"
                 size="sm"
                 className="rounded-full text-destructive hover:text-destructive"
-                onClick={() => logout.mutate()}
-                disabled={!isOnline || logout.isPending}
+                onClick={signOut.requestSignOut}
+                disabled={!isOnline || signOut.isPending}
                 aria-describedby={isOnline ? undefined : "settings-log-out-hint"}
               >
                 <LogOut className="size-4" /> Log out
@@ -221,6 +222,13 @@ export default function SettingsPage() {
                 </p>
               )}
             </div>
+            <SignOutDialog
+              open={signOut.askOpen}
+              onOpenChange={signOut.setAskOpen}
+              count={signOut.count}
+              pending={signOut.isPending}
+              onConfirm={signOut.confirm}
+            />
           </div>
         </div>
       </SectionCard>

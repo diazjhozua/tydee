@@ -1,3 +1,4 @@
+import { discardOfflineQueue } from "@/lib/offline/offlineQueue";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { ApiError } from "@/lib/types/api";
 import { AuthTokens, LoginRequest, RegisterRequest } from "@/lib/types/auth";
@@ -80,6 +81,8 @@ let onLogoutElsewhere: (() => void) | null = null;
 function endSessionHere(): void {
   logoutEpoch += 1;
   useAuthStore.getState().clear();
+  // Storage goes now. The in-memory queue is cleared when logout settles (useLogout), which discards storage again.
+  discardOfflineQueue();
 }
 
 logoutChannel?.addEventListener("message", (event: MessageEvent) => {
@@ -88,6 +91,21 @@ logoutChannel?.addEventListener("message", (event: MessageEvent) => {
     onLogoutElsewhere?.();
   }
 });
+
+// Handlers run when a refresh answers 401: the session ended without a logout (expired, or revoked elsewhere).
+const sessionEndedHandlers = new Set<() => void>();
+
+/**
+ * Runs `handler` when a refresh answers 401, so the page can drop its in-memory data as well as storage. Returns a
+ * function that stops it.
+ */
+export function onSessionEnded(handler: () => void): () => void {
+  sessionEndedHandlers.add(handler);
+
+  return () => {
+    sessionEndedHandlers.delete(handler);
+  };
+}
 
 /**
  * Runs `handler` when another tab of this browser profile logs out, so this tab can drop cached data too.
@@ -231,8 +249,11 @@ async function doRefresh(epochAtRequest: number): Promise<string | null> {
   }
 
   if (!res.ok) {
+    // Only a real 401 ends the session. A network failure or timeout leaves the queue and cache for the next attempt.
     if (res.status === 401) {
       useAuthStore.getState().clear();
+      discardOfflineQueue();
+      sessionEndedHandlers.forEach((handler) => handler());
     }
     return null;
   }

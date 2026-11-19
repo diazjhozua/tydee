@@ -1,14 +1,15 @@
 "use client";
 
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
-import { MutationCache, QueryClient } from "@tanstack/react-query";
+import { hashKey, MutationCache, type MutationKey, QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { createCardPayment } from "@/lib/api/cardPayments";
 import { createExpense, deleteExpense, updateExpense } from "@/lib/api/expenses";
 import { createIncome, deleteIncome, updateIncome } from "@/lib/api/incomes";
 import { createSuggestion } from "@/lib/api/suggestions";
+import { OFFLINE_QUEUE_KEY, purgeLegacyCache } from "@/lib/offline/offlineQueue";
 import { ApiError } from "@/lib/types/api";
 import { ExpenseRequest } from "@/lib/types/expense";
 import { IncomeRequest } from "@/lib/types/income";
@@ -31,7 +32,21 @@ function noopStorage(): Storage {
   };
 }
 
+// Registers the function that replays a queued write, and records its key. Only recorded keys are written to
+// storage. TanStack's getMutationDefaults does not answer "is this key registered", so the set is kept here.
+function registerReplay<TData, TVariables>(
+  client: QueryClient,
+  replayableKeys: Set<string>,
+  mutationKey: MutationKey,
+  options: { mutationFn: (variables: TVariables) => Promise<TData> },
+) {
+  client.setMutationDefaults(mutationKey, options);
+  replayableKeys.add(hashKey(mutationKey));
+}
+
 export function QueryProvider({ children }: { children: React.ReactNode }) {
+  const [replayableKeys] = useState(() => new Set<string>());
+
   const [queryClient] = useState(() => {
     // A mutation resumed from persisted storage after a full app close runs
     // against a fresh observer, so the useMutation() call's own onSuccess
@@ -83,24 +98,24 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
 
     // Restored (persisted) mutations lose their function on JSON round-trip;
     // these defaults are what resumePausedMutations() actually invokes.
-    client.setMutationDefaults(["expenses", "create"], { mutationFn: createExpense });
-    client.setMutationDefaults(["incomes", "create"], { mutationFn: createIncome });
-    client.setMutationDefaults(["expenses", "update"], {
+    registerReplay(client, replayableKeys, ["expenses", "create"], { mutationFn: createExpense });
+    registerReplay(client, replayableKeys, ["incomes", "create"], { mutationFn: createIncome });
+    registerReplay(client, replayableKeys, ["expenses", "update"], {
       mutationFn: (vars: { expenseId: string; request: ExpenseRequest }) =>
         updateExpense(vars.expenseId, vars.request),
     });
-    client.setMutationDefaults(["expenses", "delete"], {
+    registerReplay(client, replayableKeys, ["expenses", "delete"], {
       mutationFn: (vars: { expenseId: string; date: string }) => deleteExpense(vars.expenseId),
     });
-    client.setMutationDefaults(["incomes", "update"], {
+    registerReplay(client, replayableKeys, ["incomes", "update"], {
       mutationFn: (vars: { incomeId: string; request: IncomeRequest }) =>
         updateIncome(vars.incomeId, vars.request),
     });
-    client.setMutationDefaults(["incomes", "delete"], {
+    registerReplay(client, replayableKeys, ["incomes", "delete"], {
       mutationFn: (vars: { incomeId: string; date: string }) => deleteIncome(vars.incomeId),
     });
-    client.setMutationDefaults(["suggestions", "create"], { mutationFn: createSuggestion });
-    client.setMutationDefaults(["card-payments", "create"], { mutationFn: createCardPayment });
+    registerReplay(client, replayableKeys, ["suggestions", "create"], { mutationFn: createSuggestion });
+    registerReplay(client, replayableKeys, ["card-payments", "create"], { mutationFn: createCardPayment });
 
     return client;
   });
@@ -108,8 +123,13 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
   const [persister] = useState(() =>
     createSyncStoragePersister({
       storage: typeof window === "undefined" ? noopStorage() : window.localStorage,
+      key: OFFLINE_QUEUE_KEY,
     }),
   );
+
+  useEffect(() => {
+    purgeLegacyCache();
+  }, []);
 
   return (
     <PersistQueryClientProvider
@@ -117,7 +137,14 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       persistOptions={{
         persister,
         dehydrateOptions: {
-          shouldDehydrateMutation: (mutation) => mutation.state.isPaused,
+          // Query data (dashboard, expenses, me, admin users) is never written to storage.
+          shouldDehydrateQuery: () => false,
+          // Only queued writes persist, and only ones with a registered replay function. Auth mutations carry
+          // passwords and reset tokens, and mutations without a replay function cannot resume after a reload.
+          shouldDehydrateMutation: (mutation) =>
+            mutation.state.isPaused &&
+            mutation.options.mutationKey !== undefined &&
+            replayableKeys.has(hashKey(mutation.options.mutationKey)),
         },
       }}
       onSuccess={() => {

@@ -2,10 +2,12 @@ import { QueryClient, QueryClientProvider, onlineManager } from "@tanstack/react
 import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { RegisterRequest } from "@/lib/types/auth";
 
 const state = vi.hoisted(() => ({
   push: vi.fn(),
   logout: vi.fn(),
+  register: vi.fn(async () => ({})),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -17,7 +19,7 @@ vi.mock("@/lib/api/auth", () => ({
   forgotPassword: vi.fn(),
   login: vi.fn(),
   logout: state.logout,
-  register: vi.fn(),
+  register: state.register,
   resendVerification: vi.fn(),
   resetPassword: vi.fn(),
   verifyEmail: vi.fn(),
@@ -28,16 +30,20 @@ vi.mock("@/lib/api/me", () => ({ getMe: vi.fn() }));
 vi.mock("sonner", () => ({ toast: { error: vi.fn() } }));
 
 import { toast } from "sonner";
-import { useLogout } from "@/lib/hooks/useAuth";
+import { useLogout, useRegister } from "@/lib/hooks/useAuth";
+
+function wrapperFor(queryClient: QueryClient) {
+  function Wrapper({ children }: { children: ReactNode }) {
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  }
+  return Wrapper;
+}
 
 function setup() {
   const queryClient = new QueryClient();
   queryClient.setQueryData(["accounts"], []);
 
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-  const hook = renderHook(() => useLogout(), { wrapper });
+  const hook = renderHook(() => useLogout(), { wrapper: wrapperFor(queryClient) });
 
   return { queryClient, ...hook };
 }
@@ -91,5 +97,28 @@ describe("useLogout", () => {
     expect(state.logout).toHaveBeenCalledTimes(1);
     expect(result.current.isPaused).toBe(false);
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
+  });
+});
+
+describe("useRegister", () => {
+  beforeEach(() => {
+    state.register.mockClear();
+  });
+
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
+  it("sends the request while offline instead of pausing, so the password is never queued", async () => {
+    onlineManager.setOnline(false);
+    const queryClient = new QueryClient();
+    const { result } = renderHook(() => useRegister(), { wrapper: wrapperFor(queryClient) });
+
+    act(() => {
+      result.current.mutate({ email: "a@example.com", password: "hunter2" } as RegisterRequest);
+    });
+
+    await waitFor(() => expect(state.register).toHaveBeenCalledTimes(1));
+    expect(queryClient.getMutationCache().getAll()[0]?.state.isPaused).toBe(false);
   });
 });

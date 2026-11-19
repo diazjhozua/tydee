@@ -28,6 +28,10 @@ vi.mock("@/lib/hooks/useOnlineStatus", () => ({
   useOnlineStatus: () => state.online,
 }));
 
+vi.mock("@/lib/hooks/useUnsyncedCount", () => ({
+  useUnsyncedCount: () => 0,
+}));
+
 vi.mock("@/lib/hooks/useInstallPrompt", () => ({
   useInstallPrompt: () => ({ isInstalled: true, canPrompt: false, platform: "other" }),
 }));
