@@ -26,9 +26,12 @@ function cookiesFrom(response: APIResponse): Cookie[] {
 }
 
 /**
- * Holds the next refresh that `page` makes. The BFF rotates the token on the server before the response is held,
+ * Holds the first refresh that `page` makes. The BFF rotates the token on the server before the response is held,
  * so the browser keeps the old cookie until `release()` applies the new one. That is what a slow network does.
  * `rotationHeld` resolves once the held response is in hand; `applied` resolves once it has been delivered.
+ *
+ * Later refreshes from the same page pass through untouched. One sent after logout gets "No session" and clears the
+ * cookies; recording it would overwrite the rotation under test.
  */
 export async function holdNextRefresh(page: Page) {
   const context = page.context();
@@ -41,7 +44,14 @@ export async function holdNextRefresh(page: Page) {
   const applied = new Promise<void>((resolve) => (markApplied = resolve));
   const released = new Promise<void>((resolve) => (unhold = resolve));
 
+  let held = false;
   await page.route("**/api/auth/refresh", async (route) => {
+    if (held) {
+      await route.continue();
+      return;
+    }
+    held = true;
+
     const response = await route.fetch();
     rotation.status = response.status();
     rotation.cookies = cookiesFrom(response);
