@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.32.4](https://github.com/diazjhozua/tydee/compare/v1.32.3...v1.32.4) (2026-11-19)
+
+
+### Bug Fixes
+
+* **auth:** keep sign-out pending until the server confirms it ([fc1be2a](https://github.com/diazjhozua/tydee/commit/fc1be2a2a4885891c98b8a0c961e35329a81a49b))
+* **auth:** keep the session when the API cannot confirm sign-out ([e1e36f4](https://github.com/diazjhozua/tydee/commit/e1e36f4416ef75c7c2bff0f05bf2b78170a66942))
+* **auth:** revoke before ending the local session ([edc43a7](https://github.com/diazjhozua/tydee/commit/edc43a7138e30618567710c28d6df858938fcd74))
+* **client:** disable log out while offline on settings ([286ec0c](https://github.com/diazjhozua/tydee/commit/286ec0c7ea99abb994d3fa8ca564a3f3ca8b9771))
+* **client:** disable sign-out while offline ([605deb5](https://github.com/diazjhozua/tydee/commit/605deb562a6bf5a3d96c0146c3bb3ea76eccf70a))
+* **client:** keep signed in and say so when sign-out fails ([b3cb375](https://github.com/diazjhozua/tydee/commit/b3cb37565c9b621132769a7e262ab2fc205e1d58))
+
 ## [1.32.3](https://github.com/diazjhozua/tydee/compare/v1.32.2...v1.32.3) (2026-11-18)
 
 

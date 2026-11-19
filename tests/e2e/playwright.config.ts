@@ -37,6 +37,7 @@ export default defineConfig({
     command: "node ./start-server.mjs",
     url: `${BASE_URL}/login`,
     reuseExistingServer: false,
-    timeout: 300_000,
+    // A cold start builds the API and the client; the client build alone took about 350 s on a development machine.
+    timeout: 900_000,
   },
 });

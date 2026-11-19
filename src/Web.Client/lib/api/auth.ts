@@ -62,13 +62,10 @@ function exclusive<T>(task: () => Promise<T>): Promise<T> {
   return run;
 }
 
-// Bumped when a logout starts, here or in another tab. A refresh requested before that must not put an access
-// token back into the store.
+// Bumped when a logout ends the session, here or in another tab. A refresh requested before that must not put an
+// access token back into the store.
 let logoutEpoch = 0;
 let logoutsInFlight = 0;
-
-// The UI stops waiting for logout after this long, even if a refresh ahead of it has stalled.
-const LOGOUT_WAIT_LIMIT_MS = 3000;
 
 // Tabs of one browser profile hear about a logout here, so each clears its own access token. Created only in a
 // browser: a channel left open on the server would keep the process alive.
@@ -129,6 +126,21 @@ export function isLoggingOut(): boolean {
   return logoutsInFlight > 0;
 }
 
+// A refused login has already set its cookie in the browser. If the revoke fails, that cookie would sign the user back
+// in on the next load, so the revoke is retried a bounded number of times. The login's own failure does not wait for it.
+const REFUSED_LOGIN_REVOKE_ATTEMPTS = 3;
+
+async function revokeRefusedLogin(): Promise<void> {
+  for (let attempt = 0; attempt < REFUSED_LOGIN_REVOKE_ATTEMPTS; attempt += 1) {
+    try {
+      await post<null>("/api/auth/logout", undefined, LOGOUT_TIMEOUT_MS);
+      return;
+    } catch {
+      // Try again. After the last attempt the cookie stays, which is the case the bound accepts.
+    }
+  }
+}
+
 export async function login(request: LoginRequest): Promise<AuthTokens> {
   const epochAtRequest = logoutEpoch;
   const tokens = await exclusive(() => post<AuthTokens>("/api/auth/login", request, LOGIN_TIMEOUT_MS));
@@ -136,7 +148,7 @@ export async function login(request: LoginRequest): Promise<AuthTokens> {
   // Another tab logged out while this login ran. The session it created may already be revoked, so end it here
   // too, and ask for a new login rather than storing a token.
   if (epochAtRequest !== logoutEpoch) {
-    void logout();
+    void revokeRefusedLogin();
     throw new ApiError(401, {
       title: "Users.SignedOutElsewhere",
       detail: "You were signed out in another tab. Log in again.",
@@ -181,26 +193,34 @@ export function resendVerification(email: string): Promise<{ message: string }> 
 }
 
 /**
- * Ends every session of the user. The request is sent now, so sessions end even while a refresh is still running.
- * The server orders it after that refresh on the user row. A refresh that was already running can still set its
- * cookie after this request has cleared it, so a second request is queued behind that refresh and clears the
- * cookie again. The returned promise resolves after LOGOUT_WAIT_LIMIT_MS at the latest, so a stall never holds the UI.
+ * Ends every session of the user. The server revoke goes first, and nothing local changes until it is confirmed.
+ * A failed sign-out therefore leaves this tab signed in, and the promise rejects with the BFF's status so the caller
+ * can offer a retry. On success the local session ends and other tabs hear about it.
+ *
+ * A refresh that was already running can still set a cookie after the revoke. A second request, queued behind that
+ * refresh, clears such a cookie. It runs in the background: the server has already ended every session, so the
+ * caller does not wait for it.
  */
-export function logout(): Promise<null> {
-  endSessionHere();
+export async function logout(): Promise<null> {
   logoutsInFlight += 1;
+
+  try {
+    await post<null>("/api/auth/logout", undefined, LOGOUT_TIMEOUT_MS);
+  } catch (error) {
+    logoutsInFlight -= 1;
+    throw error;
+  }
+
+  endSessionHere();
   logoutChannel?.postMessage(LOGOUT_MESSAGE);
 
-  const now = post<null>("/api/auth/logout", undefined, LOGOUT_TIMEOUT_MS);
-  const queued = exclusive(() => post<null>("/api/auth/logout", undefined, LOGOUT_TIMEOUT_MS));
+  void exclusive(() => post<null>("/api/auth/logout", undefined, LOGOUT_TIMEOUT_MS))
+    .catch(() => undefined)
+    .finally(() => {
+      logoutsInFlight -= 1;
+    });
 
-  const settled = Promise.allSettled([now, queued]).then(() => {
-    logoutsInFlight -= 1;
-    return null;
-  });
-  const limit = new Promise<null>((resolve) => setTimeout(() => resolve(null), LOGOUT_WAIT_LIMIT_MS));
-
-  return Promise.race([settled, limit]);
+  return null;
 }
 
 // Single-flight: concurrent 401s and the AuthProvider mount share one refresh call.

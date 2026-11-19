@@ -11,8 +11,8 @@ function toApiError(error: AxiosError): ApiError {
 }
 
 /**
- * Sends the page to /login once a refresh has failed. A logout in progress already ends this session, and its page
- * moves on by itself. A hard navigation here could cut that request short, which would leave the server session alive.
+ * Sends the page to /login once a refresh has failed. A logout in progress moves the page on itself once the server
+ * confirms it. A hard navigation here could cut that request short, which would leave the server session alive.
  */
 export function redirectToLoginUnlessSigningOut(
   navigate: (href: string) => void = (href) => {

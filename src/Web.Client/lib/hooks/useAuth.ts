@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import {
   forgotPassword,
   login,
@@ -86,19 +87,21 @@ export function useResetPassword() {
 export function useLogout() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const clear = useAuthStore((s) => s.clear);
 
   return useMutation({
     mutationFn: logout,
-    // Sign-out must not wait for the network. Paused offline, it would sit disabled until reconnect.
+    // Never paused for replay: a sign-out must not run later, after a new login. The controls are disabled offline
+    // (see Sidebar and settings), so a call that does start fails at once rather than queuing.
     networkMode: "always",
-    onSettled: () => {
-      // Memory is cleared here, once the logout request settles. A throttled save during that wait may have written
-      // the queue back to storage, so storage is discarded again after the clear.
+    onSuccess: () => {
+      // logout() has already ended the local session and discarded the queue. Clear memory, then discard storage
+      // again, because a throttled save during the request may have written queued writes back.
       queryClient.clear();
       discardOfflineQueue();
-      clear();
       router.push("/login");
+    },
+    onError: () => {
+      toast.error("Couldn't sign you out. You're still signed in.");
     },
   });
 }
