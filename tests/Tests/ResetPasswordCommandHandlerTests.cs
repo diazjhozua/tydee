@@ -88,7 +88,7 @@ public class ResetPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task Reset_keeps_an_admin_lock()
+    public async Task Locked_account_refuses_the_reset_and_consumes_the_token()
     {
         using var db = TestDb.Create();
         var clock = new FixedDateTimeProvider();
@@ -101,7 +101,33 @@ public class ResetPasswordCommandHandlerTests
         var result = await Handler(db, clock).Handle(
             new ResetPasswordCommand("reset-raw", "NewPassword1", "NewPassword1"), CancellationToken.None);
 
-        result.IsSuccess.ShouldBeTrue();
+        result.Error.ShouldBe(UserErrors.InvalidResetToken);
         db.Users.Single().IsLocked.ShouldBeTrue();
+        db.Users.Single().PasswordResetTokenHash.ShouldBeNull();
+        db.Users.Single().PasswordResetTokenExpiresAt.ShouldBeNull();
+    }
+
+    [Fact]
+    public async Task Consumed_link_stays_dead_after_the_account_is_unlocked()
+    {
+        using var db = TestDb.Create();
+        var clock = new FixedDateTimeProvider();
+        var user = Seed.User(db);
+        user.IsLocked = true;
+        user.PasswordResetTokenHash = "h:reset-raw";
+        user.PasswordResetTokenExpiresAt = clock.UtcNow.AddMinutes(30);
+        db.SaveChanges();
+
+        var handler = Handler(db, clock);
+        await handler.Handle(
+            new ResetPasswordCommand("reset-raw", "NewPassword1", "NewPassword1"), CancellationToken.None);
+
+        db.Users.Single().IsLocked = false;
+        db.SaveChanges();
+
+        var replay = await handler.Handle(
+            new ResetPasswordCommand("reset-raw", "NewPassword1", "NewPassword1"), CancellationToken.None);
+
+        replay.Error.ShouldBe(UserErrors.InvalidResetToken);
     }
 }
