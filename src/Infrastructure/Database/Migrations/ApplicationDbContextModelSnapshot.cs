@@ -445,6 +445,46 @@ namespace Infrastructure.Database.Migrations
                     b.ToTable("transfers", "public");
                 });
 
+            modelBuilder.Entity("Domain.Users.PendingEmail", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempts");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("email");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("kind");
+
+                    b.Property<DateTime>("NextAttemptOnUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("next_attempt_on_utc");
+
+                    b.Property<DateTime>("RequestedOnUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("requested_on_utc");
+
+                    b.HasKey("Id")
+                        .HasName("pk_pending_emails");
+
+                    b.HasIndex("NextAttemptOnUtc")
+                        .HasDatabaseName("ix_pending_emails_next_attempt_on_utc");
+
+                    b.ToTable("pending_emails", "public");
+                });
+
             modelBuilder.Entity("Domain.Users.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")

@@ -18,6 +18,7 @@ builder.Services.AddSwaggerGenWithAuth();
 builder.Services
     .AddApplication()
     .AddPresentation()
+    .AddBackgroundWorkers()
     .AddInfrastructure(builder.Configuration, builder.Environment.IsDevelopment());
 
 builder.Services.AddEndpoints(Assembly.GetExecutingAssembly());

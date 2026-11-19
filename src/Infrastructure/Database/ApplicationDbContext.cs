@@ -42,6 +42,8 @@ public sealed class ApplicationDbContext(
 
     public DbSet<Suggestion> Suggestions { get; set; }
 
+    public DbSet<PendingEmail> PendingEmails { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
@@ -67,6 +69,49 @@ public sealed class ApplicationDbContext(
 
     public Task<IUserLock> LockUserByEmailAsync(string email, CancellationToken cancellationToken = default) =>
         LockUserAsync($"SELECT 1 FROM public.users WHERE email = {email} FOR UPDATE", cancellationToken);
+
+    public Task<bool> HasPendingEmailsAsync(DateTime utcNow, CancellationToken cancellationToken = default) =>
+        PendingEmails.AnyAsync(p => p.NextAttemptOnUtc <= utcNow, cancellationToken);
+
+    public async Task<IPendingEmailClaim> ClaimNextPendingEmailAsync(
+        DateTime utcNow,
+        CancellationToken cancellationToken = default)
+    {
+        if (!Database.IsRelational())
+        {
+            PendingEmail? first = await PendingEmails
+                .Where(p => p.NextAttemptOnUtc <= utcNow)
+                .OrderBy(p => p.NextAttemptOnUtc)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            return new PendingEmailClaim(first, null);
+        }
+
+        IDbContextTransaction transaction = await Database.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            // SKIP LOCKED makes a second worker pass over a row this one holds, instead of waiting on it.
+            // The interpolated timestamp is sent as a bound parameter, not spliced into the SQL.
+            PendingEmail? next = await PendingEmails
+                .FromSql(
+                    $"""
+                    SELECT * FROM public.pending_emails
+                    WHERE next_attempt_on_utc <= {utcNow}
+                    ORDER BY next_attempt_on_utc
+                    LIMIT 1
+                    FOR UPDATE SKIP LOCKED
+                    """)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            return new PendingEmailClaim(next, transaction);
+        }
+        catch
+        {
+            await transaction.DisposeAsync();
+            throw;
+        }
+    }
 
     private async Task<IUserLock> LockUserAsync(FormattableString lockStatement, CancellationToken cancellationToken)
     {

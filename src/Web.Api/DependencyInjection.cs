@@ -1,4 +1,5 @@
 using Web.Api.Infrastructure;
+using Web.Api.Workers;
 
 namespace Web.Api;
 
@@ -10,6 +11,13 @@ public static class DependencyInjection
 
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
+
+        return services;
+    }
+
+    public static IServiceCollection AddBackgroundWorkers(this IServiceCollection services)
+    {
+        services.AddHostedService<PendingEmailWorker>();
 
         return services;
     }

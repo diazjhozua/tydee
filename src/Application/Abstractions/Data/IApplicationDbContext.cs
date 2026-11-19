@@ -24,8 +24,23 @@ public interface IApplicationDbContext
     DbSet<Transfer> Transfers { get; }
     DbSet<CardPayment> CardPayments { get; }
     DbSet<Suggestion> Suggestions { get; }
+    DbSet<PendingEmail> PendingEmails { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// True when at least one queued account email is due at <paramref name="utcNow"/>. Lets the worker skip
+    /// a tick without starting a command.
+    /// </summary>
+    Task<bool> HasPendingEmailsAsync(DateTime utcNow, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Claims the oldest queued email that is due at <paramref name="utcNow"/>. Rows already claimed by another
+    /// worker are skipped. Returns a claim with a null request when nothing is due.
+    /// </summary>
+    Task<IPendingEmailClaim> ClaimNextPendingEmailAsync(
+        DateTime utcNow,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Locks one user row for the life of the returned transaction, so an admin lock
