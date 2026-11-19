@@ -30,7 +30,7 @@ type FormValues = z.infer<typeof schema>;
 
 export default function RegisterPage() {
   const registerMutation = useRegister();
-  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
 
   const {
     register,
@@ -40,18 +40,17 @@ export default function RegisterPage() {
 
   function onSubmit(values: FormValues) {
     registerMutation.mutate(values, {
-      onSuccess: () => setSentTo(values.email),
+      onSuccess: () => setSubmitted(true),
     });
   }
 
-  if (sentTo) {
+  if (submitted) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Check your email</CardTitle>
           <CardDescription>
-            We sent a verification link to <span className="font-medium">{sentTo}</span>.
-            Click it to activate your account, then come back and log in.
+            Check your email for next steps. New accounts must verify their email before logging in. Already have an account? Log in.
           </CardDescription>
         </CardHeader>
         <CardContent>

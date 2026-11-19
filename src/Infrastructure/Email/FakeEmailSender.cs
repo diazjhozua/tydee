@@ -30,4 +30,14 @@ internal sealed class FakeEmailSender : IEmailSender
 
         return Task.CompletedTask;
     }
+
+    public Task SendAlreadyRegisteredAsync(
+        string toEmail,
+        CancellationToken cancellationToken = default)
+    {
+        _ = toEmail;
+        _ = cancellationToken;
+
+        return Task.CompletedTask;
+    }
 }

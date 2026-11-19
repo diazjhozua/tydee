@@ -30,15 +30,12 @@ internal sealed class LoginCommandHandler(
             .Include(u => u.RefreshTokens)
             .SingleOrDefaultAsync(u => u.Email == email, cancellationToken);
 
-        if (user is null)
+        // Unknown and admin-locked accounts answer exactly like a wrong password. They also pay
+        // the same hash cost, so response time doesn't reveal whether the account exists or is locked.
+        if (user is null || user.IsLocked)
         {
-            return Result.Failure<AuthTokensResponse>(UserErrors.InvalidCredentials);
-        }
+            _ = passwordHasher.Hash(command.Password);
 
-        // An admin-locked account answers exactly like a wrong password so the lock
-        // can't be used to probe accounts or confirm a guessed password.
-        if (user.IsLocked)
-        {
             return Result.Failure<AuthTokensResponse>(UserErrors.InvalidCredentials);
         }
 

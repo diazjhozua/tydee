@@ -14,7 +14,7 @@ test("registers, verifies, logs in, and completes setup", async ({ page }) => {
   await register.open();
   await register.fill(user);
   await register.submit();
-  await register.expectCheckEmail(user.email);
+  await register.expectCheckEmail();
 
   const token = await verificationToken(user.email);
   const verify = new VerifyEmailPage(page);

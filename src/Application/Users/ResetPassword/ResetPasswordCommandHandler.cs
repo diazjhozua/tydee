@@ -40,6 +40,19 @@ internal sealed class ResetPasswordCommandHandler(
             return Result.Failure(UserErrors.InvalidResetToken);
         }
 
+        // An admin-locked account can't reset. The link is consumed, so it doesn't
+        // work again if the account is unlocked before it expires.
+        if (user.IsLocked)
+        {
+            user.PasswordResetTokenHash = null;
+            user.PasswordResetTokenExpiresAt = null;
+
+            await context.SaveChangesAsync(cancellationToken);
+            await userLock.CommitAsync(cancellationToken);
+
+            return Result.Failure(UserErrors.InvalidResetToken);
+        }
+
         user.PasswordHash = passwordHasher.Hash(command.NewPassword);
         user.PasswordResetTokenHash = null;
         user.PasswordResetTokenExpiresAt = null;

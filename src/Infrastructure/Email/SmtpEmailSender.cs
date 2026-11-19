@@ -33,6 +33,18 @@ internal sealed class SmtpEmailSender(SmtpSettings settings) : IEmailSender
         await SendAsync(message, cancellationToken);
     }
 
+    public async Task SendAlreadyRegisteredAsync(
+        string toEmail,
+        CancellationToken cancellationToken = default)
+    {
+        using MimeMessage message = BuildMessage(
+            toEmail,
+            BuildSubject("You already have an account"),
+            BuildAlreadyRegisteredBody());
+
+        await SendAsync(message, cancellationToken);
+    }
+
     private async Task SendAsync(MimeMessage message, CancellationToken cancellationToken)
     {
         using SmtpClient client = new();
@@ -84,6 +96,20 @@ internal sealed class SmtpEmailSender(SmtpSettings settings) : IEmailSender
         <p>Or copy this link into your browser:</p>
         <p>{link}</p>
         <p>This link expires in 1 hour. If you didn't ask for this, you can safely ignore it.</p>
+        """;
+    }
+
+    private string BuildAlreadyRegisteredBody()
+    {
+        string loginLink = $"{settings.FrontendUrl}/login";
+        string resetLink = $"{settings.FrontendUrl}/forgot-password";
+
+        return $"""
+        <h2>You already have a {settings.AppName} account</h2>
+        <p>Someone tried to create a new account with this email address. If that was you, log in instead:</p>
+        <p><a href="{loginLink}">Log in</a></p>
+        <p>Forgot your password? <a href="{resetLink}">Reset it here</a>.</p>
+        <p>If you didn't try to register, you can safely ignore this email.</p>
         """;
     }
 }

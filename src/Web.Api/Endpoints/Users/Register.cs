@@ -13,7 +13,7 @@ internal sealed class Register : IEndpoint
     {
         app.MapPost("api/v1/auth/register", async (
             RegisterRequest request,
-            ICommandHandler<RegisterUserCommand, Guid> handler,
+            ICommandHandler<RegisterUserCommand> handler,
             CancellationToken cancellationToken) =>
         {
             var command = new RegisterUserCommand(
@@ -23,10 +23,10 @@ internal sealed class Register : IEndpoint
                 request.FirstName,
                 request.LastName);
 
-            Result<Guid> result = await handler.Handle(command, cancellationToken);
+            Result result = await handler.Handle(command, cancellationToken);
 
             return result.Match(
-                _ => Results.Ok(new RegisterResponse(
+                () => Results.Ok(new RegisterResponse(
                     "Registration successful. Please check your email to verify your account.")),
                 CustomResults.Problem);
         })
