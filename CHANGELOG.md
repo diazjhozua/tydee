@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.33.0](https://github.com/diazjhozua/tydee/compare/v1.32.4...v1.33.0) (2026-11-19)
+
+
+### Features
+
+* **client:** add unsynced-change count and sign-out confirm dialog ([102dc86](https://github.com/diazjhozua/tydee/commit/102dc865bbe4655dca05be199795af32fa32b144))
+* **client:** ask before sign-out discards unsynced changes ([cdb3b89](https://github.com/diazjhozua/tydee/commit/cdb3b894342c81e712cbefc42ad294f103cbbd98))
+
+
+### Bug Fixes
+
+* **client:** drop queued writes and cached data when a session ends ([055c483](https://github.com/diazjhozua/tydee/commit/055c483cc7c0ac79bd688855cfe4966cd510d1fd))
+* **client:** fail auth requests fast offline and clear queue on logout ([132a8b7](https://github.com/diazjhozua/tydee/commit/132a8b78f2ccf801e1d21a069c4257ea35f024aa))
+* **client:** keep financial data and passwords out of offline storage ([c00ce3e](https://github.com/diazjhozua/tydee/commit/c00ce3e8018068b4de7d9151eacbf27ea196b31e))
+* **client:** persist only queued writes, never query data ([a188bfa](https://github.com/diazjhozua/tydee/commit/a188bfaf1c063422a808ea9dc2d753fe196fd0ce))
+
 ## [1.32.4](https://github.com/diazjhozua/tydee/compare/v1.32.3...v1.32.4) (2026-11-19)
 
 
