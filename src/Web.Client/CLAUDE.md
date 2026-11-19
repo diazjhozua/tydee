@@ -31,8 +31,10 @@ Repository-wide guidance, including backend conventions, lives in the root `CLAU
 
 ## Offline behavior
 
-- TanStack Query persists only paused mutations (`shouldDehydrateMutation: state.isPaused`) to localStorage and resumes them on reconnect.
-- Every replayable mutation must be registered with `setMutationDefaults` in `providers/QueryProvider.tsx`. Currently: expense create/update/delete, income create/update/delete, and card payment create.
+- Only queued writes persist, under `tydee-offline-queue` in localStorage. No query data is ever written (`shouldDehydrateQuery` is false). Only paused mutations whose key was registered through `registerReplay` in `providers/QueryProvider.tsx` persist, and they resume on reconnect. `purgeLegacyCache()` removes the pre-change `REACT_QUERY_OFFLINE_CACHE` key on mount.
+- Register every replayable mutation through `registerReplay` in `providers/QueryProvider.tsx`. It sets the replay function and records the key. An unregistered mutation is never persisted. Currently: expense create/update/delete, income create/update/delete, suggestion create, and card payment create.
+- Auth mutations (login, register, verify email, forgot/reset password, resend verification) use `networkMode: "always"`, so they fail at once offline and never pause or persist their passwords or tokens.
+- Sessions that end discard queued writes: `discardOfflineQueue()` in `lib/offline/offlineQueue.ts` runs on logout, on other-tab logout, and on a refresh 401. On a 401 (and on other-tab logout) `AuthProvider` also clears the in-memory cache, through `onSessionEnded` in `lib/api/auth.ts`. A network failure keeps both. Explicit logout clears memory when the request settles. With unsynced writes it asks first: `useSignOut` in `lib/hooks/useSignOut.ts` drives the `SignOutDialog` component in `components/layout/SignOutDialog.tsx`, and `useUnsyncedCount` counts paused mutations.
 - `components/shared/OfflineBanner.tsx` shows connectivity; `useOnlineStatus` is the shared hook. Offline-queued items are marked `pendingSync` in the dashboard activity and must not be edited or deleted while pending.
 
 ## Styling
