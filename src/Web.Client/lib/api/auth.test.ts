@@ -139,7 +139,7 @@ describe.each([
     await loggingOut;
   });
 
-  it("a refresh requested after logout runs after the logout requests", async () => {
+  it("a refresh requested while logout is pending runs at once, and the queued logout waits behind it", async () => {
     const calls = queueFetch();
     const { auth } = await load();
 
@@ -147,27 +147,30 @@ describe.each([
     await settle();
     const refreshing = auth.refreshAccessToken();
     await settle();
-    expect(callsTo(calls, REFRESH)).toHaveLength(0);
+    expect(callsTo(calls, REFRESH)).toHaveLength(1);
 
     callsTo(calls, LOGOUT)[0].answer(noContent());
-    callsTo(calls, LOGOUT)[1].answer(noContent());
     await loggingOut;
     await settle();
-    expect(callsTo(calls, REFRESH)).toHaveLength(1);
+    expect(callsTo(calls, LOGOUT)).toHaveLength(1);
 
     callsTo(calls, REFRESH)[0].answer(unauthorized());
     await expect(refreshing).resolves.toBeNull();
+    await settle();
+    expect(callsTo(calls, LOGOUT)).toHaveLength(2);
+
+    callsTo(calls, LOGOUT)[1].answer(noContent());
   });
 
-  it("logout resolves within three seconds while a refresh stalls", async () => {
+  it("logout resolves on the server's answer, without waiting for a stalled refresh", async () => {
     const calls = queueFetch();
     const { auth } = await load();
-    vi.useFakeTimers();
 
     void auth.refreshAccessToken();
     const loggingOut = auth.logout();
+    await settle();
+    callsTo(calls, LOGOUT)[0].answer(noContent());
 
-    await vi.advanceTimersByTimeAsync(3000);
     await expect(loggingOut).resolves.toBeNull();
     expect(callsTo(calls, REFRESH)).toHaveLength(1);
     expect(callsTo(calls, LOGOUT)).toHaveLength(1);
@@ -180,6 +183,10 @@ describe.each([
     const refreshing = auth.refreshAccessToken();
     const loggingOut = auth.logout();
     await settle();
+    callsTo(calls, LOGOUT)[0].answer(noContent());
+    await loggingOut;
+    await settle();
+    expect(callsTo(calls, LOGOUT)).toHaveLength(1);
 
     // A network failure leaves the session unknown, not ended: the refresh resolves to null and the queue moves on.
     callsTo(calls, REFRESH)[0].fail(new TypeError("network down"));
@@ -187,25 +194,22 @@ describe.each([
     await settle();
     expect(callsTo(calls, LOGOUT)).toHaveLength(2);
 
-    callsTo(calls, LOGOUT)[0].answer(noContent());
     callsTo(calls, LOGOUT)[1].answer(noContent());
-    await loggingOut;
   });
 
-  it("login waits behind a logout that is still running", async () => {
+  it("login waits behind a refresh that is still running", async () => {
     const calls = queueFetch();
     const { auth } = await load();
 
-    const loggingOut = auth.logout();
+    const refreshing = auth.refreshAccessToken();
     await settle();
     const loggingIn = auth.login(credentials);
     await settle();
-    expect(callsTo(calls, LOGOUT)).toHaveLength(2);
+    expect(callsTo(calls, REFRESH)).toHaveLength(1);
     expect(callsTo(calls, LOGIN)).toHaveLength(0);
 
-    callsTo(calls, LOGOUT)[0].answer(noContent());
-    callsTo(calls, LOGOUT)[1].answer(noContent());
-    await loggingOut;
+    callsTo(calls, REFRESH)[0].answer(unauthorized());
+    await refreshing;
     await settle();
     expect(callsTo(calls, LOGIN)).toHaveLength(1);
 
@@ -269,10 +273,15 @@ describe.each([
 
     const loggingOut = tabOne.auth.logout();
     await settle();
+    // Nothing changes in the other tab until the server has confirmed the revoke.
+    expect(tabTwo.useAuthStore.getState().accessToken).toBe(tokens.accessToken);
+
+    callsTo(calls, LOGOUT)[0].answer(noContent());
+    await loggingOut;
+    await settle();
     expect(tabTwo.useAuthStore.getState().accessToken).toBeNull();
 
     callsTo(calls, LOGOUT).forEach((call) => call.answer(noContent()));
-    await loggingOut;
   });
 
   it("a refresh running in another tab sets no token after this tab logs out", async () => {
@@ -282,7 +291,10 @@ describe.each([
 
     const refreshing = tabTwo.auth.refreshAccessToken();
     await settle();
-    void tabOne.auth.logout();
+    const loggingOut = tabOne.auth.logout();
+    await settle();
+    callsTo(calls, LOGOUT)[0].answer(noContent());
+    await loggingOut;
     await settle();
 
     callsTo(calls, REFRESH)[0].answer(refreshed());
@@ -290,15 +302,23 @@ describe.each([
     expect(tabTwo.useAuthStore.getState().accessToken).toBeNull();
   });
 
-  it("logout resolves even when the BFF answers with an error", async () => {
+  it("logout rejects, and ends nothing here, when the BFF cannot confirm the revoke", async () => {
     const calls = queueFetch();
-    const { auth } = await load();
+    const { auth, useAuthStore } = await load();
+    useAuthStore.getState().setTokens("access-1", "2026-11-17T12:00:00Z");
 
     const loggingOut = auth.logout();
     await settle();
-    callsTo(calls, LOGOUT).forEach((call) => call.answer(new Response(null, { status: 500 })));
+    callsTo(calls, LOGOUT)[0].answer(
+      new Response(JSON.stringify({ title: "Users.LogoutFailed" }), { status: 503 }),
+    );
 
-    await expect(loggingOut).resolves.toBeNull();
+    await expect(loggingOut).rejects.toMatchObject({ status: 503 });
+    expect(useAuthStore.getState().accessToken).toBe("access-1");
+    expect(auth.isLoggingOut()).toBe(false);
+
+    await settle();
+    expect(callsTo(calls, LOGOUT)).toHaveLength(1);
   });
 
   it("a login that finishes after another tab logs out is refused, and stores no token", async () => {
@@ -309,6 +329,8 @@ describe.each([
     const loggingIn = tabOne.auth.login(credentials);
     await settle();
     void tabTwo.auth.logout();
+    await settle();
+    callsTo(calls, LOGOUT)[0].answer(noContent());
     await settle();
 
     callsTo(calls, LOGIN)[0].answer(refreshed());
@@ -327,12 +349,84 @@ describe.each([
     await settle();
     expect(callsTo(calls, LOGOUT)).toHaveLength(1);
 
+    callsTo(calls, LOGOUT)[0].answer(noContent());
+    await loggingOut;
+    await settle();
+    expect(callsTo(calls, LOGOUT)).toHaveLength(1);
+
     callsTo(calls, REFRESH)[0].answer(unauthorized());
     await refreshing;
     await settle();
     expect(callsTo(calls, LOGOUT)).toHaveLength(2);
 
-    callsTo(calls, LOGOUT).forEach((call) => call.answer(noContent()));
-    await loggingOut;
+    callsTo(calls, LOGOUT)[1].answer(noContent());
+  });
+
+  it("a failed logout leaves other tabs signed in", async () => {
+    const calls = queueFetch();
+    const tabOne = await load();
+    const tabTwo = await load();
+
+    const refreshing = tabTwo.auth.refreshAccessToken();
+    await settle();
+    callsTo(calls, REFRESH)[0].answer(refreshed());
+    await refreshing;
+    expect(tabTwo.useAuthStore.getState().accessToken).toBe(tokens.accessToken);
+
+    const loggingOut = tabOne.auth.logout();
+    await settle();
+    callsTo(calls, LOGOUT)[0].answer(new Response(null, { status: 503 }));
+
+    await expect(loggingOut).rejects.toMatchObject({ status: 503 });
+    await settle();
+    expect(tabTwo.useAuthStore.getState().accessToken).toBe(tokens.accessToken);
+    expect(callsTo(calls, LOGOUT)).toHaveLength(1);
+  });
+
+  it("a refused login retries its revoke after a failed attempt", async () => {
+    const calls = queueFetch();
+    const { auth } = await load();
+
+    const loggingIn = auth.login(credentials);
+    await settle();
+    // Another tab ends its session while this login is in flight. Only its broadcast is sent, so this module's
+    // logout epoch changes without a logout request of its own.
+    new FakeChannel("tydee-auth-logout").postMessage("logout");
+    await settle();
+
+    callsTo(calls, LOGIN)[0].answer(refreshed());
+    await expect(loggingIn).rejects.toMatchObject({ title: "Users.SignedOutElsewhere" });
+    await settle();
+    expect(callsTo(calls, LOGOUT)).toHaveLength(1);
+
+    callsTo(calls, LOGOUT)[0].answer(new Response(null, { status: 503 }));
+    await settle();
+    expect(callsTo(calls, LOGOUT)).toHaveLength(2);
+
+    callsTo(calls, LOGOUT)[1].answer(noContent());
+    await settle();
+    expect(callsTo(calls, LOGOUT)).toHaveLength(2);
+  });
+
+  it("a refused login gives up its revoke after the bounded attempts", async () => {
+    const calls = queueFetch();
+    const { auth } = await load();
+
+    const loggingIn = auth.login(credentials);
+    await settle();
+    new FakeChannel("tydee-auth-logout").postMessage("logout");
+    await settle();
+
+    callsTo(calls, LOGIN)[0].answer(refreshed());
+    await expect(loggingIn).rejects.toMatchObject({ title: "Users.SignedOutElsewhere" });
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      await settle();
+      expect(callsTo(calls, LOGOUT)).toHaveLength(attempt + 1);
+      callsTo(calls, LOGOUT)[attempt].answer(new Response(null, { status: 503 }));
+    }
+
+    await settle();
+    expect(callsTo(calls, LOGOUT)).toHaveLength(3);
   });
 });
