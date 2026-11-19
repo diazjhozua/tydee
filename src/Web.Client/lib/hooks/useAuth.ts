@@ -12,8 +12,13 @@ import {
   verifyEmail,
 } from "@/lib/api/auth";
 import { getMe } from "@/lib/api/me";
+import { discardOfflineQueue } from "@/lib/offline/offlineQueue";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { defaultPagePath, safeNextPath } from "@/lib/utils/defaultPage";
+
+// Auth calls fail at once when offline instead of pausing. A paused auth mutation would sit in storage with its
+// password or reset token, and it could not be replayed anyway.
+const NOT_QUEUED = { networkMode: "always" } as const;
 
 export function useLogin() {
   const router = useRouter();
@@ -22,6 +27,7 @@ export function useLogin() {
   const setTokens = useAuthStore((s) => s.setTokens);
 
   return useMutation({
+    ...NOT_QUEUED,
     mutationFn: login,
     onSuccess: async (tokens) => {
       setTokens(tokens.accessToken, tokens.accessTokenExpiresAt);
@@ -47,23 +53,24 @@ export function useLogin() {
 }
 
 export function useRegister() {
-  return useMutation({ mutationFn: register });
+  return useMutation({ ...NOT_QUEUED, mutationFn: register });
 }
 
 export function useVerifyEmail() {
-  return useMutation({ mutationFn: verifyEmail });
+  return useMutation({ ...NOT_QUEUED, mutationFn: verifyEmail });
 }
 
 export function useForgotPassword() {
-  return useMutation({ mutationFn: forgotPassword });
+  return useMutation({ ...NOT_QUEUED, mutationFn: forgotPassword });
 }
 
 export function useResendVerification() {
-  return useMutation({ mutationFn: resendVerification });
+  return useMutation({ ...NOT_QUEUED, mutationFn: resendVerification });
 }
 
 export function useResetPassword() {
   return useMutation({
+    ...NOT_QUEUED,
     mutationFn: ({
       token,
       newPassword,
@@ -86,7 +93,10 @@ export function useLogout() {
     // Sign-out must not wait for the network. Paused offline, it would sit disabled until reconnect.
     networkMode: "always",
     onSettled: () => {
+      // Memory is cleared here, once the logout request settles. A throttled save during that wait may have written
+      // the queue back to storage, so storage is discarded again after the clear.
       queryClient.clear();
+      discardOfflineQueue();
       clear();
       router.push("/login");
     },
