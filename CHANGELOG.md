@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.33.1](https://github.com/diazjhozua/tydee/compare/v1.33.0...v1.33.1) (2026-11-19)
+
+
+### Bug Fixes
+
+* **auth:** answer every login and registration at equal cost ([24b6658](https://github.com/diazjhozua/tydee/commit/24b6658d4340cc7ed144378010c21d91f5a42702))
+* **auth:** equalize auth response timing and state leaks ([67ac9a9](https://github.com/diazjhozua/tydee/commit/67ac9a93e1082bf0121724abfbb31c3ac27677f2))
+* **auth:** queue account emails so every address does equal work ([709c92d](https://github.com/diazjhozua/tydee/commit/709c92de065416d69fbfc87f3ceec19037cacbdb))
+* **auth:** refuse password reset on locked accounts ([f76e9e9](https://github.com/diazjhozua/tydee/commit/f76e9e987f0750a958136d6d8b22cef1091c24d1))
+
 ## [1.33.0](https://github.com/diazjhozua/tydee/compare/v1.32.4...v1.33.0) (2026-11-19)
 
 
