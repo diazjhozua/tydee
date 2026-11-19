@@ -26,7 +26,7 @@ test("a logout in one tab waits for a refresh held in another, and the session e
   expect(hold.rotation.status).toBe(200);
   expect(hold.rotation.cookies.map((cookie) => cookie.name)).toContain("refresh_token");
 
-  // The logout is sent twice: at once, and again behind the held refresh. Record each answer.
+  // The logout is sent twice: first to end the session, then again behind the held refresh. Record each answer.
   const logoutAnswers: number[] = [];
   page.on("response", (response) => {
     if (response.url().endsWith("/api/auth/logout")) {
@@ -34,8 +34,8 @@ test("a logout in one tab waits for a refresh held in another, and the session e
     }
   });
 
-  // Log out in tab B while tab A's refresh is still held. The UI moves on at once or after its cap. The server
-  // request is sent now and orders itself after the held refresh.
+  // Log out in tab B while tab A's refresh is still held. The UI moves on once the server has ended the session.
+  // The second request queues behind the held refresh.
   await settings.logout();
   await expect(page).toHaveURL(/\/login$/, { timeout: 10_000 });
 

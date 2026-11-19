@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   pathname: "/accounts",
   isAdmin: false,
+  online: true,
   logout: vi.fn(),
   logoutPending: false,
 }));
@@ -14,6 +15,10 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/hooks/useMe", () => ({
   useMe: () => ({ data: { isAdmin: state.isAdmin } }),
+}));
+
+vi.mock("@/lib/hooks/useOnlineStatus", () => ({
+  useOnlineStatus: () => state.online,
 }));
 
 vi.mock("@/lib/hooks/useAuth", () => ({
@@ -27,6 +32,7 @@ describe("Sidebar", () => {
   beforeEach(() => {
     state.pathname = "/accounts";
     state.isAdmin = false;
+    state.online = true;
     state.logoutPending = false;
     state.logout.mockReset();
   });
@@ -81,5 +87,23 @@ describe("Sidebar", () => {
     render(<Sidebar />);
 
     expect(screen.getByRole("button", { name: "Sign out" })).toBeDisabled();
+  });
+
+  it("disables sign out offline and says why", () => {
+    state.online = false;
+    render(<Sidebar />);
+
+    const button = screen.getByRole("button", { name: "Sign out" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAccessibleDescription("Connect to sign out.");
+
+    fireEvent.click(button);
+    expect(state.logout).not.toHaveBeenCalled();
+  });
+
+  it("shows no offline hint while online", () => {
+    render(<Sidebar />);
+
+    expect(screen.queryByText("Connect to sign out.")).not.toBeInTheDocument();
   });
 });

@@ -7,12 +7,14 @@ import { Logo } from "@/components/brand/Logo";
 import { NavItemLink } from "@/components/layout/NavItemLink";
 import { useLogout } from "@/lib/hooks/useAuth";
 import { useMe } from "@/lib/hooks/useMe";
+import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { adminNav, isNavActive, type NavItem, primaryNav, settingsNav } from "@/lib/navigation";
 
 export function Sidebar({ items = primaryNav }: { items?: NavItem[] }) {
   const pathname = usePathname();
   const { data: me } = useMe();
   const logout = useLogout();
+  const isOnline = useOnlineStatus();
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
@@ -44,12 +46,18 @@ export function Sidebar({ items = primaryNav }: { items?: NavItem[] }) {
         <button
           type="button"
           onClick={() => logout.mutate()}
-          disabled={logout.isPending}
-          className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+          disabled={!isOnline || logout.isPending}
+          aria-describedby={isOnline ? undefined : "sidebar-sign-out-hint"}
+          className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
         >
           <LogOut className="size-5" />
           Sign out
         </button>
+        {!isOnline && (
+          <p id="sidebar-sign-out-hint" className="px-3 pt-1 text-xs text-muted-foreground">
+            Connect to sign out.
+          </p>
+        )}
       </div>
     </aside>
   );
