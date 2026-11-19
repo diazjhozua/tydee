@@ -27,9 +27,9 @@ export class RegisterPage extends BasePage {
     await this.page.getByRole("button", { name: "Sign up" }).click();
   }
 
-  async expectCheckEmail(email: string): Promise<void> {
+  /** The same confirmation shows for new and existing addresses, so it never names the address. */
+  async expectCheckEmail(): Promise<void> {
     await expect(this.page.getByText("Check your email", { exact: true })).toBeVisible();
-    await expect(this.page.getByText(email)).toBeVisible();
   }
 
   async expectError(text: string): Promise<void> {

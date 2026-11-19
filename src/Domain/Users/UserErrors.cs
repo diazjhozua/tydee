@@ -4,10 +4,6 @@ namespace Domain.Users;
 
 public static class UserErrors
 {
-    public static readonly Error EmailNotUnique = Error.Conflict(
-        "Users.EmailNotUnique",
-        "The provided email is already in use.");
-
     public static readonly Error InvalidCredentials = Error.Unauthorized(
         "Users.InvalidCredentials",
         "Invalid email or password.");

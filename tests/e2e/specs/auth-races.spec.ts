@@ -1,8 +1,9 @@
 import { createApi } from "../api";
 import { HttpError } from "../api/http";
+import { userSpec } from "../builders/user.builder";
 import { expect, test } from "../fixtures";
 import { createVerifiedUser } from "../fixtures/users";
-import { seedPasswordResetToken } from "../support/db";
+import { seedPasswordResetToken, userCountByEmail } from "../support/db";
 import { API_URL } from "../support/env";
 
 // The per-user row lock (SELECT ... FOR UPDATE) only exists against PostgreSQL, and the unit tests run on InMemory,
@@ -160,5 +161,22 @@ test("a login racing a password reset never leaves a usable session behind", asy
       // The reset ran first, so the old password no longer works.
       expect(login.title).toBe(INVALID_CREDENTIALS);
     }
+  }
+});
+
+test("two registrations of one new address both answer 200 and leave one account", async () => {
+  // The user-row lock can't serialize first-time registrations, because no row exists yet. The unique index does:
+  // the loser's insert fails, and it answers like an existing account. Only PostgreSQL enforces that index.
+  const api = createApi(API_URL);
+
+  for (let i = 0; i < ITERATIONS; i++) {
+    const spec = userSpec();
+
+    const results = await Promise.all(
+      Array.from({ length: 2 }, () => attempt(api.auth.register(spec))),
+    );
+
+    expect(results.map(label)).toEqual(["200 ok", "200 ok"]);
+    expect(await userCountByEmail(spec.email)).toBe(1);
   }
 });

@@ -39,6 +39,51 @@ public class LoginCommandHandlerTests
     }
 
     [Fact]
+    public async Task Unknown_and_locked_accounts_pay_one_hash_and_no_verify()
+    {
+        using var db = TestDb.Create();
+        Seed.User(db, "locked@example.com").IsLocked = true;
+        db.SaveChanges();
+
+        var unknownHasher = new FakePasswordHasher();
+        await NewHandler(db, unknownHasher).Handle(
+            new LoginCommand("unknown@example.com", "Password123!"), CancellationToken.None);
+
+        var lockedHasher = new FakePasswordHasher();
+        await NewHandler(db, lockedHasher).Handle(
+            new LoginCommand("locked@example.com", "Password123!"), CancellationToken.None);
+
+        unknownHasher.HashCalls.ShouldBe(1);
+        unknownHasher.VerifyCalls.ShouldBe(0);
+        lockedHasher.HashCalls.ShouldBe(1);
+        lockedHasher.VerifyCalls.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task Wrong_password_verifies_once_and_does_not_hash()
+    {
+        using var db = TestDb.Create();
+        Seed.User(db, "known@example.com");
+
+        var hasher = new FakePasswordHasher();
+        await NewHandler(db, hasher).Handle(
+            new LoginCommand("known@example.com", "WrongPassword"), CancellationToken.None);
+
+        hasher.VerifyCalls.ShouldBe(1);
+        hasher.HashCalls.ShouldBe(0);
+    }
+
+    private static LoginCommandHandler NewHandler(
+        Infrastructure.Database.ApplicationDbContext db,
+        FakePasswordHasher hasher) =>
+        new(
+            db,
+            hasher,
+            new FakeTokenProvider(),
+            new FakeAdminProvider(),
+            new FixedDateTimeProvider());
+
+    [Fact]
     public async Task Repeated_wrong_passwords_never_lock_the_account()
     {
         using var db = TestDb.Create();

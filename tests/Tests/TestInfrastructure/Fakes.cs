@@ -7,9 +7,23 @@ namespace Tests.TestInfrastructure;
 
 internal sealed class FakePasswordHasher : IPasswordHasher
 {
-    public string Hash(string password) => $"#{password}";
+    public int HashCalls { get; private set; }
 
-    public bool Verify(string password, string passwordHash) => passwordHash == $"#{password}";
+    public int VerifyCalls { get; private set; }
+
+    public string Hash(string password)
+    {
+        HashCalls++;
+
+        return $"#{password}";
+    }
+
+    public bool Verify(string password, string passwordHash)
+    {
+        VerifyCalls++;
+
+        return passwordHash == $"#{password}";
+    }
 }
 
 internal sealed class FakeTokenProvider : ITokenProvider
@@ -41,19 +55,38 @@ internal sealed class FixedDateTimeProvider : IDateTimeProvider
 internal sealed class FakeEmailSender : IEmailSender
 {
     public int VerificationEmailsSent { get; private set; }
-    public int PasswordResetEmailsSent { get; private set; }
+
+    public int AlreadyRegisteredEmailsSent { get; private set; }
+
+    public List<string> VerificationRecipients { get; } = [];
+
+    public List<string> PasswordResetRecipients { get; } = [];
+
+    public bool FailPasswordResetSends { get; set; }
 
     public Task SendEmailVerificationAsync(
         string toEmail, string verificationToken, CancellationToken cancellationToken = default)
     {
         VerificationEmailsSent++;
+        VerificationRecipients.Add(toEmail);
         return Task.CompletedTask;
     }
 
     public Task SendPasswordResetAsync(
         string toEmail, string resetToken, CancellationToken cancellationToken = default)
     {
-        PasswordResetEmailsSent++;
+        if (FailPasswordResetSends)
+        {
+            throw new InvalidOperationException("SMTP is down.");
+        }
+
+        PasswordResetRecipients.Add(toEmail);
+        return Task.CompletedTask;
+    }
+
+    public Task SendAlreadyRegisteredAsync(string toEmail, CancellationToken cancellationToken = default)
+    {
+        AlreadyRegisteredEmailsSent++;
         return Task.CompletedTask;
     }
 }

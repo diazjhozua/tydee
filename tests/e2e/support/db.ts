@@ -96,3 +96,26 @@ export async function seedPasswordResetToken(email: string): Promise<string> {
 
   return rawToken;
 }
+
+/** True once the worker has stored a reset token for this account. Used with expect.poll. */
+export async function passwordResetTokenStored(email: string): Promise<boolean> {
+  return withClient(async (client) => {
+    const result = await client.query<{ stored: boolean }>(
+      "select password_reset_token_hash is not null as stored from users where email = $1",
+      [email],
+    );
+
+    return result.rows[0]?.stored ?? false;
+  });
+}
+
+export async function userCountByEmail(email: string): Promise<number> {
+  return withClient(async (client) => {
+    const result = await client.query<{ count: string }>(
+      "select count(*)::text as count from users where email = $1",
+      [email],
+    );
+
+    return Number(result.rows[0].count);
+  });
+}

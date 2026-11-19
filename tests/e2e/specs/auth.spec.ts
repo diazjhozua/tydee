@@ -10,6 +10,7 @@ import { VerifyEmailPage } from "../pages/auth/verify-email.page";
 import { DashboardPage } from "../pages/dashboard.page";
 import { SettingsPage } from "../pages/settings.page";
 import { createUnverifiedUser } from "../fixtures/users";
+import { passwordResetTokenStored } from "../support/db";
 
 test("redirects a signed-out visitor to login", async ({ page }) => {
   await page.goto("/app");
@@ -118,14 +119,14 @@ test("offers to resend verification for an unverified account", async ({ page })
   await login.expectResendConfirmation();
 });
 
-test("rejects a duplicate email at registration", async ({ page, verifiedUser }) => {
+test("answers a duplicate email at registration with the same confirmation", async ({ page, verifiedUser }) => {
   const register = new RegisterPage(page);
 
   await register.open();
   await register.fill({ ...userSpec(), email: verifiedUser.email });
   await register.submit();
 
-  await register.expectError("The provided email is already in use.");
+  await register.expectCheckEmail();
 });
 
 test("answers identically for an unknown forgot-password email", async ({ page }) => {
@@ -134,6 +135,17 @@ test("answers identically for an unknown forgot-password email", async ({ page }
   await forgot.open();
   await forgot.submit("nobody@example.com");
   await forgot.expectGenericNotice();
+});
+
+test("queues a reset link for a known forgot-password email", async ({ page, verifiedUser }) => {
+  const forgot = new ForgotPasswordPage(page);
+
+  await forgot.open();
+  await forgot.submit(verifiedUser.email);
+  await forgot.expectGenericNotice();
+
+  // The worker sends the link within a few seconds. The fake sender discards it, so the stored hash is the proof.
+  await expect.poll(() => passwordResetTokenStored(verifiedUser.email), { timeout: 30_000 }).toBe(true);
 });
 
 test("shows an invalid verification token error", async ({ page }) => {
