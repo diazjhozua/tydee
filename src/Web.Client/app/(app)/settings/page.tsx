@@ -30,6 +30,7 @@ import { LEGAL_LINKS } from "@/lib/legal/constants";
 import { useLogout } from "@/lib/hooks/useAuth";
 import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
 import { useMe, useUpdateCurrency, useUpdateDefaultPage } from "@/lib/hooks/useMe";
+import { useOnlineStatus } from "@/lib/hooks/useOnlineStatus";
 import { useBalanceVisibilityStore } from "@/lib/stores/balanceVisibilityStore";
 import { ApiError } from "@/lib/types/api";
 import { DefaultPage } from "@/lib/types/me";
@@ -67,6 +68,7 @@ export default function SettingsPage() {
   const updateCurrency = useUpdateCurrency();
   const updateDefaultPage = useUpdateDefaultPage();
   const logout = useLogout();
+  const isOnline = useOnlineStatus();
   const install = useInstallPrompt();
   const { theme, setTheme } = useTheme();
   const hideBalances = useBalanceVisibilityStore((state) => state.hideBalances);
@@ -202,15 +204,23 @@ export default function SettingsPage() {
               </p>
               <p className="truncate text-xs text-muted-foreground">{me?.email}</p>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="rounded-full text-destructive hover:text-destructive"
-              onClick={() => logout.mutate()}
-              disabled={logout.isPending}
-            >
-              <LogOut className="size-4" /> Log out
-            </Button>
+            <div className="flex flex-col items-end gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="rounded-full text-destructive hover:text-destructive"
+                onClick={() => logout.mutate()}
+                disabled={!isOnline || logout.isPending}
+                aria-describedby={isOnline ? undefined : "settings-log-out-hint"}
+              >
+                <LogOut className="size-4" /> Log out
+              </Button>
+              {!isOnline && (
+                <p id="settings-log-out-hint" className="text-right text-xs text-muted-foreground md:hidden">
+                  Connect to sign out.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </SectionCard>
