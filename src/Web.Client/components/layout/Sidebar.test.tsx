@@ -6,6 +6,7 @@ const state = vi.hoisted(() => ({
   isAdmin: false,
   logout: vi.fn(),
   logoutPending: false,
+  unsynced: 0,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -20,6 +21,10 @@ vi.mock("@/lib/hooks/useAuth", () => ({
   useLogout: () => ({ mutate: state.logout, isPending: state.logoutPending }),
 }));
 
+vi.mock("@/lib/hooks/useUnsyncedCount", () => ({
+  useUnsyncedCount: () => state.unsynced,
+}));
+
 import { Sidebar } from "@/components/layout/Sidebar";
 import { primaryNavFor } from "@/lib/navigation";
 
@@ -28,6 +33,7 @@ describe("Sidebar", () => {
     state.pathname = "/accounts";
     state.isAdmin = false;
     state.logoutPending = false;
+    state.unsynced = 0;
     state.logout.mockReset();
   });
 
@@ -81,5 +87,47 @@ describe("Sidebar", () => {
     render(<Sidebar />);
 
     expect(screen.getByRole("button", { name: "Sign out" })).toBeDisabled();
+  });
+
+  it("keeps the confirm disabled while the sign-out request is pending", () => {
+    state.unsynced = 2;
+    const { rerender } = render(<Sidebar />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    state.logoutPending = true;
+    rerender(<Sidebar />);
+
+    expect(screen.getByRole("button", { name: "Discard and sign out" })).toBeDisabled();
+  });
+
+  it("asks before signing out when changes are unsynced, and signs out only on confirm", () => {
+    state.unsynced = 2;
+    render(<Sidebar />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("2 changes have not synced yet");
+    expect(state.logout).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Discard and sign out" }));
+    expect(state.logout).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses singular copy for one unsynced change", () => {
+    state.unsynced = 1;
+    render(<Sidebar />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent("1 change has not synced yet");
+  });
+
+  it("keeps the session when the user cancels the unsynced-changes prompt", () => {
+    state.unsynced = 3;
+    render(<Sidebar />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Sign out" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(state.logout).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

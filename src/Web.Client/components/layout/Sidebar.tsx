@@ -5,14 +5,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/brand/Logo";
 import { NavItemLink } from "@/components/layout/NavItemLink";
-import { useLogout } from "@/lib/hooks/useAuth";
+import { SignOutDialog } from "@/components/layout/SignOutDialog";
 import { useMe } from "@/lib/hooks/useMe";
+import { useSignOut } from "@/lib/hooks/useSignOut";
 import { adminNav, isNavActive, type NavItem, primaryNav, settingsNav } from "@/lib/navigation";
 
 export function Sidebar({ items = primaryNav }: { items?: NavItem[] }) {
   const pathname = usePathname();
   const { data: me } = useMe();
-  const logout = useLogout();
+  const signOut = useSignOut();
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
@@ -43,14 +44,22 @@ export function Sidebar({ items = primaryNav }: { items?: NavItem[] }) {
       <div className="p-3">
         <button
           type="button"
-          onClick={() => logout.mutate()}
-          disabled={logout.isPending}
+          onClick={signOut.requestSignOut}
+          disabled={signOut.isPending}
           className="flex h-10 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         >
           <LogOut className="size-5" />
           Sign out
         </button>
       </div>
+
+      <SignOutDialog
+        open={signOut.askOpen}
+        onOpenChange={signOut.setAskOpen}
+        count={signOut.count}
+        pending={signOut.isPending}
+        onConfirm={signOut.confirm}
+      />
     </aside>
   );
 }

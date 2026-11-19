@@ -23,6 +23,10 @@ vi.mock("@/lib/hooks/useAuth", () => ({
   useLogout: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
+vi.mock("@/lib/hooks/useUnsyncedCount", () => ({
+  useUnsyncedCount: () => 0,
+}));
+
 vi.mock("@/lib/hooks/useSuggestions", () => ({
   useCreateSuggestion: () => ({ mutate: vi.fn(), isPending: false, isPaused: false }),
 }));

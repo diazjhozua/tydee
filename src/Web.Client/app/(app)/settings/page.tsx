@@ -27,7 +27,8 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { LEGAL_LINKS } from "@/lib/legal/constants";
-import { useLogout } from "@/lib/hooks/useAuth";
+import { SignOutDialog } from "@/components/layout/SignOutDialog";
+import { useSignOut } from "@/lib/hooks/useSignOut";
 import { useInstallPrompt } from "@/lib/hooks/useInstallPrompt";
 import { useMe, useUpdateCurrency, useUpdateDefaultPage } from "@/lib/hooks/useMe";
 import { useBalanceVisibilityStore } from "@/lib/stores/balanceVisibilityStore";
@@ -66,7 +67,7 @@ export default function SettingsPage() {
   const { data: me } = useMe();
   const updateCurrency = useUpdateCurrency();
   const updateDefaultPage = useUpdateDefaultPage();
-  const logout = useLogout();
+  const signOut = useSignOut();
   const install = useInstallPrompt();
   const { theme, setTheme } = useTheme();
   const hideBalances = useBalanceVisibilityStore((state) => state.hideBalances);
@@ -206,11 +207,18 @@ export default function SettingsPage() {
               variant="ghost"
               size="sm"
               className="rounded-full text-destructive hover:text-destructive"
-              onClick={() => logout.mutate()}
-              disabled={logout.isPending}
+              onClick={signOut.requestSignOut}
+              disabled={signOut.isPending}
             >
-              <LogOut className="size-4" /> Log out
+              <LogOut className="size-4" /> Sign out
             </Button>
+            <SignOutDialog
+              open={signOut.askOpen}
+              onOpenChange={signOut.setAskOpen}
+              count={signOut.count}
+              pending={signOut.isPending}
+              onConfirm={signOut.confirm}
+            />
           </div>
         </div>
       </SectionCard>

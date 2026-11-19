@@ -39,8 +39,9 @@ export class SettingsPage extends BasePage {
     await expect(this.page.getByRole("button", { name: label, exact: true })).toBeVisible();
   }
 
+  // The sidebar has its own "Sign out" button on desktop, so scope to the page's main content.
   async logout(): Promise<void> {
-    await this.page.getByRole("button", { name: "Log out" }).click();
+    await this.page.getByRole("main").getByRole("button", { name: "Sign out" }).click();
   }
 
   async openFeedback(): Promise<void> {
