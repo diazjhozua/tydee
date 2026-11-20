@@ -27,6 +27,32 @@ internal static class Seed
         return user;
     }
 
+    public static EmailVerification Verification(
+        ApplicationDbContext db,
+        User user,
+        string sessionHash = "sh:session",
+        string? codeHash = null,
+        DateTime? codeExpiresOn = null,
+        DateTime? lastIssuedOn = null,
+        int attempts = 0,
+        string? pendingPasswordHash = null)
+    {
+        var verification = new EmailVerification
+        {
+            UserId = user.Id,
+            SessionHash = sessionHash,
+            CodeHash = codeHash,
+            CodeExpiresOnUtc = codeExpiresOn,
+            LastIssuedOnUtc = lastIssuedOn,
+            Attempts = attempts,
+            PendingPasswordHash = pendingPasswordHash,
+        };
+
+        db.EmailVerifications.Add(verification);
+        db.SaveChanges();
+        return verification;
+    }
+
     public static Account Account(
         ApplicationDbContext db,
         Guid userId,

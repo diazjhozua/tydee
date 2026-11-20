@@ -2,6 +2,7 @@ using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Email;
 using Application.Abstractions.Messaging;
+using Application.Abstractions.Verification;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -12,13 +13,13 @@ namespace Application.Users.ProcessNextPendingEmail;
 internal sealed class ProcessNextPendingEmailCommandHandler(
     IApplicationDbContext context,
     ITokenProvider tokenProvider,
+    IVerificationSecrets verificationSecrets,
     IEmailSender emailSender,
     IDateTimeProvider dateTimeProvider,
     ILogger<ProcessNextPendingEmailCommandHandler> logger)
     : ICommandHandler<ProcessNextPendingEmailCommand, bool>
 {
     private const int ResetTokenLifetimeMinutes = 60;
-    private const int VerificationTokenLifetimeHours = 24;
     private const int MaxAttempts = 5;
     private const int RetryBackoffSecondsPerAttempt = 30;
 
@@ -112,19 +113,57 @@ internal sealed class ProcessNextPendingEmailCommandHandler(
         DateTime now,
         CancellationToken cancellationToken)
     {
+        // A request queued before this deploy has no secret to bind the account to, so it can't be served.
+        if (request.SessionHash is not { } sessionHash)
+        {
+            return;
+        }
+
         User? user = await context.Users.SingleOrDefaultAsync(u => u.Email == request.Email, cancellationToken);
 
-        // Unknown and already-verified addresses get no link, which is the same answer the endpoint gives.
+        // Unknown and already-verified addresses get no code, which is the same answer the endpoint gives.
         if (user is null || user.IsEmailVerified)
         {
             return;
         }
 
-        string verificationToken = Guid.NewGuid().ToString("N");
+        EmailVerification? verification = await context.EmailVerifications
+            .SingleOrDefaultAsync(v => v.UserId == user.Id, cancellationToken);
 
-        await emailSender.SendEmailVerificationAsync(request.Email, verificationToken, cancellationToken);
+        bool isNew = verification is null;
+        verification ??= new EmailVerification { UserId = user.Id };
 
-        user.EmailVerificationToken = verificationToken;
-        user.EmailVerificationTokenExpiresAt = now.AddHours(VerificationTokenLifetimeHours);
+        // Used-up codes stay used up. Only a password reset gets the account verifiable again.
+        if (verification.IsSpent)
+        {
+            return;
+        }
+
+        // The registration password survives only when the requester presented the browser secret that is
+        // already bound. A resend from any other browser drops it.
+        bool keepPendingPassword = request.PresentedSessionHash is not null
+            && request.PresentedSessionHash == verification.SessionHash;
+
+        if (verification.IsInCooldown(now))
+        {
+            // No new code inside the cooldown. The code already in the inbox keeps working from this browser.
+            // A new row never has a cooldown, so this branch only rebinds an existing row.
+            verification.Bind(sessionHash, keepPendingPassword);
+            return;
+        }
+
+        string code = verificationSecrets.NewCode();
+
+        // Sent before the row changes, so a failed send leaves the previous code in place.
+        await emailSender.SendEmailVerificationAsync(user.Email, code, cancellationToken);
+
+        verification.Issue(verificationSecrets.HashCode(user.Id, code), now);
+        verification.Bind(sessionHash, keepPendingPassword);
+
+        // Added only after the send succeeds. A row added earlier would be saved by the failure path below.
+        if (isNew)
+        {
+            context.EmailVerifications.Add(verification);
+        }
     }
 }

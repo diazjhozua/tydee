@@ -14,6 +14,28 @@ public class ResetPasswordCommandHandlerTests
         new(db, new FakePasswordHasher(), new FakeTokenProvider(), clock);
 
     [Fact]
+    public async Task Successful_reset_verifies_the_account_and_drops_its_pending_verification()
+    {
+        using var db = TestDb.Create();
+        var clock = new FixedDateTimeProvider();
+        var user = Seed.User(db, verified: false);
+        user.PasswordResetTokenHash = "h:reset-raw";
+        user.PasswordResetTokenExpiresAt = clock.UtcNow.AddMinutes(30);
+        db.SaveChanges();
+        Seed.Verification(db, user, pendingPasswordHash: "#Registration1");
+
+        var result = await Handler(db, clock).Handle(
+            new ResetPasswordCommand("reset-raw", "NewPassword1", "NewPassword1"), CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
+
+        User saved = db.Users.Single();
+        saved.IsEmailVerified.ShouldBeTrue();
+        saved.PasswordHash.ShouldBe("#NewPassword1");
+        db.EmailVerifications.ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task Unknown_token_is_rejected()
     {
         using var db = TestDb.Create();

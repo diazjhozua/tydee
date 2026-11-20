@@ -9,13 +9,13 @@ internal sealed class SmtpEmailSender(SmtpSettings settings) : IEmailSender
 {
     public async Task SendEmailVerificationAsync(
         string toEmail,
-        string verificationToken,
+        string code,
         CancellationToken cancellationToken = default)
     {
         using MimeMessage message = BuildMessage(
             toEmail,
-            BuildSubject("Verify your email address"),
-            BuildVerificationBody(verificationToken));
+            BuildSubject("Your verification code"),
+            BuildVerificationBody(code));
 
         await SendAsync(message, cancellationToken);
     }
@@ -71,19 +71,13 @@ internal sealed class SmtpEmailSender(SmtpSettings settings) : IEmailSender
         return $"{testPrefix}[{settings.AppName}] {subject}";
     }
 
-    private string BuildVerificationBody(string token)
-    {
-        string link = $"{settings.FrontendUrl}/verify-email?token={token}";
-
-        return $"""
+    private string BuildVerificationBody(string code) =>
+        $"""
         <h2>Welcome to {settings.AppName}!</h2>
-        <p>Click the button below to verify your email address:</p>
-        <p><a href="{link}" style="display:inline-block;padding:12px 24px;background:#18181b;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">Verify email</a></p>
-        <p>Or copy this link into your browser:</p>
-        <p>{link}</p>
-        <p>This link expires in 24 hours.</p>
+        <p>Enter this code to verify your email address:</p>
+        <p style="font-size:28px;font-weight:700;letter-spacing:6px;">{code}</p>
+        <p>The code expires in 15 minutes. Enter it in the browser where you signed up.</p>
         """;
-    }
 
     private string BuildPasswordResetBody(string token)
     {

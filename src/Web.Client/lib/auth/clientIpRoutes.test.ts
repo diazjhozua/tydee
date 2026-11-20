@@ -61,7 +61,14 @@ const cases: RouteCase[] = [
     name: "verify-email",
     modulePath: "@/app/api/auth/verify-email/route",
     apiPath: "/api/v1/auth/verify-email",
-    body: { token: "verification-token" },
+    body: { code: "246810" },
+    reply: emptyJson,
+  },
+  {
+    name: "resend-verification",
+    modulePath: "@/app/api/auth/resend-verification/route",
+    apiPath: "/api/v1/auth/resend-verification",
+    body: { email: "owner@example.com" },
     reply: emptyJson,
   },
 ];

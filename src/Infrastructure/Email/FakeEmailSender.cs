@@ -3,17 +3,17 @@ using Application.Abstractions.Email;
 namespace Infrastructure.Email;
 
 // Selected by Email:Provider = "Fake" (the Testing environment only). It keeps
-// the verification and reset flows usable without an SMTP server; tests read
-// the tokens from the database instead of an inbox.
+// the verification and reset flows usable without an SMTP server. Tests seed a
+// known verification code instead of reading the inbox, because only its HMAC is stored.
 internal sealed class FakeEmailSender : IEmailSender
 {
     public Task SendEmailVerificationAsync(
         string toEmail,
-        string verificationToken,
+        string code,
         CancellationToken cancellationToken = default)
     {
         _ = toEmail;
-        _ = verificationToken;
+        _ = code;
         _ = cancellationToken;
 
         return Task.CompletedTask;

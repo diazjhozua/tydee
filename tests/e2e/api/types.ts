@@ -8,6 +8,27 @@ export type AuthResponse = {
   accessTokenExpiresAt: string;
 };
 
+// Mirrors src/Contracts/Auth. The verification secret is the registering browser's key to the code. The e2e API
+// client is not a browser, so it holds the secret itself and presents it on verify.
+export type RegisterResponse = {
+  message: string;
+  verificationSecret: string;
+};
+
+export type VerifyEmailRequest = {
+  code: string;
+  verificationSecret: string;
+};
+
+export type VerifyEmailResponse = {
+  hasPassword: boolean;
+};
+
+export type ResendVerificationResponse = {
+  message: string;
+  verificationSecret: string;
+};
+
 export type MeResponse = {
   id: string;
   email: string;

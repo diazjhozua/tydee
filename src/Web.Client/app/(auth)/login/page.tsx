@@ -37,6 +37,8 @@ function LoginForm() {
   });
 
   function onSubmit(values: FormValues) {
+    // A resend answer belongs to the address it was sent for, so a new login starts with its own resend button.
+    resendVerification.reset();
     setNotVerified(false);
     setEnteredEmail(values.email);
     login.mutate(values, {
@@ -54,6 +56,13 @@ function LoginForm() {
         ? "Too many login attempts. Wait a minute, then try again."
         : login.error.displayMessage
       : null;
+
+  const resendError =
+    resendVerification.error instanceof ApiError
+      ? resendVerification.error.displayMessage
+      : resendVerification.error
+        ? "Couldn't send a new code. Try again."
+        : null;
 
   return (
     <Card>
@@ -104,26 +113,43 @@ function LoginForm() {
           </div>
 
           {notVerified && (
-            <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/40">
-              {resendVerification.isSuccess ? (
-                <p className="text-amber-700 dark:text-amber-400">
-                  If that email needs verifying, we sent a new link.
-                </p>
-              ) : (
-                <>
+            <div role="status" className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/40">
+              <p className="text-amber-700 dark:text-amber-400">
+                Your email isn&apos;t verified yet. Check your inbox for the 6-digit code.
+              </p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+                <Link
+                  href={`/verify-email?email=${encodeURIComponent(enteredEmail)}`}
+                  className="font-medium text-primary hover:underline"
+                >
+                  Enter your code
+                </Link>
+                {resendVerification.isSuccess ? (
                   <p className="text-amber-700 dark:text-amber-400">
-                    Your email isn&apos;t verified yet. Check your inbox for the verification
-                    link.
+                    If that email needs verifying, we sent a new code.
                   </p>
-                  <button
+                ) : (
+                  <Button
                     type="button"
-                    className="mt-1.5 font-medium text-primary hover:underline disabled:opacity-50"
+                    variant="link"
+                    size="sm"
+                    className="h-auto px-0"
                     disabled={resendVerification.isPending}
                     onClick={() => resendVerification.mutate(enteredEmail)}
                   >
                     {resendVerification.isPending ? "Sending..." : "Resend verification email"}
-                  </button>
-                </>
+                  </Button>
+                )}
+              </div>
+              {!resendVerification.isSuccess && (
+                <p className="mt-1 text-amber-700 dark:text-amber-400">
+                  Resend from the browser you signed up from, or a new code drops your sign-up password.
+                </p>
+              )}
+              {resendError && (
+                <p role="alert" className="mt-1.5 text-destructive">
+                  {resendError}
+                </p>
               )}
             </div>
           )}

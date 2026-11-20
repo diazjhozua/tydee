@@ -2,11 +2,13 @@ using System.Text;
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Data;
 using Application.Abstractions.Email;
+using Application.Abstractions.Verification;
 using Infrastructure.Authentication;
 using Infrastructure.Database;
 using Infrastructure.DomainEvents;
 using Infrastructure.Email;
 using Infrastructure.Time;
+using Infrastructure.Verification;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -28,8 +30,29 @@ public static class DependencyInjection
             .AddDatabase(configuration)
             .AddHealthChecksInternal(configuration)
             .AddAuthenticationInternal(configuration, isDevelopment)
+            .AddVerificationInternal(configuration)
             .AddEmail(configuration)
             .AddAuthorizationInternal();
+
+    private static IServiceCollection AddVerificationInternal(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        EmailVerificationSettings settings = configuration
+            .GetSection(EmailVerificationSettings.SectionName)
+            .Get<EmailVerificationSettings>()
+            ?? throw new InvalidOperationException("EmailVerification configuration section is missing.");
+
+        if (settings.CodeSecret.Length < 32)
+        {
+            throw new InvalidOperationException("EmailVerification:CodeSecret must be at least 32 characters.");
+        }
+
+        services.AddSingleton(settings);
+        services.AddSingleton<IVerificationSecrets, VerificationSecrets>();
+
+        return services;
+    }
 
     private static IServiceCollection AddServices(this IServiceCollection services)
     {

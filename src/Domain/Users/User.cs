@@ -14,8 +14,6 @@ public sealed class User : Entity
     public bool IsLocked { get; set; }
     public string Currency { get; set; } = "PHP";
     public string? DefaultPage { get; set; }
-    public string? EmailVerificationToken { get; set; }
-    public DateTime? EmailVerificationTokenExpiresAt { get; set; }
     public string? PasswordResetTokenHash { get; set; }
     public DateTime? PasswordResetTokenExpiresAt { get; set; }
 

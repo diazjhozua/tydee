@@ -13,19 +13,19 @@ internal sealed class VerifyEmail : IEndpoint
     {
         app.MapPost("api/v1/auth/verify-email", async (
             VerifyEmailRequest request,
-            ICommandHandler<VerifyEmailCommand> handler,
+            ICommandHandler<VerifyEmailCommand, VerifyEmailResult> handler,
             CancellationToken cancellationToken) =>
         {
-            Result result = await handler.Handle(
-                new VerifyEmailCommand(request.Token),
+            Result<VerifyEmailResult> result = await handler.Handle(
+                new VerifyEmailCommand(request.Code, request.VerificationSecret ?? string.Empty),
                 cancellationToken);
 
             return result.Match(
-                () => Results.Ok(new RegisterResponse("Email verified successfully.")),
+                outcome => Results.Ok(new VerifyEmailResponse(outcome.HasPassword)),
                 CustomResults.Problem);
         })
         .WithTags(Tags.Auth)
         .RequireRateLimiting(RateLimitingExtensions.AuthPolicy)
-        .WithSummary("Verify an email address using the token from the verification email.");
+        .WithSummary("Verify an email address with the 6-digit code, from the browser that registered.");
     }
 }

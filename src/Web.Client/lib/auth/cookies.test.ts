@@ -1,11 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
+  EMAIL_VERIFICATION_COOKIE,
   REMEMBER_ME_COOKIE,
   REMEMBER_ME_MAX_AGE,
   REFRESH_TOKEN_COOKIE,
   applySessionCookies,
+  applyVerificationCookie,
   clearSessionCookies,
+  clearVerificationCookie,
   hasRememberMe,
+  readVerificationSecret,
   type CookieOptions,
 } from "@/lib/auth/cookies";
 
@@ -72,5 +76,73 @@ describe("hasRememberMe", () => {
     expect(hasRememberMe({ get: () => ({ value: "0" }) })).toBe(false);
     expect(hasRememberMe({ get: () => ({ value: "true" }) })).toBe(false);
     expect(hasRememberMe({ get: () => undefined })).toBe(false);
+  });
+});
+
+describe("applyVerificationCookie", () => {
+  it("binds the browser to its secret for the 15-minute code lifetime, scoped to the auth routes", () => {
+    const writer = createWriter();
+
+    applyVerificationCookie(writer, "browser-secret");
+
+    expect(writer.cookies.get(EMAIL_VERIFICATION_COOKIE)).toMatchObject({
+      value: "browser-secret",
+      options: { maxAge: 900, path: "/api/auth", httpOnly: true, sameSite: "lax" },
+    });
+  });
+
+  it("does not touch the refresh cookies", () => {
+    const writer = createWriter();
+
+    applyVerificationCookie(writer, "browser-secret");
+
+    expect(writer.cookies.has(REFRESH_TOKEN_COOKIE)).toBe(false);
+    expect(writer.cookies.has(REMEMBER_ME_COOKIE)).toBe(false);
+  });
+
+  it("is secure in production", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+
+    try {
+      // The base options are read when the module loads, so load it again under production.
+      vi.resetModules();
+      const production = await import("@/lib/auth/cookies");
+      const writer = createWriter();
+
+      production.applyVerificationCookie(writer, "browser-secret");
+
+      expect(writer.cookies.get(EMAIL_VERIFICATION_COOKIE)?.options.secure).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
+  it("is not secure outside production", () => {
+    const writer = createWriter();
+
+    applyVerificationCookie(writer, "browser-secret");
+
+    expect(writer.cookies.get(EMAIL_VERIFICATION_COOKIE)?.options.secure).toBe(false);
+  });
+});
+
+describe("clearVerificationCookie", () => {
+  it("expires the binding with the same scope it was set with", () => {
+    const writer = createWriter();
+
+    clearVerificationCookie(writer);
+
+    expect(writer.cookies.get(EMAIL_VERIFICATION_COOKIE)).toMatchObject({
+      value: "",
+      options: { maxAge: 0, path: "/api/auth", httpOnly: true },
+    });
+  });
+});
+
+describe("readVerificationSecret", () => {
+  it("returns the secret the browser sent, and undefined when the cookie is absent", () => {
+    expect(readVerificationSecret({ get: () => ({ value: "browser-secret" }) })).toBe("browser-secret");
+    expect(readVerificationSecret({ get: () => undefined })).toBeUndefined();
   });
 });

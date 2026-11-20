@@ -1,6 +1,15 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, createHmac, randomBytes } from "node:crypto";
 import { Client } from "pg";
 import { readState } from "./state";
+
+/** The code the e2e tests seed and then enter. Each test has its own account, so one value serves them all. */
+export const TEST_VERIFICATION_CODE = "246810";
+
+/**
+ * Matches EmailVerification:CodeSecret in src/Web.Api/appsettings.Testing.json. The API keys the HMAC of every
+ * verification code with it, so the seeded hash must use the same key.
+ */
+const VERIFICATION_CODE_SECRET = "tydee-e2e-verification-code-secret-32chars";
 
 async function withClient<T>(run: (client: Client) => Promise<T>): Promise<T> {
   const state = readState();
@@ -20,24 +29,49 @@ async function withClient<T>(run: (client: Client) => Promise<T>): Promise<T> {
   }
 }
 
-export async function verificationToken(email: string): Promise<string> {
-  return withClient(async (client) => {
-    const result = await client.query<{ email_verification_token: string | null }>(
-      "select email_verification_token from users where email = $1",
-      [email],
+/**
+ * Stores a known one-time code for the account, so a test can spend it. The API keeps only a keyed HMAC of each code
+ * and the fake sender discards the raw one, so the test cannot read the code from anywhere else. The hash is the
+ * same one VerificationSecrets computes: Base64 of HMAC-SHA256 over `${userId}:${code}`, keyed with the e2e secret.
+ */
+export async function seedVerificationCode(email: string, code: string): Promise<void> {
+  await withClient(async (client) => {
+    const user = await client.query<{ id: string }>("select id from users where email = $1", [email]);
+
+    if (user.rowCount !== 1) {
+      throw new Error(`Expected one user for ${email}, found ${user.rowCount}.`);
+    }
+
+    const userId = user.rows[0].id;
+    const codeHash = createHmac("sha256", VERIFICATION_CODE_SECRET)
+      .update(`${userId}:${code}`, "utf8")
+      .digest("base64");
+
+    const result = await client.query(
+      "update email_verifications set code_hash = $1, code_expires_on_utc = now() + interval '15 minutes', attempts = 0 where user_id = $2",
+      [codeHash, userId],
     );
 
     if (result.rowCount !== 1) {
-      throw new Error(`Expected one user for ${email}, found ${result.rowCount}.`);
+      throw new Error(`Could not seed a code for ${email}: updated ${result.rowCount} rows.`);
     }
+  });
+}
 
-    const token = result.rows[0].email_verification_token;
+/**
+ * True once the worker has bound this browser's verification secret to the account. A resend only queues a row, so
+ * the binding happens on the worker's next tick. Used with expect.poll.
+ */
+export async function verificationBoundTo(email: string, verificationSecret: string): Promise<boolean> {
+  const sessionHash = createHash("sha256").update(verificationSecret, "utf8").digest("base64");
 
-    if (!token) {
-      throw new Error(`No verification token stored for ${email}.`);
-    }
+  return withClient(async (client) => {
+    const result = await client.query<{ bound: boolean }>(
+      "select ev.session_hash = $1 as bound from email_verifications ev join users u on u.id = ev.user_id where u.email = $2",
+      [sessionHash, email],
+    );
 
-    return token;
+    return result.rows[0]?.bound ?? false;
   });
 }
 

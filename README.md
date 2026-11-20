@@ -80,13 +80,15 @@ See [deployment](#deployment) for notes on running it on a live system.
    ConnectionStrings__Database=Host=localhost;Port=5432;Database=tydee;Username=tydee;Password=Tydee_Dev123!
    ```
 
-3. Configure the API. `Jwt:Secret` must be at least 32 characters, and SMTP credentials
-   are needed for verification and reset emails. Prefer user secrets over the gitignored
-   `src/Web.Api/appsettings.Development.json`:
+3. Configure the API. `Jwt:Secret` and `EmailVerification:CodeSecret` must each be at least
+   32 characters; the API will not start without the code secret, which keys the HMAC of
+   verification codes. SMTP credentials are needed for verification and reset emails. Prefer
+   user secrets over the gitignored `src/Web.Api/appsettings.Development.json`:
 
    ```
    cd src/Web.Api
    dotnet user-secrets set "Jwt:Secret" "your-secret-at-least-32-chars"
+   dotnet user-secrets set "EmailVerification:CodeSecret" "your-code-secret-at-least-32-chars"
    dotnet user-secrets set "Smtp:Password" "your-smtp-password"
    ```
 
@@ -114,9 +116,10 @@ See [deployment](#deployment) for notes on running it on a live system.
    The local client needs `NEXT_PUBLIC_API_URL=http://localhost:5000`,
    `API_URL=http://localhost:5000`, and `NEXT_PUBLIC_APP_URL=http://localhost:3000`.
 
-Register at http://localhost:3000/register. The verification email links back to the
-client, and the first login opens a two-step setup: create your envelopes, then set the
-income split.
+Register at http://localhost:3000/register. The verification email carries a 6-digit code.
+Enter it on the verify page in the same browser you registered from, since only that browser
+can spend it. The first login then opens a two-step setup: create your envelopes, then set
+the income split.
 
 ## 🔧 Running the tests <a name = "tests"></a>
 
@@ -212,6 +215,7 @@ Provide production configuration through environment variables or a secret store
 ```
 ConnectionStrings__Database=Host=<host>;Port=5432;Database=tydee;Username=<user>;Password=<password>
 Jwt__Secret=<at-least-32-characters>
+EmailVerification__CodeSecret=<at-least-32-characters>
 Jwt__Issuer=<issuer>
 Jwt__Audience=<audience>
 Cors__AllowedOrigins__0=https://<client-host>

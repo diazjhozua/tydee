@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { applyVerificationCookie } from "@/lib/auth/cookies";
 import { clientIpHeaders } from "@/lib/auth/clientIp";
 
 export const maxDuration = 60;
@@ -21,5 +22,14 @@ export async function POST(request: NextRequest) {
 
   const data = await res.json().catch(() => null);
 
-  return NextResponse.json(data ?? {}, { status: res.status });
+  // The verification secret lets this browser spend the emailed code. It goes into the httpOnly cookie and never
+  // reaches the page.
+  const { verificationSecret, ...page } = data ?? {};
+  const response = NextResponse.json(page, { status: res.status });
+
+  if (res.ok && typeof verificationSecret === "string") {
+    applyVerificationCookie(response.cookies, verificationSecret);
+  }
+
+  return response;
 }

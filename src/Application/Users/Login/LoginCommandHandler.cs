@@ -39,8 +39,17 @@ internal sealed class LoginCommandHandler(
             return Result.Failure<AuthTokensResponse>(UserErrors.InvalidCredentials);
         }
 
+        // An account that hasn't verified is checked against its registration password, which waits in the
+        // verification row. The account's own hash is empty until verification.
+        string passwordHash = user.IsEmailVerified
+            ? user.PasswordHash
+            : await context.EmailVerifications
+                .Where(v => v.UserId == user.Id)
+                .Select(v => v.PendingPasswordHash)
+                .SingleOrDefaultAsync(cancellationToken) ?? user.PasswordHash;
+
         // A wrong password writes nothing. Disposing the lock without a commit rolls back.
-        if (!passwordHasher.Verify(command.Password, user.PasswordHash))
+        if (!passwordHasher.Verify(command.Password, passwordHash))
         {
             return Result.Failure<AuthTokensResponse>(UserErrors.InvalidCredentials);
         }
