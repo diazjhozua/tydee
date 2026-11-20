@@ -445,6 +445,49 @@ namespace Infrastructure.Database.Migrations
                     b.ToTable("transfers", "public");
                 });
 
+            modelBuilder.Entity("Domain.Users.EmailVerification", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempts");
+
+                    b.Property<DateTime?>("CodeExpiresOnUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("code_expires_on_utc");
+
+                    b.Property<string>("CodeHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("code_hash");
+
+                    b.Property<DateTime?>("LastIssuedOnUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_issued_on_utc");
+
+                    b.Property<string>("PendingPasswordHash")
+                        .HasColumnType("text")
+                        .HasColumnName("pending_password_hash");
+
+                    b.Property<string>("SessionHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("session_hash");
+
+                    b.HasKey("UserId")
+                        .HasName("pk_email_verifications");
+
+                    b.HasIndex("SessionHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_email_verifications_session_hash");
+
+                    b.ToTable("email_verifications", "public");
+                });
+
             modelBuilder.Entity("Domain.Users.PendingEmail", b =>
                 {
                     b.Property<Guid>("Id")
@@ -472,9 +515,19 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("next_attempt_on_utc");
 
+                    b.Property<string>("PresentedSessionHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("presented_session_hash");
+
                     b.Property<DateTime>("RequestedOnUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("requested_on_utc");
+
+                    b.Property<string>("SessionHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("session_hash");
 
                     b.HasKey("Id")
                         .HasName("pk_pending_emails");
@@ -549,15 +602,6 @@ namespace Infrastructure.Database.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("email");
 
-                    b.Property<string>("EmailVerificationToken")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("email_verification_token");
-
-                    b.Property<DateTime?>("EmailVerificationTokenExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("email_verification_token_expires_at");
-
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -602,11 +646,6 @@ namespace Infrastructure.Database.Migrations
                     b.HasIndex("Email")
                         .IsUnique()
                         .HasDatabaseName("ix_users_email");
-
-                    b.HasIndex("EmailVerificationToken")
-                        .IsUnique()
-                        .HasDatabaseName("ix_users_email_verification_token")
-                        .HasFilter("\"email_verification_token\" IS NOT NULL");
 
                     b.ToTable("users", "public");
                 });
@@ -761,6 +800,16 @@ namespace Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_transfers_users_user_id");
+                });
+
+            modelBuilder.Entity("Domain.Users.EmailVerification", b =>
+                {
+                    b.HasOne("Domain.Users.User", null)
+                        .WithOne()
+                        .HasForeignKey("Domain.Users.EmailVerification", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_email_verifications_users_user_id");
                 });
 
             modelBuilder.Entity("Domain.Users.RefreshToken", b =>

@@ -1,5 +1,6 @@
 using Application.Abstractions.Authentication;
 using Application.Abstractions.Email;
+using Application.Abstractions.Verification;
 using Domain.Users;
 using SharedKernel;
 
@@ -52,6 +53,24 @@ internal sealed class FixedDateTimeProvider : IDateTimeProvider
     public DateTime UtcNow { get; set; } = new(2026, 8, 6, 12, 0, 0, DateTimeKind.Utc);
 }
 
+// Deterministic: every code is NextCode, and secrets count up, so tests can predict them.
+internal sealed class FakeVerificationSecrets : IVerificationSecrets
+{
+    private int _counter;
+
+    public string NextCode { get; set; } = "123456";
+
+    public string NewCode() => NextCode;
+
+    public string NewSessionSecret() => $"session-{++_counter}";
+
+    public string HashSessionSecret(string sessionSecret) => $"sh:{sessionSecret}";
+
+    public string HashCode(Guid userId, string code) => $"ch:{userId:D}:{code}";
+
+    public bool CodeMatches(Guid userId, string code, string codeHash) => HashCode(userId, code) == codeHash;
+}
+
 internal sealed class FakeEmailSender : IEmailSender
 {
     public int VerificationEmailsSent { get; private set; }
@@ -60,15 +79,25 @@ internal sealed class FakeEmailSender : IEmailSender
 
     public List<string> VerificationRecipients { get; } = [];
 
+    public List<string> VerificationCodes { get; } = [];
+
     public List<string> PasswordResetRecipients { get; } = [];
 
     public bool FailPasswordResetSends { get; set; }
 
+    public bool FailVerificationSends { get; set; }
+
     public Task SendEmailVerificationAsync(
-        string toEmail, string verificationToken, CancellationToken cancellationToken = default)
+        string toEmail, string code, CancellationToken cancellationToken = default)
     {
+        if (FailVerificationSends)
+        {
+            throw new InvalidOperationException("SMTP is down.");
+        }
+
         VerificationEmailsSent++;
         VerificationRecipients.Add(toEmail);
+        VerificationCodes.Add(code);
         return Task.CompletedTask;
     }
 

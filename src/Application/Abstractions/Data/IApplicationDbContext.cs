@@ -25,6 +25,7 @@ public interface IApplicationDbContext
     DbSet<CardPayment> CardPayments { get; }
     DbSet<Suggestion> Suggestions { get; }
     DbSet<PendingEmail> PendingEmails { get; }
+    DbSet<EmailVerification> EmailVerifications { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 

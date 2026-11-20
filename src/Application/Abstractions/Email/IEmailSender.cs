@@ -4,7 +4,7 @@ public interface IEmailSender
 {
     Task SendEmailVerificationAsync(
         string toEmail,
-        string verificationToken,
+        string code,
         CancellationToken cancellationToken = default);
 
     Task SendPasswordResetAsync(
@@ -14,7 +14,7 @@ public interface IEmailSender
 
     /// <summary>
     /// Tells the owner of an existing account that someone tried to register the address.
-    /// Sent instead of a verification link, so no token is created.
+    /// Sent instead of a verification code, so no code is created.
     /// </summary>
     Task SendAlreadyRegisteredAsync(
         string toEmail,

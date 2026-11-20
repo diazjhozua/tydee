@@ -22,6 +22,40 @@ public class LoginCommandHandlerTests
             clock ?? new FixedDateTimeProvider());
 
     [Fact]
+    public async Task Unverified_account_is_checked_against_its_pending_registration_password()
+    {
+        using var db = TestDb.Create();
+        User user = Seed.User(db, "pending@example.com", verified: false);
+        user.PasswordHash = string.Empty;
+        db.SaveChanges();
+        Seed.Verification(db, user, pendingPasswordHash: "#Password123!");
+
+        var handler = Handler(db);
+
+        var right = await handler.Handle(
+            new LoginCommand("pending@example.com", "Password123!"), CancellationToken.None);
+        var wrong = await handler.Handle(
+            new LoginCommand("pending@example.com", "WrongPassword"), CancellationToken.None);
+
+        right.Error.ShouldBe(UserErrors.EmailNotVerified);
+        wrong.Error.ShouldBe(UserErrors.InvalidCredentials);
+    }
+
+    [Fact]
+    public async Task Unverified_account_with_no_password_left_answers_invalid_credentials()
+    {
+        using var db = TestDb.Create();
+        User user = Seed.User(db, "dropped@example.com", verified: false);
+        user.PasswordHash = string.Empty;
+        db.SaveChanges();
+
+        var result = await Handler(db).Handle(
+            new LoginCommand("dropped@example.com", "Password123!"), CancellationToken.None);
+
+        result.Error.ShouldBe(UserErrors.InvalidCredentials);
+    }
+
+    [Fact]
     public async Task Wrong_email_and_wrong_password_return_the_same_error()
     {
         using var db = TestDb.Create();

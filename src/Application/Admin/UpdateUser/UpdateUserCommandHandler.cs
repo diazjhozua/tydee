@@ -33,13 +33,22 @@ internal sealed class UpdateUserCommandHandler(
 
         if (command.IsEmailVerified is { } verified)
         {
-            user.IsEmailVerified = verified;
-
-            if (verified)
+            // Verifying by hand doesn't prove the owner chose the registration password, so it is dropped.
+            // The owner sets one through Forgot password. Accounts that are already verified keep theirs.
+            if (verified && !user.IsEmailVerified)
             {
-                user.EmailVerificationToken = null;
-                user.EmailVerificationTokenExpiresAt = null;
+                user.PasswordHash = string.Empty;
+
+                EmailVerification? verification = await context.EmailVerifications
+                    .SingleOrDefaultAsync(v => v.UserId == user.Id, cancellationToken);
+
+                if (verification is not null)
+                {
+                    context.EmailVerifications.Remove(verification);
+                }
             }
+
+            user.IsEmailVerified = verified;
         }
 
         if (command.IsLocked is { } locked)

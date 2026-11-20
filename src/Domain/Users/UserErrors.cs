@@ -14,11 +14,7 @@ public static class UserErrors
 
     public static readonly Error InvalidVerificationToken = Error.NotFound(
         "Users.InvalidVerificationToken",
-        "The verification token is invalid or has expired.");
-
-    public static readonly Error EmailAlreadyVerified = Error.Conflict(
-        "Users.EmailAlreadyVerified",
-        "This email address has already been verified.");
+        "The verification code is invalid or has expired.");
 
     public static readonly Error InvalidRefreshToken = Error.Unauthorized(
         "Users.InvalidRefreshToken",

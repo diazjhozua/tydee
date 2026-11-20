@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using Application.Users;
 using Application.Users.ResendVerification;
 using Contracts.Auth;
 using SharedKernel;
@@ -13,19 +14,21 @@ internal sealed class ResendVerification : IEndpoint
     {
         app.MapPost("api/v1/auth/resend-verification", async (
             ResendVerificationRequest request,
-            ICommandHandler<ResendVerificationCommand> handler,
+            ICommandHandler<ResendVerificationCommand, VerificationStarted> handler,
             CancellationToken cancellationToken) =>
         {
-            Result result = await handler.Handle(
-                new ResendVerificationCommand(request.Email),
+            Result<VerificationStarted> result = await handler.Handle(
+                new ResendVerificationCommand(request.Email, request.PresentedVerificationSecret),
                 cancellationToken);
 
             return result.Match(
-                () => Results.Ok(new { message = "If that email needs verifying, we sent a new link." }),
+                started => Results.Ok(new ResendVerificationResponse(
+                    "If that email needs verifying, we sent a new code.",
+                    started.VerificationSecret)),
                 CustomResults.Problem);
         })
         .WithTags(Tags.Auth)
-        .WithSummary("Email a fresh verification link. Always answers success.")
+        .WithSummary("Email a fresh verification code and rebind the browser. Always answers success.")
         .RequireRateLimiting(RateLimitingExtensions.AuthPolicy);
     }
 }

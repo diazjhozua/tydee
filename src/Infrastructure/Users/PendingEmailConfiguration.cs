@@ -12,6 +12,8 @@ internal sealed class PendingEmailConfiguration : IEntityTypeConfiguration<Pendi
 
         builder.Property(p => p.Kind).HasConversion<string>().HasMaxLength(32);
         builder.Property(p => p.Email).HasMaxLength(256);
+        builder.Property(p => p.SessionHash).HasMaxLength(64);
+        builder.Property(p => p.PresentedSessionHash).HasMaxLength(64);
 
         // The worker claims the due row with the earliest next attempt.
         builder.HasIndex(p => p.NextAttemptOnUtc);

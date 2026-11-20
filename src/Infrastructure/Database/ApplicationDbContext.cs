@@ -44,6 +44,8 @@ public sealed class ApplicationDbContext(
 
     public DbSet<PendingEmail> PendingEmails { get; set; }
 
+    public DbSet<EmailVerification> EmailVerifications { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);

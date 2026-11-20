@@ -17,6 +17,7 @@ public class ProcessNextPendingEmailCommandHandlerTests
         new(
             db,
             new FakeTokenProvider(),
+            new FakeVerificationSecrets(),
             emails,
             clock,
             NullLogger<ProcessNextPendingEmailCommandHandler>.Instance);
@@ -152,20 +153,37 @@ public class ProcessNextPendingEmailCommandHandlerTests
     }
 
     [Fact]
-    public async Task Resend_for_an_unverified_account_sends_a_new_link_and_stores_its_token()
+    public async Task Resend_for_an_unverified_account_emails_a_code_and_stores_only_its_hash()
     {
         using var db = TestDb.Create();
-        Seed.User(db, "unverified@example.com", verified: false);
-        Queue(db, PendingEmailKind.VerificationResend, "unverified@example.com");
+        User user = Seed.User(db, "unverified@example.com", verified: false);
         var clock = new FixedDateTimeProvider();
         var emails = new FakeEmailSender();
+        var secrets = new FakeVerificationSecrets();
 
-        await RunOnce(db, emails, clock);
+        db.PendingEmails.Add(PendingEmail.Request(
+            PendingEmailKind.VerificationResend,
+            "unverified@example.com",
+            clock.UtcNow,
+            sessionHash: "sh:new"));
+        db.SaveChanges();
+
+        await new ProcessNextPendingEmailCommandHandler(
+            db,
+            new FakeTokenProvider(),
+            secrets,
+            emails,
+            clock,
+            NullLogger<ProcessNextPendingEmailCommandHandler>.Instance)
+            .Handle(new ProcessNextPendingEmailCommand(), CancellationToken.None);
 
         emails.VerificationRecipients.Single().ShouldBe("unverified@example.com");
-        var user = db.Users.Single();
-        user.EmailVerificationToken.ShouldNotBeNull();
-        user.EmailVerificationTokenExpiresAt.ShouldBe(clock.UtcNow.AddHours(24));
+        emails.VerificationCodes.Single().ShouldBe("123456");
+
+        EmailVerification saved = db.EmailVerifications.Single();
+        saved.UserId.ShouldBe(user.Id);
+        saved.CodeHash.ShouldBe(secrets.HashCode(user.Id, "123456"));
+        saved.SessionHash.ShouldBe("sh:new");
         db.PendingEmails.Count().ShouldBe(0);
     }
 

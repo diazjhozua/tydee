@@ -1,4 +1,5 @@
 using Application.Abstractions.Messaging;
+using Application.Users;
 using Application.Users.Register;
 using Contracts.Auth;
 using SharedKernel;
@@ -13,7 +14,7 @@ internal sealed class Register : IEndpoint
     {
         app.MapPost("api/v1/auth/register", async (
             RegisterRequest request,
-            ICommandHandler<RegisterUserCommand> handler,
+            ICommandHandler<RegisterUserCommand, VerificationStarted> handler,
             CancellationToken cancellationToken) =>
         {
             var command = new RegisterUserCommand(
@@ -23,15 +24,16 @@ internal sealed class Register : IEndpoint
                 request.FirstName,
                 request.LastName);
 
-            Result result = await handler.Handle(command, cancellationToken);
+            Result<VerificationStarted> result = await handler.Handle(command, cancellationToken);
 
             return result.Match(
-                () => Results.Ok(new RegisterResponse(
-                    "Registration successful. Please check your email to verify your account.")),
+                started => Results.Ok(new RegisterResponse(
+                    "Registration successful. Enter the 6-digit code we emailed you.",
+                    started.VerificationSecret)),
                 CustomResults.Problem);
         })
         .WithTags(Tags.Auth)
         .RequireRateLimiting(RateLimitingExtensions.AuthPolicy)
-        .WithSummary("Register a new account and send a verification email.");
+        .WithSummary("Register a new account and email a verification code.");
     }
 }

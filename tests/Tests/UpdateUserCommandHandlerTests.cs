@@ -52,6 +52,42 @@ public class UpdateUserCommandHandlerTests
     }
 
     [Fact]
+    public async Task Admin_verifying_an_unverified_account_drops_the_registration_password()
+    {
+        using var db = TestDb.Create();
+        var clock = new FixedDateTimeProvider();
+        var admin = Seed.User(db, "admin@example.com");
+        User member = Seed.User(db, "member@example.com", verified: false);
+        member.PasswordHash = string.Empty;
+        db.SaveChanges();
+        Seed.Verification(db, member, pendingPasswordHash: "#Registration1");
+
+        var result = await Handler(db, clock).Handle(
+            new UpdateUserCommand(member.Id, true, null, admin.Id), CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
+
+        User saved = db.Users.Single(u => u.Id == member.Id);
+        saved.IsEmailVerified.ShouldBeTrue();
+        saved.PasswordHash.ShouldBe(string.Empty);
+        db.EmailVerifications.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task Admin_verifying_an_already_verified_account_keeps_its_password()
+    {
+        using var db = TestDb.Create();
+        var clock = new FixedDateTimeProvider();
+        var admin = Seed.User(db, "admin@example.com");
+        User member = Seed.User(db, "member@example.com", verified: true);
+
+        await Handler(db, clock).Handle(
+            new UpdateUserCommand(member.Id, true, null, admin.Id), CancellationToken.None);
+
+        db.Users.Single(u => u.Id == member.Id).PasswordHash.ShouldBe("#Password123!");
+    }
+
+    [Fact]
     public async Task Admin_cannot_lock_their_own_account()
     {
         using var db = TestDb.Create();

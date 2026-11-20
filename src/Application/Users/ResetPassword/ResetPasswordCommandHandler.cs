@@ -57,6 +57,18 @@ internal sealed class ResetPasswordCommandHandler(
         user.PasswordResetTokenHash = null;
         user.PasswordResetTokenExpiresAt = null;
 
+        // The reset link proves the mailbox, and the password just written is the owner's own, so the
+        // account verifies here. Any pending verification with the registration password is dropped.
+        user.IsEmailVerified = true;
+
+        EmailVerification? verification = await context.EmailVerifications
+            .SingleOrDefaultAsync(v => v.UserId == user.Id, cancellationToken);
+
+        if (verification is not null)
+        {
+            context.EmailVerifications.Remove(verification);
+        }
+
         // Whoever reset the password should be the only one left logged in,
         // so every existing session gets revoked.
         user.RevokeActiveSessions(dateTimeProvider.UtcNow);

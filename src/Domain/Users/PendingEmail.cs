@@ -26,7 +26,18 @@ public sealed class PendingEmail
 
     public int Attempts { get; set; }
 
-    public static PendingEmail Request(PendingEmailKind kind, string email, DateTime utcNow) =>
+    /// <summary>Resend only: hash of the browser secret the account is bound to once a code is issued.</summary>
+    public string? SessionHash { get; set; }
+
+    /// <summary>Resend only: hash of the secret the requesting browser presented, or null when it had none.</summary>
+    public string? PresentedSessionHash { get; set; }
+
+    public static PendingEmail Request(
+        PendingEmailKind kind,
+        string email,
+        DateTime utcNow,
+        string? sessionHash = null,
+        string? presentedSessionHash = null) =>
         new()
         {
             Id = Guid.NewGuid(),
@@ -34,5 +45,7 @@ public sealed class PendingEmail
             Email = email.ToLowerInvariant(),
             RequestedOnUtc = utcNow,
             NextAttemptOnUtc = utcNow,
+            SessionHash = sessionHash,
+            PresentedSessionHash = presentedSessionHash,
         };
 }
