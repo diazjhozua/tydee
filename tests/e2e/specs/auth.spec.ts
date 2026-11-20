@@ -10,7 +10,9 @@ import { VerifyEmailPage } from "../pages/auth/verify-email.page";
 import { DashboardPage } from "../pages/dashboard.page";
 import { SettingsPage } from "../pages/settings.page";
 import { createUnverifiedUser } from "../fixtures/users";
-import { passwordResetTokenStored } from "../support/db";
+import { TEST_VERIFICATION_CODE, passwordResetTokenStored, seedVerificationCode } from "../support/db";
+
+const WRONG_VERIFICATION_CODE = "000000";
 
 test("redirects a signed-out visitor to login", async ({ page }) => {
   await page.goto("/app");
@@ -115,6 +117,7 @@ test("offers to resend verification for an unverified account", async ({ page })
   await login.submit();
 
   await login.expectNotVerifiedNotice();
+  await login.expectEnterCodeLink(user.email);
   await login.resendVerification();
   await login.expectResendConfirmation();
 });
@@ -126,7 +129,7 @@ test("answers a duplicate email at registration with the same confirmation", asy
   await register.fill({ ...userSpec(), email: verifiedUser.email });
   await register.submit();
 
-  await register.expectCheckEmail();
+  await register.expectVerifyPage();
 });
 
 test("answers identically for an unknown forgot-password email", async ({ page }) => {
@@ -148,11 +151,27 @@ test("queues a reset link for a known forgot-password email", async ({ page, ver
   await expect.poll(() => passwordResetTokenStored(verifiedUser.email), { timeout: 30_000 }).toBe(true);
 });
 
-test("shows an invalid verification token error", async ({ page }) => {
+test("rejects a wrong verification code, then accepts the right one from the same browser", async ({ page }) => {
+  const user = userSpec();
+  const register = new RegisterPage(page);
+
+  await register.open();
+  await register.fill(user);
+  await register.submit();
+  await register.expectVerifyPage();
+
+  await seedVerificationCode(user.email, TEST_VERIFICATION_CODE);
+
   const verify = new VerifyEmailPage(page);
 
-  await verify.open("not-a-real-token");
+  await verify.enterCode(WRONG_VERIFICATION_CODE);
+  await verify.submit();
   await verify.expectInvalid();
+
+  // A wrong guess spends one attempt, not the code, and the browser keeps its binding.
+  await verify.enterCode(TEST_VERIFICATION_CODE);
+  await verify.submit();
+  await verify.expectVerified();
 });
 
 test("shows the missing-token state for password reset", async ({ page }) => {

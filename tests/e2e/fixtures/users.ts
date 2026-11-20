@@ -1,13 +1,24 @@
 import type { BrowserContext, Page } from "@playwright/test";
-import { createApi } from "../api";
+import { createApi, type TydeeApi } from "../api";
 import type { AuthResponse } from "../api/types";
 import { userSpec, type UserSpec } from "../builders/user.builder";
-import { promoteToAdmin, verificationToken } from "../support/db";
+import { TEST_VERIFICATION_CODE, promoteToAdmin, seedVerificationCode } from "../support/db";
 import { API_URL } from "../support/env";
 
 export type UserSession = UserSpec & AuthResponse;
 
 export type DefaultPagePreference = "Home" | "LogExpense" | null;
+
+/**
+ * Registers through the API and verifies with a seeded code. The API has no browser, so the registration's
+ * verification secret is passed back explicitly, as the BFF's cookie would pass it in a real browser.
+ */
+async function registerAndVerify(api: TydeeApi, spec: UserSpec): Promise<void> {
+  const { verificationSecret } = await api.auth.register(spec);
+
+  await seedVerificationCode(spec.email, TEST_VERIFICATION_CODE);
+  await api.auth.verifyEmail({ code: TEST_VERIFICATION_CODE, verificationSecret });
+}
 
 export async function createUnverifiedUser(spec: UserSpec = userSpec()): Promise<UserSpec> {
   const api = createApi(API_URL);
@@ -23,10 +34,7 @@ export async function createVerifiedUser(
 ): Promise<UserSession> {
   const api = createApi(API_URL);
 
-  await api.auth.register(spec);
-
-  const token = await verificationToken(spec.email);
-  await api.auth.verifyEmail(token);
+  await registerAndVerify(api, spec);
 
   const auth = await api.auth.login(spec.email, spec.password);
 
@@ -47,10 +55,7 @@ export async function createAdminUser(
 ): Promise<UserSession> {
   const api = createApi(API_URL);
 
-  await api.auth.register(spec);
-
-  const token = await verificationToken(spec.email);
-  await api.auth.verifyEmail(token);
+  await registerAndVerify(api, spec);
 
   await promoteToAdmin(spec.email);
 

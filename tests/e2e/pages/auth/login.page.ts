@@ -66,17 +66,25 @@ export class LoginPage extends BasePage {
 
   async expectResendConfirmation(): Promise<void> {
     await expect(
-      this.page.getByText("If that email needs verifying, we sent a new link."),
+      this.page.getByText("If that email needs verifying, we sent a new code."),
     ).toBeVisible();
   }
 
   async expectNotVerifiedNotice(): Promise<void> {
     await expect(
-      this.page.getByText("Your email isn't verified yet. Check your inbox for the verification link."),
+      this.page.getByText("Your email isn't verified yet. Check your inbox for the 6-digit code."),
     ).toBeVisible();
     await expect(
       this.page.getByRole("button", { name: "Resend verification email" }),
     ).toBeVisible();
+  }
+
+  /** The notice links to the code entry page, which prefills the address the owner typed. */
+  async expectEnterCodeLink(email: string): Promise<void> {
+    await expect(this.page.getByRole("link", { name: "Enter your code" })).toHaveAttribute(
+      "href",
+      `/verify-email?email=${encodeURIComponent(email)}`,
+    );
   }
 
   async resendVerification(): Promise<void> {

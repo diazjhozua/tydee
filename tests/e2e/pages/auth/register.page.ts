@@ -27,9 +27,13 @@ export class RegisterPage extends BasePage {
     await this.page.getByRole("button", { name: "Sign up" }).click();
   }
 
-  /** The same confirmation shows for new and existing addresses, so it never names the address. */
-  async expectCheckEmail(): Promise<void> {
-    await expect(this.page.getByText("Check your email", { exact: true })).toBeVisible();
+  /**
+   * Every address moves on to the code entry, new or existing, so the response never names the address. The page
+   * carries the registered address in the URL, and the code field is where the owner enters the emailed code.
+   */
+  async expectVerifyPage(): Promise<void> {
+    await expect(this.page).toHaveURL(/\/verify-email\?email=/);
+    await expect(this.page.getByLabel("Verification code")).toBeVisible();
   }
 
   async expectError(text: string): Promise<void> {

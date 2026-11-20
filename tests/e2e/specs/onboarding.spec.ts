@@ -5,7 +5,7 @@ import { RegisterPage } from "../pages/auth/register.page";
 import { VerifyEmailPage } from "../pages/auth/verify-email.page";
 import { DefaultPagePrompt } from "../pages/overlays/default-page-prompt";
 import { SetupPage } from "../pages/setup.page";
-import { verificationToken } from "../support/db";
+import { TEST_VERIFICATION_CODE, seedVerificationCode } from "../support/db";
 
 test("registers, verifies, logs in, and completes setup", async ({ page }) => {
   const user = userSpec();
@@ -14,12 +14,15 @@ test("registers, verifies, logs in, and completes setup", async ({ page }) => {
   await register.open();
   await register.fill(user);
   await register.submit();
-  await register.expectCheckEmail();
+  await register.expectVerifyPage();
 
-  const token = await verificationToken(user.email);
+  // The fake sender never shows the code, so the test seeds a known one for this account.
+  await seedVerificationCode(user.email, TEST_VERIFICATION_CODE);
+
   const verify = new VerifyEmailPage(page);
 
-  await verify.open(token);
+  await verify.enterCode(TEST_VERIFICATION_CODE);
+  await verify.submit();
   await verify.expectVerified();
 
   const login = new LoginPage(page);
