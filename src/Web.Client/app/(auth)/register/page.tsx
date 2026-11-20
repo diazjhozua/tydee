@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Resolver, useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -29,8 +29,8 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 
 export default function RegisterPage() {
+  const router = useRouter();
   const registerMutation = useRegister();
-  const [submitted, setSubmitted] = useState(false);
 
   const {
     register,
@@ -39,27 +39,11 @@ export default function RegisterPage() {
   } = useForm<FormValues>({ resolver: zodResolver(schema) as Resolver<FormValues> });
 
   function onSubmit(values: FormValues) {
+    // Every address gets the same answer, so the page moves on to code entry whether or not the account is new.
+    // This browser holds the cookie that lets it spend the code.
     registerMutation.mutate(values, {
-      onSuccess: () => setSubmitted(true),
+      onSuccess: () => router.push(`/verify-email?email=${encodeURIComponent(values.email)}`),
     });
-  }
-
-  if (submitted) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Check your email</CardTitle>
-          <CardDescription>
-            Check your email for next steps. New accounts must verify their email before logging in. Already have an account? Log in.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button render={<Link href="/login" />} nativeButton={false} className="w-full">
-            Go to login
-          </Button>
-        </CardContent>
-      </Card>
-    );
   }
 
   const errorMessage =

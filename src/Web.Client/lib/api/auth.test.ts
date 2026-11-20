@@ -507,3 +507,44 @@ describe.each([
     expect(window.localStorage.getItem(OFFLINE_QUEUE_KEY)).toBe("{}");
   });
 });
+
+// The verification secret never reaches this module: the BFF keeps it in the email_verification cookie.
+describe("email verification calls", () => {
+  beforeEach(() => {
+    channels.length = 0;
+    vi.stubGlobal("BroadcastChannel", FakeChannel);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("verifyEmail posts only the code to the BFF and returns hasPassword", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ hasPassword: false }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { auth } = await load();
+
+    await expect(auth.verifyEmail("246810")).resolves.toEqual({ hasPassword: false });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/auth/verify-email",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ code: "246810" }) }),
+    );
+  });
+
+  it("resendVerification posts the email to the BFF route, so the cookie is set in this browser", async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ message: "If that email needs verifying, we sent a new code." }), {
+          status: 200,
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { auth } = await load();
+
+    await auth.resendVerification("ada@example.com");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/auth/resend-verification",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ email: "ada@example.com" }) }),
+    );
+  });
+});

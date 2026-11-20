@@ -1,7 +1,14 @@
 import { discardOfflineQueue } from "@/lib/offline/offlineQueue";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { ApiError } from "@/lib/types/api";
-import { AuthTokens, LoginRequest, RegisterRequest } from "@/lib/types/auth";
+import {
+  AuthTokens,
+  LoginRequest,
+  RegisterRequest,
+  RegisterResponse,
+  ResendVerificationResponse,
+  VerifyEmailResult,
+} from "@/lib/types/auth";
 
 // Bounds on each call, so a stalled server cannot hold the cross-tab lock forever. The BFF routes cut their own
 // upstream calls a little sooner (see app/api/auth/*), so these only fire when the route itself never answers.
@@ -158,12 +165,13 @@ export async function login(request: LoginRequest): Promise<AuthTokens> {
   return tokens;
 }
 
-export function register(request: RegisterRequest): Promise<{ message: string }> {
-  return post<{ message: string }>("/api/auth/register", request);
+// The BFF keeps the browser's verification secret in a cookie, so the page sends only the code.
+export function register(request: RegisterRequest): Promise<RegisterResponse> {
+  return post<RegisterResponse>("/api/auth/register", request);
 }
 
-export function verifyEmail(token: string): Promise<{ message: string }> {
-  return post<{ message: string }>("/api/auth/verify-email", { token });
+export function verifyEmail(code: string): Promise<VerifyEmailResult> {
+  return post<VerifyEmailResult>("/api/auth/verify-email", { code });
 }
 
 export function forgotPassword(email: string): Promise<{ message: string }> {
@@ -185,11 +193,9 @@ export function resetPassword(
   });
 }
 
-export function resendVerification(email: string): Promise<{ message: string }> {
-  return post<{ message: string }>(
-    `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/resend-verification`,
-    { email },
-  );
+// Goes through the BFF so the fresh verification secret lands in this browser's cookie.
+export function resendVerification(email: string): Promise<ResendVerificationResponse> {
+  return post<ResendVerificationResponse>("/api/auth/resend-verification", { email });
 }
 
 /**
