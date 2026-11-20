@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.33.2](https://github.com/diazjhozua/tydee/compare/v1.33.1...v1.33.2) (2026-11-20)
+
+
+### Bug Fixes
+
+* **auth:** verify email with a code bound to the registering browser ([2320638](https://github.com/diazjhozua/tydee/commit/2320638062047192fb6017d0761c7f60096d59cc))
+* **auth:** verify email with a code bound to the registering browser ([7ebfbe0](https://github.com/diazjhozua/tydee/commit/7ebfbe05a8b3aa2efa53569d34a5b2451cf770e1))
+* **client:** verify email with a six-digit code ([f850e11](https://github.com/diazjhozua/tydee/commit/f850e110af362932e048b6cc390342b982679901))
+
 ## [1.33.1](https://github.com/diazjhozua/tydee/compare/v1.33.0...v1.33.1) (2026-11-19)
 
 
