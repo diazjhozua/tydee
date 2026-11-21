@@ -26,11 +26,11 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
-      // Phone-width coverage for the responsive shell. Only the layout spec
-      // runs here to keep the suite's runtime close to the desktop run.
+      // Phone-width coverage for the responsive shell and amount entry. Only these
+      // specs run here to keep the suite's runtime close to the desktop run.
       name: "mobile",
       use: { ...devices["Desktop Chrome"], viewport: { width: 375, height: 812 } },
-      testMatch: /layout\.spec\.ts$/,
+      testMatch: /(layout|amount-input)\.spec\.ts$/,
     },
   ],
   webServer: {
