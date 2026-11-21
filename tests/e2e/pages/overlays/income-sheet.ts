@@ -15,6 +15,47 @@ export class IncomeSheet extends BasePage {
     await expect(this.sheet(mode).getByLabel("Amount")).toHaveValue(String(amount));
   }
 
+  amountField(mode: "Add income" | "Edit income" = "Add income"): Locator {
+    return this.sheet(mode).getByLabel("Amount");
+  }
+
+  async fillAmountText(text: string, mode: "Add income" | "Edit income" = "Add income") {
+    await this.amountField(mode).fill(text);
+  }
+
+  async amountFontSize(mode: "Add income" | "Edit income" = "Add income"): Promise<number> {
+    return this.amountField(mode).evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+  }
+
+  async amountWidthPx(mode: "Add income" | "Edit income" = "Add income"): Promise<number> {
+    const box = await this.amountField(mode).boundingBox();
+    if (!box) {
+      throw new Error("Amount field has no bounding box");
+    }
+    return box.width;
+  }
+
+  /** The amount field sits inside the sheet's 20px content padding. */
+  async expectAmountInsideSheet(mode: "Add income" | "Edit income" = "Add income") {
+    const sheet = this.sheet(mode);
+    const field = this.amountField(mode);
+    await expect(field).toBeVisible();
+    const sheetBox = await sheet.boundingBox();
+    const fieldBox = await field.boundingBox();
+    if (!sheetBox || !fieldBox) {
+      throw new Error("Sheet or amount field has no bounding box");
+    }
+    expect(fieldBox.x).toBeGreaterThanOrEqual(sheetBox.x + 20);
+    expect(fieldBox.x + fieldBox.width).toBeLessThanOrEqual(sheetBox.x + sheetBox.width - 20);
+  }
+
+  async expectNoHorizontalScroll(): Promise<void> {
+    const overflows = await this.page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth,
+    );
+    expect(overflows).toBe(false);
+  }
+
   async fillSource(source: string, mode: "Add income" | "Edit income" = "Add income") {
     await this.sheet(mode).getByLabel("Source").fill(source);
   }
