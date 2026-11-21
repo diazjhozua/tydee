@@ -1,8 +1,6 @@
 using System.Reflection;
 using Application;
-using HealthChecks.UI.Client;
 using Infrastructure;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
 using Web.Api;
 using Web.Api.Extensions;
@@ -54,10 +52,7 @@ else
 
 app.ApplyMigrations();
 
-app.MapHealthChecks("health", new HealthCheckOptions
-{
-    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
-});
+app.MapHealthEndpoint();
 
 app.UseRequestContextLogging();
 
