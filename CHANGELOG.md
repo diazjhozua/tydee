@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.33.4](https://github.com/diazjhozua/tydee/compare/v1.33.3...v1.33.4) (2026-11-21)
+
+
+### Bug Fixes
+
+* **api:** hide dependency details from anonymous health endpoint ([ced4e2e](https://github.com/diazjhozua/tydee/commit/ced4e2eb320beec58804a9378f07cebf7ef47011))
+* **api:** hide dependency details from anonymous health endpoint ([458cd36](https://github.com/diazjhozua/tydee/commit/458cd36211840f5d44e41f8781904f3162f29da4))
+
 ## [1.33.3](https://github.com/diazjhozua/tydee/compare/v1.33.2...v1.33.3) (2026-11-21)
 
 
