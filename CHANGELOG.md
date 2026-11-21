@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.33.3](https://github.com/diazjhozua/tydee/compare/v1.33.2...v1.33.3) (2026-11-21)
+
+
+### Bug Fixes
+
+* **client:** fit long amounts in the amount input ([e1afdd9](https://github.com/diazjhozua/tydee/commit/e1afdd971e48139de6d67857fc180442d4148711))
+* **client:** fit long amounts in the amount input ([41535e3](https://github.com/diazjhozua/tydee/commit/41535e3222f5baec32128756f117affc28ad7927))
+
 ## [1.33.2](https://github.com/diazjhozua/tydee/compare/v1.33.1...v1.33.2) (2026-11-20)
 
 
