@@ -14,7 +14,7 @@ Repository-wide guidance lives in the root `CLAUDE.md`.
 
 ## Structure
 
-- `support/` — leaf primitives: `env.ts` (URLs, consent storage state), `state.ts` (`.e2e-state.json`), `db.ts` (verification code seeding and binding checks, admin promotion, password reset token seeding; one connection per call), `held-refresh.ts` (holds a page's next refresh response), `time.ts` (UTC dates, unique emails), `select.ts` (Base UI selects), `domain.ts` (shared unions).
+- `support/` — leaf primitives: `env.ts` (URLs, consent storage state), `state.ts` (`.e2e-state.json`), `db.ts` (verification code seeding and binding checks, password reset token seeding, user counts; one connection per call), `held-refresh.ts` (holds a page's next refresh response), `time.ts` (UTC dates, unique emails), `select.ts` (Base UI selects), `domain.ts` (shared unions).
 - `api/` — typed HTTP client with one module per API area and `types.ts` mirroring `src/Contracts`. Specs never call `fetch` directly.
 - `builders/` — pure payload builders. No ids, no HTTP.
 - `seed/seed.ts` — resolves account names to ids and seeds accounts, template, income, expenses, transfers, recurring expenses, and suggestions through the API.
@@ -29,7 +29,7 @@ Repository-wide guidance lives in the root `CLAUDE.md`.
 - `signedIn` logs the user in through the Next BFF with `page.request.post("/api/auth/login")`, so the browser context receives the `refresh_token` cookie and `AuthProvider` refreshes the in-memory token on the first navigation.
 - `app` seeds the default accounts (Budget 50, Savings 30, Emergency Fund 20) and opens `/app`.
 - For custom data, use `signedIn` + `seed` and seed **before** the first `/app` navigation. A full reload can restore a persisted query cache that is still fresh under the client's 30s `staleTime`, which would skip the refetch.
-- `adminUser` registers, verifies, flips `users.is_admin`, and logs in again. The role claim is only added when a token is issued, so a token from before the update is not an admin.
+- `adminUser` takes the first unused address from the 16-address pool in `fixtures/users.ts`, which must match `Admin:Emails` in `src/Web.Api/appsettings.Testing.json`. It registers, verifies, and logs in. Admin comes from that list at login, so an address outside it is not an admin. Each admin test gets a fresh account and login budget; the fixture throws when the pool is used up.
 - Consent is pre-seeded with `use.storageState` (`tydee-consent`) so the cookie banner never covers the bottom navigation or the floating action buttons. The cookie-banner test opts out with an empty storage state.
 
 ## Selectors

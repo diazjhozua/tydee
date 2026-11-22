@@ -11,6 +11,7 @@ namespace Application.Users.RefreshToken;
 internal sealed class RefreshTokenCommandHandler(
     IApplicationDbContext context,
     ITokenProvider tokenProvider,
+    IAdminProvider adminProvider,
     IDateTimeProvider dateTimeProvider)
     : ICommandHandler<RefreshTokenCommand, AuthTokensResponse>
 {
@@ -70,6 +71,9 @@ internal sealed class RefreshTokenCommandHandler(
         {
             return Result.Failure<AuthTokensResponse>(UserErrors.InvalidRefreshToken);
         }
+
+        // Same rule as login: a removal from Admin:Emails takes effect on the next refresh.
+        user.IsAdmin = adminProvider.IsAdmin(user.Email);
 
         existingToken.RevokedAt = dateTimeProvider.UtcNow;
 

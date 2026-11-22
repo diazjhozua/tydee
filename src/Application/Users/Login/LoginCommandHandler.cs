@@ -59,12 +59,9 @@ internal sealed class LoginCommandHandler(
             return Result.Failure<AuthTokensResponse>(UserErrors.EmailNotVerified);
         }
 
-        // The config allowlist can grant admin on login; it never revokes, so a
-        // manually flipped DB flag is not clobbered by a stale allowlist entry.
-        if (adminProvider.IsAdmin(user.Email))
-        {
-            user.IsAdmin = true;
-        }
+        // Admin:Emails is authoritative. Login and refresh both set IsAdmin from it, so an
+        // email removed from the list is demoted here. A failed attempt never reaches this line.
+        user.IsAdmin = adminProvider.IsAdmin(user.Email);
 
         user.RefreshTokens.RemoveAll(t => t.IsExpired(dateTimeProvider.UtcNow));
 
