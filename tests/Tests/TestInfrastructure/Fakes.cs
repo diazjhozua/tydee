@@ -31,7 +31,8 @@ internal sealed class FakeTokenProvider : ITokenProvider
 {
     private int _counter;
 
-    public string CreateAccessToken(User user) => $"access-{user.Id}";
+    public string CreateAccessToken(User user) =>
+        user.IsAdmin ? $"access-{user.Id}-admin" : $"access-{user.Id}";
 
     public string GenerateRefreshToken() => $"raw-{++_counter}";
 

@@ -238,4 +238,51 @@ public class LoginCommandHandlerTests
         result.IsSuccess.ShouldBeTrue();
         db.Users.Single().IsAdmin.ShouldBeTrue();
     }
+
+    [Fact]
+    public async Task Login_demotes_an_admin_who_is_no_longer_on_the_allowlist()
+    {
+        using var db = TestDb.Create();
+        var user = Seed.User(db, "former@example.com");
+        user.IsAdmin = true;
+        db.SaveChanges();
+
+        var result = await Handler(db).Handle(
+            new LoginCommand(user.Email, "Password123!"), CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
+        db.ChangeTracker.Clear();
+        db.Users.Single().IsAdmin.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Still_listed_admin_keeps_the_flag_on_login()
+    {
+        using var db = TestDb.Create();
+        var user = Seed.User(db, "admin@example.com");
+        user.IsAdmin = true;
+        db.SaveChanges();
+
+        var result = await Handler(db, adminProvider: new FakeAdminProvider("admin@example.com")).Handle(
+            new LoginCommand(user.Email, "Password123!"), CancellationToken.None);
+
+        result.IsSuccess.ShouldBeTrue();
+        db.ChangeTracker.Clear();
+        db.Users.Single().IsAdmin.ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task Failed_login_does_not_change_the_admin_flag()
+    {
+        using var db = TestDb.Create();
+        var user = Seed.User(db, "former@example.com");
+        user.IsAdmin = true;
+        db.SaveChanges();
+
+        var result = await Handler(db).Handle(
+            new LoginCommand(user.Email, "WrongPassword"), CancellationToken.None);
+
+        result.Error.ShouldBe(UserErrors.InvalidCredentials);
+        db.Users.Single().IsAdmin.ShouldBeTrue();
+    }
 }
