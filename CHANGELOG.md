@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.33.5](https://github.com/diazjhozua/tydee/compare/v1.33.4...v1.33.5) (2026-11-22)
+
+
+### Bug Fixes
+
+* **auth:** make Admin:Emails authoritative on login and refresh ([55510a0](https://github.com/diazjhozua/tydee/commit/55510a036187b840364014308cd309c7385f32da))
+* **auth:** make Admin:Emails authoritative on login and refresh ([8d43e1b](https://github.com/diazjhozua/tydee/commit/8d43e1b22d4cddd0240b861cabc460ec8b5f1b10))
+
 ## [1.33.4](https://github.com/diazjhozua/tydee/compare/v1.33.3...v1.33.4) (2026-11-21)
 
 
