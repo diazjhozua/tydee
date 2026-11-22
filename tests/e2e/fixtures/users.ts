@@ -2,7 +2,7 @@ import type { BrowserContext, Page } from "@playwright/test";
 import { createApi, type TydeeApi } from "../api";
 import type { AuthResponse } from "../api/types";
 import { userSpec, type UserSpec } from "../builders/user.builder";
-import { TEST_VERIFICATION_CODE, promoteToAdmin, seedVerificationCode } from "../support/db";
+import { TEST_VERIFICATION_CODE, seedVerificationCode, userCountByEmail } from "../support/db";
 import { API_URL } from "../support/env";
 
 export type UserSession = UserSpec & AuthResponse;
@@ -46,18 +46,35 @@ export async function createVerifiedUser(
 }
 
 /**
- * Admin promotion is a database flag, and the role claim is only added when a
- * token is issued, so the user must log in again after the update.
+ * Admin comes from Admin:Emails at login, so each admin test signs in as a fresh address from this pool. The list
+ * must match src/Web.Api/appsettings.Testing.json. Every test gets its own account, so no two tests share a session,
+ * its data, or a per-account login budget.
  */
+const ADMIN_EMAILS = Array.from(
+  { length: 16 },
+  (_, index) => `e2e-admin-${String(index + 1).padStart(2, "0")}@tydee.test`,
+);
+
+/** The first pool address with no account yet. The database is fresh per run, so an address is never reused. */
+async function freeAdminEmail(): Promise<string> {
+  for (const email of ADMIN_EMAILS) {
+    if ((await userCountByEmail(email)) === 0) {
+      return email;
+    }
+  }
+
+  throw new Error(
+    `All ${ADMIN_EMAILS.length} e2e admin addresses are in use. Add more to Admin:Emails in src/Web.Api/appsettings.Testing.json and to ADMIN_EMAILS.`,
+  );
+}
+
 export async function createAdminUser(
-  spec: UserSpec = userSpec("e2e-admin"),
   options: { defaultPage?: DefaultPagePreference } = { defaultPage: "Home" },
 ): Promise<UserSession> {
   const api = createApi(API_URL);
+  const spec = userSpec({ email: await freeAdminEmail() });
 
   await registerAndVerify(api, spec);
-
-  await promoteToAdmin(spec.email);
 
   const auth = await api.auth.login(spec.email, spec.password);
 

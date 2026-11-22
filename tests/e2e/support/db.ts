@@ -90,18 +90,6 @@ export async function userId(email: string): Promise<string> {
   });
 }
 
-export async function promoteToAdmin(email: string): Promise<void> {
-  await withClient(async (client) => {
-    const result = await client.query("update users set is_admin = true where email = $1", [
-      email,
-    ]);
-
-    if (result.rowCount !== 1) {
-      throw new Error(`Could not promote ${email}: updated ${result.rowCount} rows.`);
-    }
-  });
-}
-
 export async function setEmailVerified(email: string): Promise<void> {
   await withClient(async (client) => {
     await client.query("update users set is_email_verified = true where email = $1", [email]);
