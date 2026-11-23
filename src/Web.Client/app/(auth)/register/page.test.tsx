@@ -56,6 +56,22 @@ describe("RegisterPage", () => {
     state.register.mockReset();
   });
 
+  it("refuses an address over 256 characters before it reaches the API", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.type(screen.getByLabelText("First name"), "Ada");
+    await user.type(screen.getByLabelText("Last name"), "Lovelace");
+    await user.click(screen.getByLabelText("Email"));
+    await user.paste(`${"a".repeat(245)}@example.com`);
+    await user.type(screen.getByLabelText("Password", { exact: true }), "secret-password");
+    await user.type(screen.getByLabelText("Confirm password", { exact: true }), "secret-password");
+    await user.click(screen.getByRole("button", { name: "Sign up" }));
+
+    expect(await screen.findByText("Email must be 256 characters or fewer.")).toBeInTheDocument();
+    expect(state.register).not.toHaveBeenCalled();
+  });
+
   it("moves on to code entry with the registered address encoded in the URL", async () => {
     state.register.mockResolvedValue({ message: "Registration successful. Enter the 6-digit code we emailed you." });
     renderPage();

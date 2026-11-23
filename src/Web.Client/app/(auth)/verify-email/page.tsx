@@ -24,7 +24,11 @@ const codeSchema = z.object({
   code: z.string().regex(/^\d{6}$/, "Enter the 6-digit code."),
 });
 
-const emailSchema = z.string().trim().email("Enter a valid email");
+const emailSchema = z
+  .string()
+  .trim()
+  .max(256, "Email must be 256 characters or fewer.")
+  .email("Enter a valid email");
 
 type CodeValues = z.infer<typeof codeSchema>;
 

@@ -253,6 +253,19 @@ describe("VerifyEmailPage", () => {
   });
 
   describe("resend", () => {
+    it("refuses an address over 256 characters before it sends anything", async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.clear(screen.getByLabelText("Email"));
+      await user.click(screen.getByLabelText("Email"));
+      await user.paste(`${"a".repeat(245)}@example.com`);
+      await user.click(screen.getByRole("button", { name: "Resend code" }));
+
+      expect(await screen.findByText("Email must be 256 characters or fewer.")).toBeInTheDocument();
+      expect(state.resendVerification).not.toHaveBeenCalled();
+    });
+
     it("asks for a valid email before it sends anything, and marks the field invalid", async () => {
       const user = userEvent.setup();
       renderPage();
