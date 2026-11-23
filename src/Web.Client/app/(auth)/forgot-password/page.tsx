@@ -3,15 +3,26 @@
 import { MailCheck } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useForgotPassword } from "@/lib/hooks/useAuth";
+import { ApiError } from "@/lib/types/api";
+
+const MAX_EMAIL_LENGTH = 256;
+
+const emailSchema = z
+  .string()
+  .trim()
+  .max(MAX_EMAIL_LENGTH, `Email must be ${MAX_EMAIL_LENGTH} characters or fewer.`)
+  .email("Enter a valid email");
 
 export default function ForgotPasswordPage() {
   const forgotPassword = useForgotPassword();
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   if (forgotPassword.isSuccess) {
     return (
@@ -39,6 +50,12 @@ export default function ForgotPasswordPage() {
     );
   }
 
+  const requestError = forgotPassword.isError
+    ? forgotPassword.error instanceof ApiError
+      ? forgotPassword.error.displayMessage
+      : "Something went wrong. Try again."
+    : null;
+
   return (
     <Card className="rounded-3xl">
       <CardHeader>
@@ -50,11 +67,16 @@ export default function ForgotPasswordPage() {
       <CardContent>
         <form
           className="space-y-4"
+          noValidate
           onSubmit={(e) => {
             e.preventDefault();
-            if (email.trim() !== "") {
-              forgotPassword.mutate(email.trim());
+            const parsed = emailSchema.safeParse(email);
+            if (!parsed.success) {
+              setEmailError(parsed.error.issues[0]?.message ?? "Enter a valid email");
+              return;
             }
+            setEmailError(null);
+            forgotPassword.mutate(parsed.data);
           }}
         >
           <div className="space-y-2">
@@ -65,9 +87,25 @@ export default function ForgotPasswordPage() {
               autoComplete="email"
               autoFocus
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              aria-invalid={emailError ? true : undefined}
+              aria-describedby={emailError ? "email-error" : undefined}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setEmailError(null);
+              }}
             />
+            {emailError && (
+              <p id="email-error" role="alert" className="text-sm text-destructive">
+                {emailError}
+              </p>
+            )}
           </div>
+
+          {requestError && (
+            <p role="alert" className="text-sm text-destructive">
+              {requestError}
+            </p>
+          )}
 
           <Button type="submit" className="w-full" disabled={forgotPassword.isPending}>
             {forgotPassword.isPending ? "Sending..." : "Send reset link"}
