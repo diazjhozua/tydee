@@ -6,6 +6,6 @@ internal sealed class ResendVerificationCommandValidator : AbstractValidator<Res
 {
     public ResendVerificationCommandValidator()
     {
-        RuleFor(c => c.Email).NotEmpty().EmailAddress();
+        RuleFor(c => c.Email).ValidEmailAddress();
     }
 }

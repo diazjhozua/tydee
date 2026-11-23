@@ -6,7 +6,6 @@ internal sealed class ForgotPasswordCommandValidator : AbstractValidator<ForgotP
 {
     public ForgotPasswordCommandValidator()
     {
-        // Matches the column length. A longer address would fail the insert and answer 500 instead of the uniform 200.
-        RuleFor(c => c.Email).NotEmpty().EmailAddress().MaximumLength(256);
+        RuleFor(c => c.Email).ValidEmailAddress();
     }
 }
