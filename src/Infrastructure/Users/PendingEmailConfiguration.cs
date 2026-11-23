@@ -1,3 +1,4 @@
+using Application.Users;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -11,7 +12,7 @@ internal sealed class PendingEmailConfiguration : IEntityTypeConfiguration<Pendi
         builder.HasKey(p => p.Id);
 
         builder.Property(p => p.Kind).HasConversion<string>().HasMaxLength(32);
-        builder.Property(p => p.Email).HasMaxLength(256);
+        builder.Property(p => p.Email).HasMaxLength(EmailRules.MaxLength);
         builder.Property(p => p.SessionHash).HasMaxLength(64);
         builder.Property(p => p.PresentedSessionHash).HasMaxLength(64);
 
