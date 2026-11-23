@@ -40,6 +40,13 @@ async function loginStatus(api: TydeeApi, email: string, password: string): Prom
   );
 }
 
+test("refuses an over-length address with a validation error, not a rate limit", async () => {
+  const anonymous = createApi();
+
+  // 257 characters: past the column width, so validation refuses it and the per-account budget is skipped.
+  expect(await loginStatus(anonymous, `${"a".repeat(245)}@example.com`, "WrongPassword123!")).toBe(400);
+});
+
 test("a wrong-password flood blocks the owner only until the window clears", async ({ verifiedUser }) => {
   const anonymous = createApi();
 
