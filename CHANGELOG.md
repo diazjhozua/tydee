@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.33.6](https://github.com/diazjhozua/tydee/compare/v1.33.5...v1.33.6) (2026-11-24)
+
+
+### Bug Fixes
+
+* **api:** skip login budget for over-length addresses ([dba610a](https://github.com/diazjhozua/tydee/commit/dba610a3f749c2f8d3b54cf7e563f4ae56b29484))
+* **application:** bound auth email length at 256 ([d685400](https://github.com/diazjhozua/tydee/commit/d685400508ef8061997974a93960729a555c3cc9))
+* **auth:** bound auth email length at 256 ([37bb048](https://github.com/diazjhozua/tydee/commit/37bb04800dc3c1ddf1a0f8191778f368a976e3e0))
+* **client:** cap login, register and verify-email emails at 256 ([d9f123e](https://github.com/diazjhozua/tydee/commit/d9f123e0b97fa3b505bfc52dcb6ff71636fbd9dd))
+* **client:** show forgot-password errors and cap email at 256 ([6b4644f](https://github.com/diazjhozua/tydee/commit/6b4644fc1fe5ddb2e664162c8a8e721b9386cefc))
+
 ## [1.33.5](https://github.com/diazjhozua/tydee/compare/v1.33.4...v1.33.5) (2026-11-22)
 
 
