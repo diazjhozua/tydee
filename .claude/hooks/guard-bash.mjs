@@ -13,7 +13,7 @@ import {
   wrapsGitCommit,
   writesProtectedConfig,
 } from './lib/git.mjs'
-import { commandName, findCommands, INTERPRETERS, OVERFLOW, usesInterpreter } from './lib/shell.mjs'
+import { commandName, findCommands, INTERPRETERS, literalHeredocRanges, OVERFLOW, usesInterpreter } from './lib/shell.mjs'
 
 const BLOCK_MESSAGE = (reason) =>
   `Blocked by .claude/hooks/guard-bash.mjs: ${reason}\n` +
@@ -458,6 +458,18 @@ function runsFindDelete(command) {
     })
 }
 
+// Literal here-document bodies are data the shell never runs. Blank them before the raw-text checks, which would
+// otherwise read body lines such as C# `Console.WriteLine($"x")` as commands. Only bodies the reader skips are blanked.
+function maskLiteralHeredocBodies(command) {
+  let out = ''
+  let last = 0
+  for (const [from, to] of literalHeredocRanges(command)) {
+    out += command.slice(last, from)
+    last = to
+  }
+  return out + command.slice(last)
+}
+
 // Resolve every recursive-delete target. Any directory change or shell wrapper fails closed.
 function recursiveDeleteTargets(command, projectDir, home) {
   // A command word built from expansion, globbing, or escaping cannot be resolved statically.
@@ -738,7 +750,7 @@ if (runsFindDelete(command)) {
   block('find can delete files or execute commands.')
 }
 
-const dangerousDelete = recursiveDeleteTargets(command, projectDir, home).some(({ resolved, cwd }) => {
+const dangerousDelete = recursiveDeleteTargets(maskLiteralHeredocBodies(command), projectDir, home).some(({ resolved, cwd }) => {
   if (resolved === null) {
     return true
   }

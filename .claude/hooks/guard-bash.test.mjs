@@ -309,8 +309,20 @@ test('blocks a quoted heredoc whose body a shell or a pipe runs', () => {
   assert.equal(exitCodeFor("cat <<'EOF' | sh\n$(echo rm) -rf ~/Documents\nEOF"), 2)
 })
 
-test('blocks a heredoc body redirected to a file, which a later command could run', () => {
-  assert.equal(exitCodeFor("cat <<'EOF' > out.sh\n$(echo rm) -rf ~/Documents\nEOF"), 2)
+// Accepted gap: a quoted heredoc body redirected to a file is not scanned, so a later command can run it unchecked.
+test('allows a heredoc body redirected to a file (accepted gap)', () => {
+  assert.equal(exitCodeFor("cat <<'EOF' > out.sh\n$(echo rm) -rf ~/Documents\nEOF"), 0)
+})
+
+test('allows a literal heredoc body with $ and a pipe on a later line, and still checks what follows', () => {
+  assert.equal(exitCodeFor("cat <<'EOF' > Program.cs\nConsole.WriteLine($\"x\")\nEOF\ndotnet run 2>&1 | tail -30"), 0)
+  assert.equal(exitCodeFor("cat <<'EOF'\nConsole.WriteLine($\"x\")\nEOF\necho done"), 0)
+  assert.equal(exitCodeFor("cat <<'EOF' > Program.cs\nConsole.WriteLine($\"x\")\nEOF\nrm -rf ~/Documents"), 2)
+})
+
+test('still blocks a pipe on the heredoc line, including a continued line', () => {
+  assert.equal(exitCodeFor("cat <<'EOF' | sh\n$(echo rm) -rf ~/Documents\nEOF"), 2)
+  assert.equal(exitCodeFor("cat <<'EOF' \\\n| sh\n$(echo rm) -rf ~/Documents\nEOF"), 2)
 })
 
 test('still checks commands after a skipped heredoc body', () => {

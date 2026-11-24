@@ -153,21 +153,30 @@ function readHeredocDelimiter(input, pos, words, pending) {
 }
 
 // Called at the newline that ends the line with the `<<` operators. A body is skipped only when every
-// here-document on the line has a quoted delimiter and a data consumer, and no pipe is present. Otherwise the body
-// stays in the scan, so `sh <<'EOF'` (the body is a script) and `cat <<EOF` (the shell expands the body) are checked.
+// here-document on the line has a quoted delimiter and a data consumer, and the operator line has no pipe. Otherwise
+// the body stays in the scan, so `sh <<'EOF'` (the body is a script) and `cat <<'EOF' | sh` are checked.
+// A pipe elsewhere in the command does not count, and neither does a redirect on the operator line.
+// A line ending in a backslash continues onto the next line, so its body stays in the scan.
 function skipHeredocBodies(input, start, pending, ctx) {
-  // `start` follows the newline that ends the operator line. A redirect on that line can send the body to a file that a
-  // later command runs, so the body then stays in the scan.
+  // `start` follows the newline that ends the operator line.
   const newline = start - 1
   const lineStart = input.lastIndexOf('\n', newline - 1) + 1
-  const redirected = input.slice(lineStart, newline).includes('>')
-  const literal = !ctx.pipes && !redirected && pending.every((h) => h.quoted && HEREDOC_DATA_CONSUMERS.has(h.owner))
+  const operatorLine = input.slice(lineStart, newline)
+  const literal =
+    !operatorLine.includes('|') &&
+    !operatorLine.trimEnd().endsWith('\\') &&
+    pending.every((h) => h.quoted && HEREDOC_DATA_CONSUMERS.has(h.owner))
   if (!literal) {
     return start
   }
   let i = start
   for (const h of pending) {
     i = skipHeredocBody(input, i, h)
+  }
+  // Only a single top-level heredoc is recorded. The terminator line stays out of the range, so the masked text
+  // still ends the body where the reader does. A nested body (inside $(...)) would carry offsets into a substring.
+  if (input === ctx.source && pending.length === 1) {
+    ctx.ranges.push([start, Math.max(start, input.lastIndexOf('\n', i - 1) + 1)])
   }
   return i
 }
@@ -185,6 +194,13 @@ function skipHeredocBody(input, start, { delim, strip }) {
     i = end + 1
   }
   return input.length
+}
+
+// [from, to) ranges of the top-level here-document bodies that the reader treats as literal data, as offsets into `input`.
+export function literalHeredocRanges(input) {
+  const ctx = { source: input, ranges: [] }
+  parseShell(input, ctx)
+  return ctx.ranges
 }
 
 // Parse a command string into simple commands (arrays of words) plus nested substitution bodies.
@@ -439,8 +455,7 @@ export function findCommands(input, depth = 0, context = null) {
   if (depth > MAX_DEPTH) {
     return [{ name: OVERFLOW, words: [], raw: [], unresolved: false }]
   }
-  // `pipes` is decided once for the whole command, so a pipe anywhere keeps every heredoc body in the scan.
-  const ctx = context ?? { pipes: input.includes('|') }
+  const ctx = context ?? {}
   const { commands, nested } = parseShell(input, ctx)
   const found = []
 
