@@ -17,7 +17,7 @@ const schema = z
   .object({
     firstName: z.string().min(1, "First name is required").max(100),
     lastName: z.string().min(1, "Last name is required").max(100),
-    email: z.string().email("Enter a valid email"),
+    email: z.string().max(256, "Email must be 256 characters or fewer.").email("Enter a valid email"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
   })

@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using Application.Abstractions.Messaging;
+using Application.Users;
 using Application.Users.Login;
 using Contracts.Auth;
 using SharedKernel;
@@ -22,9 +23,12 @@ internal sealed class Login : IEndpoint
             // Every attempt takes a permit, right or wrong, so the budget is per account.
             // A flood blocks this account's logins only while it keeps exhausting the window;
             // the block clears once the attempts stop. Nothing is locked.
-            using RateLimitLease lease = attemptLimiter.Acquire(request.Email);
+            // An address over the column length cannot match an account, so it skips the budget and fails validation.
+            using RateLimitLease? lease = EmailRules.IsWithinMaxLength(request.Email)
+                ? attemptLimiter.Acquire(request.Email)
+                : null;
 
-            if (!lease.IsAcquired)
+            if (lease is not null && !lease.IsAcquired)
             {
                 RateLimitingExtensions.SetRetryAfter(httpContext.Response, lease);
 

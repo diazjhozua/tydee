@@ -14,7 +14,7 @@ import { useLogin, useResendVerification } from "@/lib/hooks/useAuth";
 import { ApiError } from "@/lib/types/api";
 
 const schema = z.object({
-  email: z.string().email("Enter a valid email"),
+  email: z.string().max(256, "Email must be 256 characters or fewer.").email("Enter a valid email"),
   password: z.string().min(1, "Password is required"),
   rememberMe: z.boolean(),
 });

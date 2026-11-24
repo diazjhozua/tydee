@@ -1,3 +1,4 @@
+using Application.Users;
 using Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -10,7 +11,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
     {
         builder.HasKey(u => u.Id);
 
-        builder.Property(u => u.Email).HasMaxLength(256);
+        builder.Property(u => u.Email).HasMaxLength(EmailRules.MaxLength);
         builder.HasIndex(u => u.Email).IsUnique();
 
         builder.Property(u => u.FirstName).HasMaxLength(100);

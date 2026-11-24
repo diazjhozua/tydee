@@ -75,6 +75,19 @@ describe("LoginPage", () => {
     state.resendVerification.mockReset();
   });
 
+  it("refuses an address over 256 characters before it reaches the API", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByLabelText("Email"));
+    await user.paste(`${"a".repeat(245)}@example.com`);
+    await user.type(screen.getByLabelText("Password", { exact: true }), PASSWORD);
+    await user.click(screen.getByRole("button", { name: "Log in" }));
+
+    expect(await screen.findByText("Email must be 256 characters or fewer.")).toBeInTheDocument();
+    expect(state.login).not.toHaveBeenCalled();
+  });
+
   it("offers a fresh resend for each address that logs in unverified", async () => {
     state.login.mockRejectedValue(notVerified());
     state.resendVerification.mockResolvedValue({ message: SENT });
