@@ -22,6 +22,7 @@
       "Bash(gh issue list:*)",
       "Bash(gh search issues:*)",
       "Bash(gh auth status)",
+      "Bash(codegraph:*)",
       "Bash(powershell -ExecutionPolicy Bypass -File scripts\\link-worktree-env.ps1)",
       "Bash(powershell -ExecutionPolicy Bypass -File scripts\\link-worktree-env.ps1 -Worktree *)"
     ],
