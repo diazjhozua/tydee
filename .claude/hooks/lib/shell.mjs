@@ -11,17 +11,21 @@ const PREFIX_WRAPPERS = new Set([
   'builtin',
   'command',
   'coproc',
+  'doas',
   'env',
   'exec',
   'ionice',
   'nice',
   'nohup',
+  'pkexec',
+  'runuser',
   'setsid',
   'stdbuf',
   'sudo',
   'time',
   'timeout',
   'watch',
+  'wsl',
   'xargs',
 ])
 
@@ -45,6 +49,8 @@ export const INTERPRETERS = new Set([
   'pwsh',
   'sh',
   'source',
+  'ssh',
+  'su',
   'tcsh',
   'xargs',
   'zsh',
@@ -431,6 +437,13 @@ function effectiveWords(words) {
 // Commands a guard must see even when a prefix wrapper takes option values the reader does not model.
 const CANDIDATE_NAMES = new Set([...INTERPRETERS, 'git', 'rm', 'dotnet', 'docker', 'docker-compose'])
 
+// Tools that never run their arguments. Their words are data, so no payload is read out of them.
+const DATA_TOOLS = new Set(['codegraph', 'echo', 'grep', 'printf'])
+
+function isDataCommand(raw) {
+  return raw.length > 0 && DATA_TOOLS.has(commandName(raw[0].value))
+}
+
 function addCommand(words, raw, depth, found, ctx) {
   const name = commandName(words[0].value)
   found.push({ name, words, raw, unresolved: words[0].expandable })
@@ -466,16 +479,18 @@ export function findCommands(input, depth = 0, context = null) {
       starts.push(effective)
     }
 
-    if (raw.some((w) => PREFIX_WRAPPERS.has(commandName(w.value)))) {
+    // Data tools run nothing from their words. Any other command with a prefix wrapper among its words is scanned
+    // for a payload, so `docker exec app sh -c ...` and `doas sh -c ...` are caught.
+    if (!isDataCommand(raw) && raw.some((w) => PREFIX_WRAPPERS.has(commandName(w.value)))) {
       raw.forEach((w, k) => {
         if (k > 0 && CANDIDATE_NAMES.has(commandName(w.value))) {
           starts.push(raw.slice(k))
         }
       })
-      // env -S and similar options take a whole command line as one word.
+      // env -S and --split-string take a whole command line as one word, possibly glued to the option.
       for (const w of raw) {
         if (/\s/.test(w.value)) {
-          found.push(...findCommands(w.value, depth + 1, ctx))
+          found.push(...findCommands(w.value.replace(/^(?:-S|--split-string=?)/, ''), depth + 1, ctx))
         }
       }
     }
@@ -491,9 +506,13 @@ export function findCommands(input, depth = 0, context = null) {
   return found
 }
 
-// True when any simple command names an interpreter or prefix wrapper.
+// True when a command the shell runs holds an interpreter or a prefix wrapper among its words, so a payload behind
+// an unmodeled wrapper (docker exec, doas) still counts. Data tools are exempt: `codegraph query find "rm -rf"`
+// runs no interpreter.
 export function usesInterpreter(input) {
-  return findCommands(input).some((c) =>
-    c.raw.some((w) => INTERPRETERS.has(commandName(w.value)) || PREFIX_WRAPPERS.has(commandName(w.value))),
+  return findCommands(input).some(
+    (c) =>
+      !isDataCommand(c.raw) &&
+      c.raw.some((w) => INTERPRETERS.has(commandName(w.value)) || PREFIX_WRAPPERS.has(commandName(w.value))),
   )
 }

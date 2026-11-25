@@ -175,6 +175,90 @@ test('allows a grep for xargs piped before a plain commit', () => {
   assert.equal(exitCodeFor('rg xargs src && git commit -m "fix: x"'), 0)
 })
 
+// An interpreter name passed as an argument is data, not a payload runner. Only the command the shell runs,
+// or a wrapper in front of it, starts a payload.
+test('allows an interpreter name passed as an argument next to recursive-rm text', () => {
+  assert.equal(exitCodeFor('codegraph query find "rm -rf"'), 0)
+  assert.equal(exitCodeFor('codegraph callers xargs -- "rm -rf"'), 0)
+  assert.equal(exitCodeFor('grep -rn xargs docs && echo "rm -rf notes"'), 0)
+  assert.equal(exitCodeFor('grep -n "sudo" docs && echo "rm -rf x"'), 0)
+  assert.equal(exitCodeFor('echo sh -c "rm -rf notes"'), 0)
+})
+
+// A runner that is not a shell still runs its payload. docker exec, doas, pkexec, runuser, wsl and kubectl exec
+// are prefix wrappers the reader does not model in full, so the scan covers them.
+test('blocks a payload run by a runner that is not a shell', () => {
+  assert.equal(exitCodeFor('docker exec app sh -c "rm -rf /data"'), 2)
+  assert.equal(exitCodeFor('kubectl exec pod -- sh -c "rm -rf /data"'), 2)
+  assert.equal(exitCodeFor('doas sh -c "rm -rf ~"'), 2)
+  assert.equal(exitCodeFor('echo "rm -rf ~" | doas sh'), 2)
+  assert.equal(exitCodeFor('doas rm -rf ~'), 2)
+  assert.equal(exitCodeFor('pkexec rm -rf ~'), 2)
+  assert.equal(exitCodeFor('runuser -u root -- sh -c "rm -rf ~"'), 2)
+  assert.equal(exitCodeFor('wsl rm -rf ~'), 2)
+})
+
+test('blocks a delete after an append assignment or glued to env -S or --split-string', () => {
+  assert.equal(exitCodeFor('FOO+=1 sudo rm -rf ~'), 2)
+  assert.equal(exitCodeFor('{fd}>/dev/null sudo rm -rf ~'), 2)
+  assert.equal(exitCodeFor('env -S"rm -rf ~"'), 2)
+  assert.equal(exitCodeFor('env --split-string="rm -rf ~"'), 2)
+})
+
+test('blocks a cmd or PowerShell recursive delete written as literal text', () => {
+  assert.equal(exitCodeFor('cmd /c "rd /s /q build"'), 2)
+  assert.equal(exitCodeFor('cmd /c "rmdir /s build"'), 2)
+  assert.equal(exitCodeFor('cmd /c "del/s/q build"'), 2)
+  assert.equal(exitCodeFor('cmd /c "erase /s build"'), 2)
+  assert.equal(exitCodeFor('powershell -Command "Remove-Item -Recurse build"'), 2)
+  assert.equal(exitCodeFor('powershell -Command "Remove-Item -Path build -Recurse -Force"'), 2)
+  assert.equal(exitCodeFor('powershell -Command "ri build -r"'), 2)
+})
+
+test('allows a cmd or PowerShell delete that is not recursive', () => {
+  assert.equal(exitCodeFor('cmd /c "del build.log"'), 0)
+  assert.equal(exitCodeFor('cmd /c "rd build"'), 0)
+  assert.equal(exitCodeFor('powershell -Command "Remove-Item build\\old.txt"'), 0)
+})
+
+test('blocks a commit wrapped by a runner that is not a shell', () => {
+  assert.equal(exitCodeFor('docker exec repo sh -c "git commit -m \'fix: x\'"'), 2)
+  assert.equal(exitCodeFor('doas sh -c "git commit -m \'fix: x\'"'), 2)
+  assert.equal(exitCodeFor('su -c "git commit -m \'fix: x\'"'), 2)
+})
+
+
+test('blocks a su or ssh payload that holds recursive-rm text, bare or behind a wrapper', () => {
+  assert.equal(exitCodeFor('su -c "rm -rf src"'), 2)
+  assert.equal(exitCodeFor('ssh host "rm -rf ~"'), 2)
+  assert.equal(exitCodeFor('echo nice; su -c "rm -rf src"'), 2)
+  assert.equal(exitCodeFor('env -S \'su -c "rm -rf src"\''), 2)
+  assert.equal(exitCodeFor('sudo true; su -c "rm -rf src"'), 2)
+  assert.equal(exitCodeFor('sudo su <<< "rm -rf src"'), 2)
+  assert.equal(exitCodeFor('echo "rm -rf src" | nohup su'), 2)
+  assert.equal(exitCodeFor("echo 'rm -rf src' | xargs -I{} sudo {}"), 2)
+  assert.equal(exitCodeFor('nice -n 5 su <<< "rm -rf src"'), 2)
+  assert.equal(exitCodeFor('FOO=1 sudo su <<< "rm -rf src"'), 2)
+  assert.equal(exitCodeFor('echo "rm -rf src" | /usr/bin/sh'), 2)
+})
+
+// The reader does not model every wrapper option, so a payload behind an option value still counts.
+test('blocks a payload behind a leading wrapper with option values or assignments', () => {
+  assert.equal(exitCodeFor('timeout -s KILL 5 sh -c "rm -rf ~"'), 2)
+  assert.equal(exitCodeFor('nice -n 5 bash -c "rm -rf ~"'), 2)
+  assert.equal(exitCodeFor('FOO=1 sudo sh -c "rm -rf ~"'), 2)
+  assert.equal(exitCodeFor('if sudo su <<< "rm -rf src"; then :; fi'), 2)
+  assert.equal(exitCodeFor('env -S \'rm -rf ~\''), 2)
+})
+
+test('allows a git log whose grep or path names a shell word', () => {
+  assert.equal(exitCodeFor('git log --oneline --grep=commit -- scripts/xargs'), 0)
+})
+
+test('blocks a plain commit wrapped in xargs', () => {
+  assert.equal(exitCodeFor('xargs git commit -m "fix: x"'), 2)
+})
+
 test('blocks secrets staged through a command substitution or backticks', () => {
   assert.equal(exitCodeFor('git add $(echo .env)'), 2)
   assert.equal(exitCodeFor('git add "$(echo .env)"'), 2)

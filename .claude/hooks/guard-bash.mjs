@@ -418,8 +418,18 @@ function recursiveFlag(token) {
   return token.startsWith('--') && !RM_SAFE_LONG.has(token)
 }
 
-// Text-level recursive rm check, used only as a fallback next to an interpreter or wrapper.
+// cmd and PowerShell delete verbs. `/s` is the cmd recursive switch; PowerShell takes -Recurse or any prefix of it
+// (-r, -rec, ...). The fallback reads these as text because the shell reader does not model cmd or PowerShell.
+const DELETE_RECURSIVE_TEXT = [
+  /\b(?:rd|rmdir|del|erase)\b[^\n;&|]*\/s\b/i,
+  /\b(?:remove-item|ri|rd|rmdir|del|erase)\b[^\n;&|]*\s-r(?:e(?:c(?:u(?:r(?:se?)?)?)?)?)?\b/i,
+]
+
+// Text-level recursive delete check, used only as a fallback next to an interpreter or wrapper.
 function textRecursiveRm(command) {
+  if (DELETE_RECURSIVE_TEXT.some((re) => re.test(command))) {
+    return true
+  }
   return splitSegments(command).some((segment) => {
     const tokens = segment.split(/\s+/).filter(Boolean)
     const rmIndex = tokens.findIndex((token) => commandName(token).replace(/^[({$`]+/, '') === 'rm')

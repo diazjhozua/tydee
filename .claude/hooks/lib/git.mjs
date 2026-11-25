@@ -4,7 +4,7 @@ import { commandName, findCommands } from './shell.mjs'
 import { isLocalOnlyPath, isSecretBasename } from './secrets.mjs'
 
 const GLOBAL_OPTIONS_WITH_VALUE = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace', '--exec-path'])
-const SHELL_LIKE = new Set(['bash', 'sh', 'zsh', 'dash', 'ksh', 'fish', 'eval', 'xargs'])
+const SHELL_LIKE = new Set(['bash', 'sh', 'zsh', 'dash', 'ksh', 'fish', 'eval', 'xargs', 'su', 'ssh'])
 const EMPTY_WORD = { value: '', expandable: false }
 const PUSH_FORCE_FLAGS = new Set(['--force', '-f', '--force-with-lease', '--mirror', '--delete'])
 const CONFIG_READ_FLAGS = new Set(['--get', '--get-all', '--get-regexp', '--get-urlmatch', '--list', '-l'])
@@ -114,12 +114,20 @@ export function addsSecretPath(args) {
   })
 }
 
-// A shell wrapper (sh -c, bash -c, eval, xargs) that runs git commit, which would bypass
+// `git log` and `git ls-files` take paths and patterns as data: `git log --grep=commit -- scripts/sh` runs no shell.
+const GIT_DATA_SUBCOMMANDS = new Set(['log', 'ls-files'])
+
+function isGitDataCommand(raw) {
+  return raw.length > 1 && commandName(raw[0].value) === 'git' && GIT_DATA_SUBCOMMANDS.has(raw[1].value)
+}
+
+// A shell wrapper (sh -c, bash -c, eval, xargs, su, ssh) that runs git commit, which would bypass
 // the commit-message check when the wrapped command is not validated as a commit.
 export function wrapsGitCommit(command) {
   return findCommands(command).some(
-    ({ raw }) =>
-      raw.some((w) => SHELL_LIKE.has(commandName(w.value))) &&
-      /\bgit\b[\s\S]*\bcommit\b/.test(raw.map((w) => w.value).join(' ')),
+    (c) =>
+      !isGitDataCommand(c.raw) &&
+      c.raw.some((w) => SHELL_LIKE.has(commandName(w.value))) &&
+      /\bgit\b[\s\S]*\bcommit\b/.test(c.raw.map((w) => w.value).join(' ')),
   )
 }
