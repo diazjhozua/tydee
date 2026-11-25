@@ -49,6 +49,7 @@ Run this phase first. It decides whether the work is isolated in a worktree.
    - Run `powershell -ExecutionPolicy Bypass -File scripts\link-worktree-env.ps1 -Worktree <worktree path>`. It links the gitignored local config (API settings and client `.env.local`) from the main checkout, which it creates on first run and never overwrites. The API also reads shared user secrets, so no per-worktree setup is needed for those.
    - The script never shares node_modules. Run `npm --prefix src/Web.Client install` in the worktree every time. A junction into main's copy breaks `next dev` (Turbopack refuses links that point outside the project), and it means one session's install rewrites packages for every session that shares it.
    - Run `dotnet restore tydee.slnx` in the worktree every time.
+   - Run `codegraph init -y` when `.codegraph/` is missing in the worktree. It builds the index (about 8 seconds here) and is gitignored, so `git status` stays clean. Skip it when the index exists.
    - If a worktree from before this change still has `src/Web.Client/node_modules` as a junction, the guard blocks every npm dependency change there (`install`, `i`, `add`, `update`, `up`, `uninstall`, `un`, `remove`, `rm`, `ci`, `dedupe`, `prune`). Remove only the link with `cmd /c rmdir src\Web.Client\node_modules` (no `/S`: it removes the link and refuses a non-empty folder), then run `npm --prefix src/Web.Client install`. Never add `/S` or use recursive delete on the link.
 7. If no issue is given, skip this phase: no worktree, no branch rule, no `Refs` line. Phase 8 still runs, but only when the user asks for a commit or pull request.
 
@@ -61,10 +62,13 @@ Run this phase first. It decides whether the work is isolated in a worktree.
 
 ## Phase 2: Codebase exploration
 
+When `.codegraph/` exists, run `codegraph sync` first so the index matches the checkout. Otherwise search with Grep/Glob.
+
 1. Launch 2-3 `code-explorer` agents in parallel, each on a different aspect, for example:
    - the closest existing slice (e.g. accounts: `Endpoints/Accounts/CreateAccount.cs` -> `CreateAccountCommandHandler` -> `AccountDialog` -> `useAccounts`)
    - the persistence and state path (`IApplicationDbContext`, `ApplicationDbContext`, `BalanceCalculator`, TanStack query keys, offline mutation replay)
    - UI patterns, components in `components/ui`, and test approach for the affected screen
+   - Put this in every explorer prompt: search with codegraph first (`codegraph explore` for a flow with source; `codegraph query`, `callers`, or `node` for one symbol), then Grep/Glob if codegraph errors or returns nothing.
 2. Read every key file they return.
 3. Present a summary of findings and the patterns the feature must follow.
 
@@ -105,6 +109,8 @@ Do not start without explicit approval.
 3. Present findings and ask: fix now, fix later, or proceed. Apply what the user chooses.
 
 ## Phase 7: Verify
+
+When `.codegraph/` exists, run `codegraph sync` first so later searches see the edits.
 
 Before verifying, make sure `src/Web.Client/node_modules` is a real folder, not a junction. If it is a junction left from an older worktree, remove only the link with `cmd /c rmdir src\Web.Client\node_modules` (no `/S`), then run `npm --prefix src/Web.Client install` in the worktree first.
 

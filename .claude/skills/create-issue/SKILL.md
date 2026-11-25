@@ -48,7 +48,7 @@ Run this step for every issue unless the user says "skip verification". When ski
 
 Launch one `code-explorer` agent (read-only) with a prompt in this shape:
 
-> In this repository, determine whether `<feature>` already exists, or whether `<bug>` is real. Return a verdict of EXISTS, PARTIAL, ABSENT, or UNCLEAR, and cite `file:line` evidence for each claim. Do not modify anything.
+> In this repository, determine whether `<feature>` already exists, or whether `<bug>` is real. Return a verdict of EXISTS, PARTIAL, ABSENT, or UNCLEAR, and cite `file:line` evidence for each claim. Search with codegraph first when `.codegraph/` exists (`codegraph query`, `codegraph explore`), then `Grep`/`Glob`. Do not modify anything.
 
 Route by verdict:
 
@@ -62,7 +62,7 @@ Route by verdict:
 | Task already done | Stop and show where. |
 | UNCLEAR | Continue and note that verification was inconclusive. |
 
-If the agent returns nothing usable, fall back to a direct `Grep`/`Glob` search before deciding.
+If the agent returns nothing usable, search directly with `codegraph query` or `codegraph explore` when `.codegraph/` exists, then fall back to a direct `Grep`/`Glob` search before deciding. Do not create an index from this skill; it runs in whatever checkout the user is in.
 
 ## Step 6: Check for duplicates
 

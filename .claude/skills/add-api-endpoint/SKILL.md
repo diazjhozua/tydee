@@ -7,6 +7,8 @@ description: Add a new backend feature or API endpoint to Tydee following the Cl
 
 Follow an existing slice such as `Endpoints/Accounts/CreateAccount.cs` -> `CreateAccountCommand` + handler + validator -> `IApplicationDbContext`. Dependencies point inward only; `tests/Tests/Architecture/LayerTests.cs` fails otherwise.
 
+Find the slice with codegraph before Grep: `codegraph explore <Feature>` traces a flow with source, `codegraph callers <Handler>` lists call sites, and `codegraph node <Name>` shows one definition. Before you edit, run `codegraph init -y` when `.codegraph/` is missing, and `codegraph sync` after edits. Fall back to `Grep`/`Glob` when codegraph errors or returns nothing usable.
+
 ## Steps
 
 1. **Contracts** — add flat request/response DTOs and enums under `src/Contracts/<Area>/`. The project is a leaf: no Tydee references and no infrastructure packages. Keep the wire shape identical to the client types in `src/Web.Client/lib/types/`.

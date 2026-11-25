@@ -7,6 +7,8 @@ description: Review the Tydee working diff before committing. Use for "review th
 
 Review `git diff` plus untracked files. Report findings as `path:line: severity: problem. fix.` — no praise, no scope creep. Only report issues that change behavior, correctness, security, or the project's stated conventions.
 
+Before judging a changed symbol's scope, check its call sites. When `.codegraph/` exists, run `codegraph sync` so the index matches the working tree, then `codegraph callers <symbol>` and `codegraph impact <symbol>`. Use `codegraph query` to find related files. Fall back to `Grep`/`Glob` when `.codegraph/` is missing or codegraph returns nothing. Do not create an index from this skill.
+
 ## Checklist
 
 **Architecture**

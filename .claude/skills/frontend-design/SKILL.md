@@ -36,7 +36,7 @@ For `A · B` meta strings specifically: do not join facts with middle dots or pa
 
 1. **Brief** — state the screen's user, primary job, and the data it shows, using real Tydee content (accounts, income allocations, expenses, categories, balances).
 2. **Plan** — which existing tokens and primitives it uses, a short layout description with an ASCII wireframe for desktop and 375px, the one element that carries emphasis, and the empty, loading, and error states.
-3. **Check the plan** against the home and accounts screens. If any part looks like it came from a different product, or like a generic default, revise it and say what changed.
+3. **Check the plan** against the home and accounts screens. Find their components with `codegraph explore <Screen>` when `.codegraph/` exists, else `Grep`/`Glob`. If any part looks like it came from a different product, or like a generic default, revise it and say what changed.
 4. **Build** following the `add-client-feature` skill.
 5. **Critique** — run the app (`npm --prefix src/Web.Client run dev` against the API) and screenshot desktop and 375px. Remove one thing that does not earn its place. Then hand off to `ui-reviewer`.
 
