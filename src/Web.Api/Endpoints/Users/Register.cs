@@ -34,6 +34,7 @@ internal sealed class Register : IEndpoint
         })
         .WithTags(Tags.Auth)
         .RequireRateLimiting(RateLimitingExtensions.AuthPolicy)
+        .AddEndpointFilter<RejectCrossSiteRequestsFilter>()
         .WithSummary("Register a new account and email a verification code.");
     }
 }
