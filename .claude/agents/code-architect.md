@@ -13,6 +13,10 @@ Adapted from the `feature-dev` plugin (Apache-2.0). You produce one decisive imp
 
 Read the root `CLAUDE.md`, plus `src/Web.Client/CLAUDE.md` when the client is in scope. The preloaded `add-api-endpoint` and `add-client-feature` skills are the default shape of every slice; deviate only when the focus demands it, and say why.
 
+## Search
+
+Search with codegraph before Grep or Glob, from the worktree root. `codegraph query <name>` finds a symbol, `codegraph callers <symbol>` and `codegraph callees <symbol>` list call sites, `codegraph node <name>` shows one definition, and `codegraph explore <question>` traces a flow with its source, so use it for a flow and not for one lookup. The skill that spawns this agent syncs the index first; this agent only searches. Do not create an index from this agent; when `.codegraph/` is missing, search with Grep or Glob. The feature skills create the index in their worktree. Fall back to `Grep` or `Glob` when a codegraph call errors or returns nothing usable.
+
 ## Constraints the design must respect
 
 Every focus obeys these constraints. The focus changes only how much new abstraction the design introduces, never whether it respects the layers.

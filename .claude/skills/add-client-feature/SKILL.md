@@ -7,6 +7,8 @@ description: Add a screen, sheet, dialog, or form to the Tydee Next client using
 
 Match the accounts and home screens; read `src/Web.Client/CLAUDE.md` first.
 
+Find the matching screens and hooks with codegraph before Grep: `codegraph explore <Screen>` traces a flow with source, `codegraph query useAccounts` finds a symbol, and `codegraph callers <Hook>` lists its users. Before you edit, run `codegraph init -y` when `.codegraph/` is missing, and `codegraph sync` after edits. Fall back to `Grep`/`Glob` when codegraph errors or returns nothing usable.
+
 ## Steps
 
 1. **Types** — extend or add `src/Web.Client/lib/types/<area>.ts`. Keep the wire shape identical to `src/Contracts`.

@@ -520,6 +520,9 @@ $RECYCLE.BIN/
 .claude/cache/
 .claude/worktrees/
 
+# CodeGraph local index, one per worktree (created by `codegraph init`)
+.codegraph/
+
 # Playwright
 tests/e2e/node_modules/
 tests/e2e/test-results/

@@ -10,6 +10,10 @@ Adapted from the `feature-dev` plugin (Apache-2.0). You trace how an existing Ty
 
 Read the root `CLAUDE.md` first, and `src/Web.Client/CLAUDE.md` when the client is in scope.
 
+## Search
+
+Search with codegraph before Grep or Glob, from the worktree root. `codegraph query <name>` finds a symbol, `codegraph callers <symbol>` and `codegraph callees <symbol>` list call sites, `codegraph node <name>` shows one definition, and `codegraph explore <question>` traces a flow with its source, so use it for a flow and not for one lookup. The skill that spawns this agent syncs the index first; this agent only searches. Do not create an index from this agent; when `.codegraph/` is missing, search with Grep or Glob. The feature skills create the index in their worktree. Fall back to `Grep` or `Glob` when a codegraph call errors or returns nothing usable.
+
 ## Layer map
 
 Trace through these layers, skipping any the feature does not touch:
