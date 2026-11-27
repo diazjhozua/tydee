@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.33.7](https://github.com/diazjhozua/tydee/compare/v1.33.6...v1.33.7) (2026-11-27)
+
+
+### Bug Fixes
+
+* **api:** refuse cross-site requests to anonymous auth endpoints ([0a04021](https://github.com/diazjhozua/tydee/commit/0a040213b287bd4cb62e16fa624a9ac6d6620f73))
+* **auth:** refuse cross-site and non-JSON requests to BFF auth routes ([c8326fd](https://github.com/diazjhozua/tydee/commit/c8326fd3af63a99e805364dc675d4f60981de3d5))
+* **auth:** refuse cross-site requests to auth endpoints ([d338f85](https://github.com/diazjhozua/tydee/commit/d338f851bc0ea513268775a15aa20966cf8af779))
+
 ## [1.33.6](https://github.com/diazjhozua/tydee/compare/v1.33.5...v1.33.6) (2026-11-24)
 
 
