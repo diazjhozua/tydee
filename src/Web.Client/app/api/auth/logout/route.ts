@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { REFRESH_TOKEN_COOKIE, clearSessionCookies } from "@/lib/auth/cookies";
 import { clientIpHeaders } from "@/lib/auth/clientIp";
+import { guardBffRequest } from "@/lib/auth/requestGuard";
 
 const API_URL = process.env.API_URL;
 
@@ -28,6 +29,11 @@ async function revokeSessions(request: NextRequest, refreshToken: string): Promi
 }
 
 export async function POST(request: NextRequest) {
+  const refused = guardBffRequest(request, { requireJson: false });
+  if (refused) {
+    return refused;
+  }
+
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
 
   // Without a cookie there is no session to revoke, so the browser simply forgets. With one, the cookies go only

@@ -26,6 +26,7 @@ internal sealed class ForgotPassword : IEndpoint
         })
         .WithTags(Tags.Auth)
         .WithSummary("Email a password reset link. Always answers success.")
-        .RequireRateLimiting(RateLimitingExtensions.AuthPolicy);
+        .RequireRateLimiting(RateLimitingExtensions.AuthPolicy)
+        .AddEndpointFilter<RejectCrossSiteRequestsFilter>();
     }
 }

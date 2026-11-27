@@ -6,12 +6,18 @@ import {
   hasRememberMe,
 } from "@/lib/auth/cookies";
 import { clientIpHeaders } from "@/lib/auth/clientIp";
+import { guardBffRequest } from "@/lib/auth/requestGuard";
 
 export const maxDuration = 60;
 
 const API_URL = process.env.API_URL;
 
 export async function POST(request: NextRequest) {
+  const refused = guardBffRequest(request, { requireJson: false });
+  if (refused) {
+    return refused;
+  }
+
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
 
   if (!refreshToken) {

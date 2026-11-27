@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { applySessionCookies } from "@/lib/auth/cookies";
 import { clientIpHeaders } from "@/lib/auth/clientIp";
+import { guardBffRequest } from "@/lib/auth/requestGuard";
 
 export const maxDuration = 60;
 
 const API_URL = process.env.API_URL;
 
 export async function POST(request: NextRequest) {
+  const refused = guardBffRequest(request, { requireJson: true });
+  if (refused) {
+    return refused;
+  }
+
   const { email, password, rememberMe } = await request.json();
 
   let res: Response;

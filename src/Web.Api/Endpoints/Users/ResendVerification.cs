@@ -29,6 +29,7 @@ internal sealed class ResendVerification : IEndpoint
         })
         .WithTags(Tags.Auth)
         .WithSummary("Email a fresh verification code and rebind the browser. Always answers success.")
-        .RequireRateLimiting(RateLimitingExtensions.AuthPolicy);
+        .RequireRateLimiting(RateLimitingExtensions.AuthPolicy)
+        .AddEndpointFilter<RejectCrossSiteRequestsFilter>();
     }
 }
